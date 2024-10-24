@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dlax8vjr11ihn"
+path="res://.godot/imported/Calm Ambient Sci Fi Fantasy Music.mp3-3637842ea772b9fb0b5dc04c85b14343.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/Calm Ambient Sci Fi Fantasy Music.mp3"
+dest_files=["res://.godot/imported/Calm Ambient Sci Fi Fantasy Music.mp3-3637842ea772b9fb0b5dc04c85b14343.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

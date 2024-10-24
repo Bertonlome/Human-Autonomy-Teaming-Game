@@ -1,0 +1,64 @@
+[gd_scene load_steps=15 format=3 uid="uid://bipxsk1snp5nq"]
+
+[ext_resource type="Script" path="res://scenes/level/BaseLevel.cs" id="1_oetcv"]
+[ext_resource type="TileSet" uid="uid://be2deub8k3gjr" path="res://resources/highlight_tileset.tres" id="2_8gl76"]
+[ext_resource type="PackedScene" uid="uid://b7d1hhincgf58" path="res://scenes/manager/GridManager.tscn" id="2_46an4"]
+[ext_resource type="TileSet" uid="uid://dvqwr0ci0x55u" path="res://resources/tiles.tres" id="2_ik0op"]
+[ext_resource type="PackedScene" uid="uid://db583b5wliqtp" path="res://scenes/ui/LevelCompleteScreen.tscn" id="2_nafao"]
+[ext_resource type="PackedScene" uid="uid://c0b3p1iyv2yph" path="res://scenes/manager/BuildingManager.tscn" id="2_smhdp"]
+[ext_resource type="PackedScene" uid="uid://dqoljijx36x6a" path="res://scenes/ui/GameUI.tscn" id="3_b6i5e"]
+[ext_resource type="PackedScene" uid="uid://cx2k42pew5v1f" path="res://scenes/ui/EscapeMenu.tscn" id="3_qe475"]
+[ext_resource type="PackedScene" uid="uid://du6yrfdf7n3so" path="res://scenes/GameCamera.tscn" id="5_gni5d"]
+[ext_resource type="PackedScene" uid="uid://cv6tnl0bv6sfg" path="res://scenes/building/Base.tscn" id="5_xjsmf"]
+[ext_resource type="PackedScene" uid="uid://bocvnu5ijh44c" path="res://scenes/manager/ResourceIndicatorManager.tscn" id="6_2ofsf"]
+[ext_resource type="PackedScene" uid="uid://bh0jxs1odudla" path="res://scenes/building/BuildingGhost.tscn" id="8_c56o1"]
+[ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/GoldMine.tscn" id="9_87w6t"]
+[ext_resource type="PackedScene" uid="uid://b0eal3gs3jkha" path="res://scenes/manager/FloatingTextManager.tscn" id="13_p7dg5"]
+
+[node name="BaseLevel" type="Node"]
+script = ExtResource("1_oetcv")
+levelCompleteScreenScene = ExtResource("2_nafao")
+escapeMenuScene = ExtResource("3_qe475")
+
+[node name="BuildingManager" parent="." node_paths=PackedStringArray("gridManager", "gameUI", "ySortRoot") instance=ExtResource("2_smhdp")]
+gridManager = NodePath("../GridManager")
+gameUI = NodePath("../GameUI")
+ySortRoot = NodePath("../YSortRoot")
+buildingGhostScene = ExtResource("8_c56o1")
+
+[node name="GridManager" parent="." node_paths=PackedStringArray("highlightTilemapLayer", "baseTerrainTilemapLayer") instance=ExtResource("2_46an4")]
+highlightTilemapLayer = NodePath("../YSortRoot/HighlightTileMapLayer")
+baseTerrainTilemapLayer = NodePath("../YSortRoot/BaseTerrainTileMapLayer")
+
+[node name="GameUI" parent="." node_paths=PackedStringArray("buildingManager") instance=ExtResource("3_b6i5e")]
+buildingManager = NodePath("../BuildingManager")
+
+[node name="GameCamera" parent="." instance=ExtResource("5_gni5d")]
+
+[node name="YSortRoot" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="BaseTerrainTileMapLayer" type="TileMapLayer" parent="YSortRoot"]
+unique_name_in_owner = true
+y_sort_enabled = true
+tile_set = ExtResource("2_ik0op")
+
+[node name="FoamTileMapLayer" type="TileMapLayer" parent="YSortRoot/BaseTerrainTileMapLayer"]
+y_sort_enabled = true
+tile_set = ExtResource("2_ik0op")
+
+[node name="Base" parent="YSortRoot" instance=ExtResource("5_xjsmf")]
+unique_name_in_owner = true
+
+[node name="GoldMine" parent="YSortRoot" instance=ExtResource("9_87w6t")]
+unique_name_in_owner = true
+
+[node name="HighlightTileMapLayer" type="TileMapLayer" parent="YSortRoot"]
+modulate = Color(1, 1, 1, 0.705882)
+y_sort_enabled = true
+tile_set = ExtResource("2_8gl76")
+
+[node name="ResourceIndicatorManager" parent="." node_paths=PackedStringArray("gridManager") instance=ExtResource("6_2ofsf")]
+gridManager = NodePath("../GridManager")
+
+[node name="FloatingTextManager" parent="." instance=ExtResource("13_p7dg5")]

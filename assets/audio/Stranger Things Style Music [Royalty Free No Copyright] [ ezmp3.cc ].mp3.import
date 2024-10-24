@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://mj063tcx2r73"
+path="res://.godot/imported/Stranger Things Style Music [Royalty Free No Copyright] [ ezmp3.cc ].mp3-f1b3faf1efa5a7a633215fb679580d1f.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/Stranger Things Style Music [Royalty Free No Copyright] [ ezmp3.cc ].mp3"
+dest_files=["res://.godot/imported/Stranger Things Style Music [Royalty Free No Copyright] [ ezmp3.cc ].mp3-f1b3faf1efa5a7a633215fb679580d1f.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

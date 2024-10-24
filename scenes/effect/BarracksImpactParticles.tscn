@@ -1,0 +1,100 @@
+[gd_scene load_steps=8 format=3 uid="uid://ci0ne02cndkn6"]
+
+[ext_resource type="Texture2D" uid="uid://qsb3k4jbp34y" path="res://assets/effects/particle.png" id="1_voeob"]
+
+[sub_resource type="Animation" id="Animation_083qe"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("GPUParticles2D:emitting")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+
+[sub_resource type="Animation" id="Animation_rfl3w"]
+resource_name = "default"
+length = 2.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("GPUParticles2D:emitting")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/1/type = "method"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(2),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"queue_free"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_p504u"]
+_data = {
+"RESET": SubResource("Animation_083qe"),
+"default": SubResource("Animation_rfl3w")
+}
+
+[sub_resource type="Curve" id="Curve_188xe"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.152174, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_rg8ck"]
+curve = SubResource("Curve_188xe")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_lbqpw"]
+lifetime_randomness = 0.5
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(128, 1, 1)
+angle_min = 1.07288e-05
+angle_max = 360.0
+direction = Vector3(0, -1, 0)
+spread = 15.0
+initial_velocity_min = 20.0
+initial_velocity_max = 150.0
+angular_velocity_min = -360.0
+angular_velocity_max = 360.0
+gravity = Vector3(0, -500, 0)
+damping_min = 300.0
+damping_max = 600.0
+scale_curve = SubResource("CurveTexture_rg8ck")
+
+[node name="BuildingImpactParticles" type="Node2D"]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_p504u")
+}
+autoplay = "default"
+
+[node name="GPUParticles2D" type="GPUParticles2D" parent="."]
+position = Vector2(0, -3)
+emitting = false
+amount = 40
+process_material = SubResource("ParticleProcessMaterial_lbqpw")
+texture = ExtResource("1_voeob")
+lifetime = 0.7
+one_shot = true
+explosiveness = 0.9
+fixed_fps = 0
+interpolate = false
+draw_order = 0

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="LevelDefinitionResource" load_steps=2 format=3 uid="uid://beg3tak5yp2j4"]
+
+[ext_resource type="Script" path="res://resources/level/LevelDefinitionResource.cs" id="1_qkdll"]
+
+[resource]
+script = ExtResource("1_qkdll")
+Id = "concrete_bricks"
+StartingResourceCount = 100
+LevelScenePath = "res://scenes/level/Level3.tscn"
