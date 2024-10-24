@@ -1,0 +1,102 @@
+[gd_scene load_steps=8 format=3 uid="uid://yxvqexc01y6k"]
+
+[ext_resource type="Texture2D" uid="uid://qsb3k4jbp34y" path="res://assets/effects/particle.png" id="1_81lgs"]
+
+[sub_resource type="Animation" id="Animation_11a7v"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Node2D/GPUParticles2D:emitting")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+
+[sub_resource type="Animation" id="Animation_tcxhp"]
+resource_name = "default"
+length = 3.0
+step = 0.05
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Node2D/GPUParticles2D:emitting")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.75),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/1/type = "method"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(3),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"queue_free"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_cwa2u"]
+_data = {
+"RESET": SubResource("Animation_11a7v"),
+"default": SubResource("Animation_tcxhp")
+}
+
+[sub_resource type="Curve" id="Curve_tmh7c"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.152174, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_su0hv"]
+curve = SubResource("Curve_tmh7c")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_8yx16"]
+lifetime_randomness = 0.5
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(160, 1, 1)
+angle_min = 1.07288e-05
+angle_max = 360.0
+direction = Vector3(0, -1, 0)
+spread = 15.0
+initial_velocity_min = 100.0
+initial_velocity_max = 200.0
+angular_velocity_min = -360.0
+angular_velocity_max = 360.0
+gravity = Vector3(0, -200, 0)
+scale_curve = SubResource("CurveTexture_su0hv")
+
+[node name="BuildingDestroyParticles" type="Node2D"]
+y_sort_enabled = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_cwa2u")
+}
+autoplay = "default"
+
+[node name="Node2D" type="Node2D" parent="."]
+position = Vector2(0, 64)
+
+[node name="GPUParticles2D" type="GPUParticles2D" parent="Node2D"]
+position = Vector2(0, -54)
+emitting = false
+amount = 100
+process_material = SubResource("ParticleProcessMaterial_8yx16")
+texture = ExtResource("1_81lgs")
+one_shot = true
+explosiveness = 0.1
+fixed_fps = 0
+interpolate = false
+draw_order = 0

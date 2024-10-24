@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bxcmasc2a615x"
+path="res://.godot/imported/Future Renaissance _ Epic Sci-Fi Trailer Music.mp3-6675361716fc8ad22602b8bc3734fcfd.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/Future Renaissance _ Epic Sci-Fi Trailer Music.mp3"
+dest_files=["res://.godot/imported/Future Renaissance _ Epic Sci-Fi Trailer Music.mp3-6675361716fc8ad22602b8bc3734fcfd.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

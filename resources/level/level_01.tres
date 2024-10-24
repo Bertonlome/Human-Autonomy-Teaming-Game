@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="LevelDefinitionResource" load_steps=2 format=3 uid="uid://hksumikloa8y"]
+
+[ext_resource type="Script" path="res://resources/level/LevelDefinitionResource.cs" id="1_netsu"]
+
+[resource]
+script = ExtResource("1_netsu")
+Id = "when_cucumbers_fall"
+StartingResourceCount = 2
+LevelScenePath = "res://scenes/level/Level1.tscn"

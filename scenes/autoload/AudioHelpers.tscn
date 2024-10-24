@@ -1,0 +1,50 @@
+[gd_scene load_steps=14 format=3 uid="uid://dtanw3tk455ur"]
+
+[ext_resource type="Script" path="res://scenes/autoload/AudioHelpers.cs" id="1_s3wg7"]
+[ext_resource type="AudioStream" uid="uid://qsbn74jjuvup" path="res://assets/audio/explosion_01.wav" id="2_yoq2d"]
+[ext_resource type="AudioStream" uid="uid://dcc4kiu0jvkkv" path="res://assets/audio/explosion_02.wav" id="3_5p0kw"]
+[ext_resource type="AudioStream" uid="uid://che8wifxbljh8" path="res://assets/audio/explosion_03.wav" id="4_g7hsd"]
+[ext_resource type="AudioStream" uid="uid://cgftfyep4mfv" path="res://assets/audio/click.wav" id="5_uhce4"]
+[ext_resource type="AudioStream" uid="uid://b7pqqoy5d7x1" path="res://assets/audio/victory.wav" id="6_ihlbg"]
+[ext_resource type="AudioStream" uid="uid://dlax8vjr11ihn" path="res://assets/audio/Calm Ambient Sci Fi Fantasy Music.mp3" id="7_n34jh"]
+[ext_resource type="AudioStream" uid="uid://j82bmnjtg18s" path="res://assets/audio/Calm Cosmos _ Free Music.mp3" id="8_h4nsv"]
+[ext_resource type="AudioStream" uid="uid://cbwmpgolh5sb2" path="res://assets/audio/Free Music Retro Sci-Fi Music.mp3" id="9_ejprn"]
+[ext_resource type="AudioStream" uid="uid://bxcmasc2a615x" path="res://assets/audio/Future Renaissance _ Epic Sci-Fi Trailer Music.mp3" id="10_co8tf"]
+[ext_resource type="AudioStream" uid="uid://mj063tcx2r73" path="res://assets/audio/Stranger Things Style Music [Royalty Free No Copyright] [ ezmp3.cc ].mp3" id="11_lmpfm"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_emq37"]
+streams_count = 3
+stream_0/stream = ExtResource("2_yoq2d")
+stream_1/stream = ExtResource("3_5p0kw")
+stream_2/stream = ExtResource("4_g7hsd")
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_cbm3q"]
+streams_count = 5
+stream_0/stream = ExtResource("7_n34jh")
+stream_1/stream = ExtResource("8_h4nsv")
+stream_2/stream = ExtResource("9_ejprn")
+stream_3/stream = ExtResource("10_co8tf")
+stream_4/stream = ExtResource("11_lmpfm")
+
+[node name="AudioHelpers" type="Node"]
+script = ExtResource("1_s3wg7")
+
+[node name="ExplosionAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = SubResource("AudioStreamRandomizer_emq37")
+max_polyphony = 3
+bus = &"SFX"
+
+[node name="ClickAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_uhce4")
+bus = &"SFX"
+
+[node name="VictoryAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_ihlbg")
+bus = &"SFX"
+
+[node name="MusicAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = SubResource("AudioStreamRandomizer_cbm3q")
+volume_db = -25.0
+autoplay = true
+max_polyphony = 3
+bus = &"Music"
