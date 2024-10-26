@@ -74,13 +74,19 @@ public partial class BuildingManager : Node
 					{
 					selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
 					if(selectedBuildingComponent == null) return;
-
 					HighlightSelectedBuilding(selectedBuildingComponent);
 					}
-					else
+					else if (SelectBuildingAtHoveredCellPosition() == selectedBuildingComponent)
 					{
 						UnHighlightSelectedBuilding(selectedBuildingComponent);
 						selectedBuildingComponent = null;
+					}
+					else if(selectedBuildingComponent != null && SelectBuildingAtHoveredCellPosition() != selectedBuildingComponent)
+					{
+						UnHighlightSelectedBuilding(selectedBuildingComponent);
+						selectedBuildingComponent = null;
+						selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
+						HighlightSelectedBuilding(selectedBuildingComponent);
 					}
 				}
 				if (evt.IsActionPressed(MOVE_UP))
