@@ -46,6 +46,7 @@ public partial class GridManager : Node
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingDestroyed, Callable.From<BuildingComponent>(OnBuildingDestroyed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingEnabled, Callable.From<BuildingComponent>(OnBuildingEnabled));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingDisabled, Callable.From<BuildingComponent>(OnBuildingDisabled));
+		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnBuildingMoved));
 
 		allTilemapLayers = GetAllTilemapLayers(baseTerrainTilemapLayer);
 		MapTileMapLayersToElevationLayers();
@@ -74,13 +75,21 @@ public partial class GridManager : Node
 
 	public bool IsTileAreaBuildable(Rect2I tileArea, bool isAttackTiles = false)
 	{
+		IEnumerable<Vector2I> tileSetToCheck;
 		var tiles = tileArea.ToTiles();
 		if (tiles.Count == 0) return false;
 
 		(TileMapLayer firstTileMapLayer, _) = GetTileCustomData(tiles[0], IS_BUILDABLE);
 		var targetElevationLayer = firstTileMapLayer != null ? tileMapLayerToElevationLayer[firstTileMapLayer] : null;
 
-		var tileSetToCheck = GetBuildableTileSet(isAttackTiles);
+		if(BuildingManager.selectedBuildingComponent != null)
+		{
+			tileSetToCheck = GetBuildableTileSet(isAttackTiles).Except(BuildingManager.selectedBuildingComponent.GetOccupiedCellPositions());
+		}
+		else
+		{
+			tileSetToCheck = GetBuildableTileSet(isAttackTiles);
+		}
 		if (isAttackTiles)
 		{
 			tileSetToCheck = tileSetToCheck.Except(occupiedTiles).ToHashSet();
@@ -91,6 +100,34 @@ public partial class GridManager : Node
 			(TileMapLayer tileMapLayer, bool isBuildable) = GetTileCustomData(tilePosition, IS_BUILDABLE);
 			var elevationLayer = tileMapLayer != null ? tileMapLayerToElevationLayer[tileMapLayer] : null;
 			return isBuildable && tileSetToCheck.Contains(tilePosition) && elevationLayer == targetElevationLayer;
+		});
+	}
+
+	public bool IsTileAreaMovable(Rect2I originArea, Rect2I destinationArea)
+	{
+		IEnumerable<Vector2I> tileSetToCheck;
+		var tilesDestination = destinationArea.ToTiles();
+		var tilesOrigin = originArea.ToTiles();
+		if (tilesDestination.Count == 0) return false;
+
+		(TileMapLayer firstTileMapLayer, _) = GetTileCustomData(tilesDestination[0], IS_BUILDABLE);
+		var targetElevationLayer = firstTileMapLayer != null ? tileMapLayerToElevationLayer[firstTileMapLayer] : null;
+
+		(firstTileMapLayer, _) = GetTileCustomData(tilesOrigin[0], IS_BUILDABLE);
+		var OriginElevationLayer = firstTileMapLayer != null ? tileMapLayerToElevationLayer[firstTileMapLayer] : null;
+
+		var transitionTile = originArea.ToTiles().Intersect(destinationArea.ToTiles()).ToHashSet();
+
+		tileSetToCheck = GetBuildableTileSet().Union(transitionTile).ToHashSet();
+
+		return tilesDestination.All((tilePosition) =>
+		{
+			(TileMapLayer tileMapLayer, bool isBuildable) = GetTileCustomData(tilePosition, IS_BUILDABLE);
+			var elevationLayer = tileMapLayer != null ? tileMapLayerToElevationLayer[tileMapLayer] : null;
+			var check1 = tileSetToCheck.Contains(tilePosition) ? true: false;
+			var check2 = elevationLayer == targetElevationLayer ? true: false;
+			var check3 = OriginElevationLayer == targetElevationLayer ? true: false;
+			return check1 && check2 && check3;
 		});
 	}
 
@@ -385,6 +422,16 @@ public partial class GridManager : Node
 
 		validBuildableTiles.ExceptWith(dangerOccupiedTiles);
 		EmitSignal(SignalName.GridStateUpdated);
+		GD.Print("NEW PRINT \n");
+		foreach(Vector2I vector in occupiedTiles)
+		{
+			GD.Print(vector);
+		}
+	}
+
+	private void UpdateValidMovableTiles()
+	{
+		
 	}
 
 	private void UpdateCollectedResourceTiles(BuildingComponent buildingComponent)
@@ -510,8 +557,9 @@ public partial class GridManager : Node
 		});
 	}
 
-	private void UpdateBuildingComponentGridState(BuildingComponent buildingComponent)
+	public void UpdateBuildingComponentGridState(BuildingComponent buildingComponent)
 	{
+		var buildingOccupiedTiles = buildingComponent.GetOccupiedCellPositions();
 		UpdateDangerOccupiedTiles(buildingComponent);
 		UpdateValidBuildableTiles(buildingComponent);
 		UpdateCollectedResourceTiles(buildingComponent);
@@ -521,7 +569,14 @@ public partial class GridManager : Node
 	private void OnBuildingPlaced(BuildingComponent buildingComponent)
 	{
 		UpdateBuildingComponentGridState(buildingComponent);
+		
 		CheckDangerBuildingDestruction();
+	}
+
+	private void OnBuildingMoved(BuildingComponent buildingComponent)
+	{
+		RecalculateGrid();
+		UpdateBuildingComponentGridState(buildingComponent);
 	}
 
 	private void OnBuildingDestroyed(BuildingComponent buildingComponent)

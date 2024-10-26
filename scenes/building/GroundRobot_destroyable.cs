@@ -4,7 +4,7 @@ using Godot;
 namespace Game.Building;
 
 
-public partial class GoblinCamp : Node2D
+public partial class GroundRobot : Node2D
 {
 	[Export]
 	private BuildingComponent buildingComponent;
@@ -36,7 +36,7 @@ public partial class GoblinCamp : Node2D
 
 		private void OnEnabled()
 	{
-		animatedSprite2D.Play("default");
+		animatedSprite2D.Play("Sci-fi");
 		fireAnimatedSprite2D.Visible = false;
 	}
 }

@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://dtanw3tk455ur"]
+[gd_scene load_steps=15 format=3 uid="uid://dtanw3tk455ur"]
 
 [ext_resource type="Script" path="res://scenes/autoload/AudioHelpers.cs" id="1_s3wg7"]
 [ext_resource type="AudioStream" uid="uid://qsbn74jjuvup" path="res://assets/audio/explosion_01.wav" id="2_yoq2d"]
@@ -11,6 +11,7 @@
 [ext_resource type="AudioStream" uid="uid://cbwmpgolh5sb2" path="res://assets/audio/Free Music Retro Sci-Fi Music.mp3" id="9_ejprn"]
 [ext_resource type="AudioStream" uid="uid://bxcmasc2a615x" path="res://assets/audio/Future Renaissance _ Epic Sci-Fi Trailer Music.mp3" id="10_co8tf"]
 [ext_resource type="AudioStream" uid="uid://mj063tcx2r73" path="res://assets/audio/Stranger Things Style Music [Royalty Free No Copyright] [ ezmp3.cc ].mp3" id="11_lmpfm"]
+[ext_resource type="AudioStream" uid="uid://broplbacxltq7" path="res://assets/audio/robot_move.wav" id="12_ptdvl"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_emq37"]
 streams_count = 3
@@ -48,3 +49,7 @@ volume_db = -25.0
 autoplay = true
 max_polyphony = 3
 bus = &"Music"
+
+[node name="RobotMoveAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("12_ptdvl")
+bus = &"SFX"

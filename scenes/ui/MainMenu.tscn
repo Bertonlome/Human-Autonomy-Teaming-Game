@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cv6tnl0bv6sfg" path="res://scenes/building/Base.tscn" id="3_p8kyu"]
 [ext_resource type="PackedScene" uid="uid://iv4rk5h4ybki" path="res://scenes/level/util/ElevationLayer.tscn" id="3_pnm4a"]
 [ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/GoldMine.tscn" id="4_smdta"]
-[ext_resource type="PackedScene" uid="uid://bb2ug053frok2" path="res://scenes/building/Village.tscn" id="4_tfh3j"]
+[ext_resource type="PackedScene" uid="uid://bb2ug053frok2" path="res://scenes/building/GroundRobot.tscn" id="4_tfh3j"]
 [ext_resource type="PackedScene" uid="uid://dr2vs3njjnlm4" path="res://scenes/ui/LevelSelectScreen.tscn" id="7_3j1st"]
 
 [node name="MainMenu" type="Node"]
@@ -65,7 +65,7 @@ unique_name_in_owner = true
 position = Vector2(960, 128)
 
 [node name="Village" parent="YSortRoot" instance=ExtResource("4_tfh3j")]
-position = Vector2(704, 192)
+position = Vector2(817, 295)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 

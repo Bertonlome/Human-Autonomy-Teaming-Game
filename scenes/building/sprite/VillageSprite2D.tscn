@@ -1,9 +1,9 @@
 [gd_scene load_steps=2 format=3 uid="uid://5c855rmarlp6"]
 
-[ext_resource type="Texture2D" uid="uid://smsxhatugpl8" path="res://assets/buildings/house_blue.png" id="1_x1i05"]
+[ext_resource type="Texture2D" uid="uid://dcdrggrhkot7s" path="res://assets/buildings/ground_robot_sprite.png" id="1_45hxa"]
 
 [node name="VillageSprite2D" type="Sprite2D"]
 position = Vector2(64, 96)
-texture = ExtResource("1_x1i05")
+texture = ExtResource("1_45hxa")
 centered = false
-offset = Vector2(-64, -172)
+offset = Vector2(-46, -91)
