@@ -1,7 +1,51 @@
-[gd_scene load_steps=3 format=3 uid="uid://cv6tnl0bv6sfg"]
+[gd_scene load_steps=10 format=3 uid="uid://cv6tnl0bv6sfg"]
 
 [ext_resource type="PackedScene" uid="uid://ce2hqhobmdg47" path="res://scenes/component/BuildingComponent.tscn" id="1_o8g7c"]
-[ext_resource type="Texture2D" uid="uid://de0rlhkag2dkc" path="res://assets/buildings/castle_white.png" id="2_k3dub"]
+[ext_resource type="Texture2D" uid="uid://tj0p2a3nhymk" path="res://assets/buildings/npc.png" id="2_jg1ve"]
+[ext_resource type="Texture2D" uid="uid://bklfhif1isigv" path="res://assets/buildings/new_tank.png" id="3_yommg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j01oo"]
+atlas = ExtResource("2_jg1ve")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_r4av1"]
+atlas = ExtResource("2_jg1ve")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3j8qk"]
+atlas = ExtResource("2_jg1ve")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lle2x"]
+atlas = ExtResource("2_jg1ve")
+region = Rect2(288, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g313t"]
+atlas = ExtResource("2_jg1ve")
+region = Rect2(384, 0, 96, 96)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_iy2xi"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_j01oo")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_r4av1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3j8qk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lle2x")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g313t")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
 
 [node name="Base" type="Node2D"]
 y_sort_enabled = true
@@ -10,7 +54,15 @@ y_sort_enabled = true
 buildingResourcePath = "res://resources/building/base.tres"
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-position = Vector2(160, 96)
-texture = ExtResource("2_k3dub")
+position = Vector2(162, 96)
+scale = Vector2(5.21875, 4.45829)
+texture = ExtResource("3_yommg")
 centered = false
-offset = Vector2(-160, -224)
+offset = Vector2(-32, -39)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(320, 97)
+sprite_frames = SubResource("SpriteFrames_iy2xi")
+autoplay = "default"
+frame_progress = 0.171805
+offset = Vector2(-28, 0)

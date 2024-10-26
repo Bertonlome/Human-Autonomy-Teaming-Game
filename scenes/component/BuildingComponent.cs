@@ -56,7 +56,6 @@ public partial class BuildingComponent : Node2D
 		{
 			buildingAnimatorComponent.DestroyAnimationFinished += OnDestroyAnimationFinished;
 		}
-
 		AddToGroup(nameof(BuildingComponent));
 		Callable.From(Initialize).CallDeferred();
 	}
@@ -113,6 +112,29 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
+	public Rect2I GetAreaOccupiedAfterMovingFromPos(Vector2I position)
+	{
+		Vector2I dimensionVector = new Vector2I(BuildingResource.Dimensions.X, BuildingResource.Dimensions.Y);
+		Rect2I area = new Rect2I(position, dimensionVector);
+		return area;
+	}
+
+	public void Moved(Vector2I originPos, Vector2I destinationPos)
+	{
+		GameEvents.EmitBuildingMoved(this);
+		//buildingAnimatorComponent?.PlayMoveAnimation(originPos, destinationPos);
+		Initialize();
+	}
+
+	public Rect2I GetAreaOccupied(Vector2I position)
+	{
+		Vector2I dimensionVector = new Vector2I(BuildingResource.Dimensions.X, BuildingResource.Dimensions.Y);
+		Rect2I area = new Rect2I(position, dimensionVector);
+		return area;
+	}
+
+
+
 	private void CalculateOccupiedCellPositions()
 	{
 		var gridPosition = GetGridCellPosition();
@@ -121,6 +143,18 @@ public partial class BuildingComponent : Node2D
 			for (int y = gridPosition.Y; y < gridPosition.Y + BuildingResource.Dimensions.Y; y++)
 			{
 				occupiedTiles.Add(new Vector2I(x, y));
+			}
+		}
+	}
+
+	public void FreeOccupiedCellPosition()
+	{
+		var gridPosition = GetGridCellPosition();
+		for (int x = gridPosition.X; x < gridPosition.X + BuildingResource.Dimensions.X; x++)
+		{
+			for (int y = gridPosition.Y; y < gridPosition.Y + BuildingResource.Dimensions.Y; y++)
+			{
+				occupiedTiles.Remove(new Vector2I(x, y));
 			}
 		}
 	}

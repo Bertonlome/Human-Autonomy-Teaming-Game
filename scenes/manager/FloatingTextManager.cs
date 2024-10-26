@@ -1,3 +1,4 @@
+using Game.Component;
 using Game.UI;
 using Godot;
 
@@ -19,12 +20,19 @@ public partial class FloatingTextManager : Node
 		}
     }
 
-	public static void ShowMessage(string message)
+	public static void ShowMessageAtMousePosition(string message)
 	{
 		var floatingtext = instance.floatingtextScene.Instantiate<FloatingText>();
 		instance.AddChild(floatingtext);
 		floatingtext.SetText(message);
 		floatingtext.GlobalPosition = floatingtext.GetGlobalMousePosition();
+	}
 
+	public static void ShowMessageAtBuildingPosition(string message, Node2D buildingNode)
+	{
+		var floatingtext = instance.floatingtextScene.Instantiate<FloatingText>();
+		instance.AddChild(floatingtext);
+		floatingtext.SetText(message);
+		floatingtext.GlobalPosition = buildingNode.GlobalPosition;
 	}
 }

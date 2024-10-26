@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Game.Autoload;
 using Game.Building;
 using Game.Component;
 using Game.Resources.Building;
@@ -13,6 +14,10 @@ public partial class BuildingManager : Node
 	private readonly StringName ACTION_LEFT_CLICK = "left_click";
 	private readonly StringName ACTION_CANCEL = "cancel";
 	private readonly StringName ACTION_RIGHT_CLICK = "right_click";
+	private readonly StringName MOVE_UP = "move_up";
+	private readonly StringName MOVE_DOWN = "move_down";
+	private readonly StringName MOVE_LEFT = "move_left";
+	private readonly StringName MOVE_RIGHT = "move_right";
 
 	[Signal]
 	public delegate void AvailableResourceCountChangedEventHandler(int availableResourceCount);
@@ -40,6 +45,7 @@ public partial class BuildingManager : Node
 	private Vector2 buildingGhostDimensions;
 	private State currentState;
 	private int startingResourceCount;
+	public static BuildingComponent selectedBuildingComponent {get; private set;} = null;
 
 	private int AvailableResourceCount => startingResourceCount + currentResourceCount - currentlyUsedResourceCount;
 
@@ -47,6 +53,7 @@ public partial class BuildingManager : Node
 	{
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
 		gameUI.BuildingResourceSelected += OnBuildingResourceSelected;
+		
 
 		Callable.From(() => EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount)).CallDeferred();
 	}
@@ -60,6 +67,49 @@ public partial class BuildingManager : Node
 				{
 					DestroyBuildingAtHoveredCellPosition();
 					GetViewport().SetInputAsHandled();
+				}
+				if(evt.IsActionPressed(ACTION_LEFT_CLICK))
+				{
+					if(selectedBuildingComponent == null)
+					{
+					selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
+					if(selectedBuildingComponent == null) return;
+
+					HighlightSelectedBuilding(selectedBuildingComponent);
+					}
+					else
+					{
+						UnHighlightSelectedBuilding(selectedBuildingComponent);
+						selectedBuildingComponent = null;
+					}
+				}
+				if (evt.IsActionPressed(MOVE_UP))
+				{
+					if (selectedBuildingComponent != null)
+					{
+						MoveBuildingInDirection(MOVE_UP);
+					}
+				}
+				if (evt.IsActionPressed(MOVE_DOWN))
+				{
+					if (selectedBuildingComponent != null)
+					{
+						MoveBuildingInDirection(MOVE_DOWN);
+					}
+				}
+				if (evt.IsActionPressed(MOVE_LEFT))
+				{
+					if (selectedBuildingComponent != null)
+					{
+						MoveBuildingInDirection(MOVE_LEFT);
+					}
+				}
+				if (evt.IsActionPressed(MOVE_RIGHT))
+				{
+					if (selectedBuildingComponent != null)
+					{
+						MoveBuildingInDirection(MOVE_RIGHT);
+					}
 				}
 				break;
 			case State.PlacingBuilding:
@@ -123,7 +173,7 @@ public partial class BuildingManager : Node
 			gridManager.HighlightDangerOccupiedTiles();
 		}
 
-		if (IsBuildingPlaceableAtArea(hoveredGridArea))
+		if (IsBuildingResourcePlaceableAtArea(hoveredGridArea))
 		{
 			if (toPlaceBuildingResource.IsAttackBuilding())
 			{
@@ -147,12 +197,12 @@ public partial class BuildingManager : Node
 	{
 		if(!CanAffortBuilding())
 		{
-			FloatingTextManager.ShowMessage("Can't afford!");
+			FloatingTextManager.ShowMessageAtMousePosition("Can't afford!");
 			return;
 		}
-		if(!IsBuildingPlaceableAtArea(hoveredGridArea))
+		if(!IsBuildingResourcePlaceableAtArea(hoveredGridArea))
 		{
-			FloatingTextManager.ShowMessage("Invalid placement!");
+			FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
 			return;
 		}
 		var building = toPlaceBuildingResource.BuildingScene.Instantiate<Node2D>();
@@ -167,6 +217,36 @@ public partial class BuildingManager : Node
 		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
+	public void MoveBuildingInDirection(StringName direction)
+	{
+		Vector2I directionVector;
+		if(direction == MOVE_UP) directionVector = new Vector2I(0, -1);
+		else if(direction == MOVE_DOWN) directionVector = new Vector2I(0,1);
+		else if(direction == MOVE_LEFT) directionVector = new Vector2I(-1, 0);
+		else if(direction == MOVE_RIGHT) directionVector = new Vector2I(1, 0);
+		else return;
+
+		Node2D buildingNode = (Node2D)selectedBuildingComponent.GetParent();
+		var originPos = buildingNode.Position;
+		var originArea = selectedBuildingComponent.GetAreaOccupied((Vector2I)originPos);
+		originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
+		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64))/64), (int)((buildingNode.Position.Y + (directionVector.Y * 64))/64));
+		if(!IsBuildingComponentMoveableAtArea(originArea, selectedBuildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition)))
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", selectedBuildingComponent);
+			return;
+		}
+		selectedBuildingComponent.FreeOccupiedCellPosition();
+		gridManager.UpdateBuildingComponentGridState(selectedBuildingComponent);
+
+		buildingNode.Position +=  directionVector * 64;
+		selectedBuildingComponent.Moved((Vector2I)originPos, destinationPosition);
+
+
+
+		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+	}
+
 	private void DestroyBuildingAtHoveredCellPosition()
 	{
 		var rootCell = hoveredGridArea.Position;
@@ -178,13 +258,38 @@ public partial class BuildingManager : Node
 		if (buildingComponent == null) return;
 		if (!gridManager.CanDestroyBuilding(buildingComponent)) 
 		{
-			FloatingTextManager.ShowMessage("Can't destroy");
+			FloatingTextManager.ShowMessageAtMousePosition("Can't destroy");
 			return;
 		};
 
 		currentlyUsedResourceCount -= buildingComponent.BuildingResource.ResourceCost;
 		buildingComponent.Destroy();
 		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+	}
+
+	private BuildingComponent SelectBuildingAtHoveredCellPosition()
+	{
+		var rootCell = hoveredGridArea.Position;
+		var buildingComponent = BuildingComponent.GetValidBuildingComponents(this)
+			.FirstOrDefault((buildingComponent) =>
+			{
+				return !buildingComponent.BuildingResource.IsBase && buildingComponent.IsTileInBuildingArea(rootCell);
+			});
+		if (buildingComponent == null) return null;
+		else return buildingComponent;
+		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+	}
+
+		public void HighlightSelectedBuilding(BuildingComponent buildingComponent)
+	{
+		var highlightZone = buildingComponent.GetNode<ColorRect>("%HighlightZone");
+		highlightZone.Visible = true;
+	}
+
+	public void UnHighlightSelectedBuilding(BuildingComponent buildingComponent)
+	{
+		var highlightZone = buildingComponent.GetNode<ColorRect>("%HighlightZone");
+		highlightZone.Visible = false;
 	}
 
 	private void ClearBuildingGhost()
@@ -203,11 +308,24 @@ public partial class BuildingManager : Node
 		return AvailableResourceCount >= toPlaceBuildingResource.ResourceCost;
 	}
 
-	private bool IsBuildingPlaceableAtArea(Rect2I tileArea)
+	private bool IsBuildingResourcePlaceableAtArea(Rect2I tileArea)
 	{
 		var isAttackTiles = toPlaceBuildingResource.IsAttackBuilding();
 		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, isAttackTiles);
 		return allTilesBuildable && CanAffortBuilding();
+	}
+
+	private bool IsBuildingComponentPlaceableAtArea(Rect2I tileArea)
+	{
+		var isAttackTiles = selectedBuildingComponent.BuildingResource.IsAttackBuilding();
+		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, isAttackTiles);
+		return allTilesBuildable;
+	}
+
+	private bool IsBuildingComponentMoveableAtArea(Rect2I originArea, Rect2I tileArea)
+	{
+		var allTilesMovable = gridManager.IsTileAreaMovable(originArea, tileArea);
+		return allTilesMovable;
 	}
 
 	private void UpdateHoveredGridArea()

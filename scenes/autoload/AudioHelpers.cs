@@ -13,6 +13,7 @@ public partial class AudioHelpers : Node
 	private AudioStreamPlayer clickAudioStreamPlayer;
 	private AudioStreamPlayer victoryAudioStreamPlayer;
 	private AudioStreamPlayer musicAudioStreamPlayer;
+	private AudioStreamPlayer robotMoveAudioStreamPlayer;
 
 
 
@@ -31,6 +32,7 @@ public partial class AudioHelpers : Node
 		clickAudioStreamPlayer = GetNode<AudioStreamPlayer>("ClickAudioStreamPlayer");
 		victoryAudioStreamPlayer = GetNode<AudioStreamPlayer>("VictoryAudioStreamPlayer");
 		musicAudioStreamPlayer = GetNode<AudioStreamPlayer>("MusicAudioStreamPlayer");
+		robotMoveAudioStreamPlayer = GetNode<AudioStreamPlayer>("RobotMoveAudioStreamPlayer");
 
 		musicAudioStreamPlayer.Finished += OnMusicFinished;
 
@@ -43,6 +45,11 @@ public partial class AudioHelpers : Node
 	public static void PlayBuildingDestruction()
 	{
 		instance.explosionAudioStreamPlayer.Play();
+	}
+
+	public static void PlayMove()
+	{
+		instance.robotMoveAudioStreamPlayer.Play();
 	}
 
 	public static void RegisterButtons(IEnumerable<Button> buttons)

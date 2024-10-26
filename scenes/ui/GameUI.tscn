@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/ui/GameUI.cs" id="1_ig7ao"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/tower.tres" id="2_2jsg4"]
-[ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/village.tres" id="3_7ve0q"]
+[ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/ground_robot.tres" id="3_7ve0q"]
 [ext_resource type="PackedScene" uid="uid://dldi351241g0a" path="res://scenes/ui/BuildingSection.tscn" id="4_bv77p"]
 [ext_resource type="Resource" uid="uid://cofysia182eue" path="res://resources/building/barracks.tres" id="4_qh1hu"]
 [ext_resource type="Texture2D" uid="uid://c38q546jteu6h" path="res://assets/ui/wood_icon.png" id="5_ngx1v"]
