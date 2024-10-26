@@ -1,7 +1,6 @@
-[gd_scene load_steps=14 format=3 uid="uid://bb2ug053frok2"]
+[gd_scene load_steps=13 format=3 uid="uid://bb2ug053frok2"]
 
 [ext_resource type="PackedScene" uid="uid://ce2hqhobmdg47" path="res://scenes/component/BuildingComponent.tscn" id="3_0a6pq"]
-[ext_resource type="PackedScene" uid="uid://5c855rmarlp6" path="res://scenes/building/sprite/VillageSprite2D.tscn" id="3_8ruhj"]
 [ext_resource type="PackedScene" uid="uid://dtadqyklji2e7" path="res://scenes/component/BuildingAnimatorComponent.tscn" id="4_ps8v2"]
 [ext_resource type="Texture2D" uid="uid://csifi0fgq36j3" path="res://assets/buildings/robots.png" id="5_ctc6u"]
 
@@ -78,24 +77,20 @@ buildingAnimatorComponent = NodePath("../BuildingAnimatorComponent")
 
 [node name="BuildingAnimatorComponent" parent="." instance=ExtResource("4_ps8v2")]
 
-[node name="GroundRobotSprite2D" parent="BuildingAnimatorComponent" instance=ExtResource("3_8ruhj")]
-visible = false
-offset = Vector2(-46, -96)
-
-[node name="Node2D" type="Node2D" parent="BuildingAnimatorComponent"]
-position = Vector2(-32, -64)
-scale = Vector2(1.6, 0.8)
-
-[node name="HighlightZone" type="ColorRect" parent="BuildingAnimatorComponent/Node2D"]
-unique_name_in_owner = true
-offset_left = -20.0
-offset_right = 20.0
-offset_bottom = 40.0
-color = Color(1, 1, 1, 0.866667)
-
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="BuildingAnimatorComponent"]
-position = Vector2(64, 0)
+position = Vector2(32, 58)
 sprite_frames = SubResource("SpriteFrames_x0pb4")
 autoplay = "default"
 frame_progress = 0.89978
-offset = Vector2(-96, -96)
+centered = false
+offset = Vector2(-48, -90)
+
+[node name="Node2D" type="Node2D" parent="BuildingAnimatorComponent"]
+position = Vector2(-35, -53)
+scale = Vector2(1.6, 1.6)
+
+[node name="HighlightZone" type="ColorRect" parent="BuildingAnimatorComponent/Node2D"]
+unique_name_in_owner = true
+offset_right = 40.0
+offset_bottom = 40.0
+color = Color(1, 1, 1, 0.866667)
