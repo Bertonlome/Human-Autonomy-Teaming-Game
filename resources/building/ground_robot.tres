@@ -1,20 +1,21 @@
 [gd_resource type="Resource" script_class="BuildingResource" load_steps=4 format=3 uid="uid://ckgl0k8fdrdrn"]
 
-[ext_resource type="PackedScene" uid="uid://bb2ug053frok2" path="res://scenes/building/GroundRobot.tscn" id="1_7cd0y"]
-[ext_resource type="PackedScene" uid="uid://5c855rmarlp6" path="res://scenes/building/sprite/VillageSprite2D.tscn" id="2_0gmch"]
-[ext_resource type="Script" path="res://resources/building/BuildingResource.cs" id="3_w857o"]
+[ext_resource type="PackedScene" uid="uid://bb2ug053frok2" path="res://scenes/building/GroundRobot.tscn" id="1_j4dnl"]
+[ext_resource type="PackedScene" uid="uid://5c855rmarlp6" path="res://scenes/building/sprite/GroundRobotAnimatedSprite2D.tscn" id="2_qg7mt"]
+[ext_resource type="Script" path="res://resources/building/BuildingResource.cs" id="3_0f206"]
 
 [resource]
-script = ExtResource("3_w857o")
+script = ExtResource("3_0f206")
 DisplayName = "Ground Robot"
 Description = "Gathers resources"
 IsBase = false
 IsDeletable = true
+IsAerial = false
 Dimensions = Vector2i(1, 1)
 ResourceCost = 2
 BuildableRadius = 0
-ResourceRadius = 3
+ResourceRadius = 2
 DangerRadius = 0
 AttackRadius = 0
-BuildingScene = ExtResource("1_7cd0y")
-SpriteScene = ExtResource("2_0gmch")
+BuildingScene = ExtResource("1_j4dnl")
+SpriteScene = ExtResource("2_qg7mt")

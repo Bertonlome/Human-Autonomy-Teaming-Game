@@ -1,0 +1,74 @@
+[gd_scene load_steps=11 format=3 uid="uid://5c855rmarlp6"]
+
+[ext_resource type="Texture2D" uid="uid://csifi0fgq36j3" path="res://assets/buildings/robots.png" id="1_s0hyw"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jhe3q"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(0, 576, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gwdhk"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(96, 576, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nfy74"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(192, 576, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p1gqu"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(288, 576, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8f6f8"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(480, 576, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ydfeg"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(576, 576, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_odk0n"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(672, 576, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1mtls"]
+atlas = ExtResource("1_s0hyw")
+region = Rect2(768, 576, 96, 96)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_au46q"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jhe3q")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gwdhk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nfy74")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_p1gqu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8f6f8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ydfeg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_odk0n")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1mtls")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="GroundRobotAnimatedSprite2D" type="AnimatedSprite2D"]
+position = Vector2(32, 58)
+sprite_frames = SubResource("SpriteFrames_au46q")
+autoplay = "default"
+centered = false
+offset = Vector2(-48, -90)

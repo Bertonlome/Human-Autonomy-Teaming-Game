@@ -91,6 +91,7 @@ scale = Vector2(1.6, 1.6)
 
 [node name="HighlightZone" type="ColorRect" parent="BuildingAnimatorComponent/Node2D"]
 unique_name_in_owner = true
+visible = false
 offset_right = 40.0
 offset_bottom = 40.0
-color = Color(1, 1, 1, 0.866667)
+color = Color(0.301961, 1, 0, 0.866667)

@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://bkk040smvshyh"]
+
+[ext_resource type="PackedScene" uid="uid://ce2hqhobmdg47" path="res://scenes/component/BuildingComponent.tscn" id="1_oviyg"]
+[ext_resource type="PackedScene" uid="uid://dtadqyklji2e7" path="res://scenes/component/BuildingAnimatorComponent.tscn" id="2_p2omv"]
+[ext_resource type="PackedScene" uid="uid://dj3uo7meto58s" path="res://scenes/building/sprite/AerialRobotAnimatedSprite2D.tscn" id="3_w3lpa"]
+
+[node name="AerialRobot" type="Node2D"]
+y_sort_enabled = true
+
+[node name="BuildingComponent" parent="." node_paths=PackedStringArray("buildingAnimatorComponent") instance=ExtResource("1_oviyg")]
+buildingResourcePath = "res://resources/building/aerial_robot.tres"
+buildingAnimatorComponent = NodePath("../BuildingAnimatorComponent")
+
+[node name="BuildingAnimatorComponent" parent="." instance=ExtResource("2_p2omv")]
+
+[node name="AerialRobotSprite2D" parent="BuildingAnimatorComponent" instance=ExtResource("3_w3lpa")]
+
+[node name="Node2D" type="Node2D" parent="BuildingAnimatorComponent"]
+position = Vector2(-35, -53)
+scale = Vector2(1.6, 1.6)
+
+[node name="HighlightZone" type="ColorRect" parent="BuildingAnimatorComponent/Node2D"]
+unique_name_in_owner = true
+visible = false
+offset_right = 40.0
+offset_bottom = 40.0
+color = Color(0.301961, 1, 0, 0.866667)
