@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Game.Autoload;
 using Game.Component;
@@ -103,9 +104,10 @@ public partial class GridManager : Node
 		});
 	}
 
-	public bool IsTileAreaMovable(Rect2I originArea, Rect2I destinationArea)
+	public bool IsTileAreaMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea)
 	{
-		IEnumerable<Vector2I> tileSetToCheck;
+		IEnumerable<Vector2I> tileSetToCheckGround;
+		IEnumerable<Vector2I> tileSetToCheckAerial;
 		var tilesDestination = destinationArea.ToTiles();
 		var tilesOrigin = originArea.ToTiles();
 		if (tilesDestination.Count == 0) return false;
@@ -118,16 +120,23 @@ public partial class GridManager : Node
 
 		var transitionTile = originArea.ToTiles().Intersect(destinationArea.ToTiles()).ToHashSet();
 
-		tileSetToCheck = GetBuildableTileSet().Union(transitionTile).ToHashSet();
+		tileSetToCheckGround = GetBuildableTileSet().Union(transitionTile).ToHashSet();
+		
+		//GetTileCustomData(tilePosition, IS_WOOD).Item2;
+		tileSetToCheckAerial = occupiedTiles.ToHashSet();
 
 		return tilesDestination.All((tilePosition) =>
 		{
 			(TileMapLayer tileMapLayer, bool isBuildable) = GetTileCustomData(tilePosition, IS_BUILDABLE);
 			var elevationLayer = tileMapLayer != null ? tileMapLayerToElevationLayer[tileMapLayer] : null;
-			var check1 = tileSetToCheck.Contains(tilePosition) ? true: false;
+			(tileMapLayer, bool isWood) = GetTileCustomData(tilePosition, IS_WOOD);
+			var check1 = tileSetToCheckGround.Contains(tilePosition) ? true: false;
 			var check2 = elevationLayer == targetElevationLayer ? true: false;
 			var check3 = OriginElevationLayer == targetElevationLayer ? true: false;
-			return check1 && check2 && check3;
+			var check4 = buildingComponent.BuildingResource.IsAerial;
+			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false: true;
+			var check6 = !isWood;
+			return (check1 && check2 && check3) || (check4 && check5 && check6);
 		});
 	}
 
@@ -365,7 +374,6 @@ public partial class GridManager : Node
 		}
 		return result;
 	}
-
 	private void MapTileMapLayersToElevationLayers()
 	{
 		foreach (var layer in allTilemapLayers)
@@ -427,11 +435,6 @@ public partial class GridManager : Node
 		{
 			GD.Print(vector);
 		}
-	}
-
-	private void UpdateValidMovableTiles()
-	{
-		
 	}
 
 	private void UpdateCollectedResourceTiles(BuildingComponent buildingComponent)
@@ -575,8 +578,10 @@ public partial class GridManager : Node
 
 	private void OnBuildingMoved(BuildingComponent buildingComponent)
 	{
+		ClearHighlightedTiles();
 		RecalculateGrid();
 		UpdateBuildingComponentGridState(buildingComponent);
+		HighlightBuildableTiles();
 	}
 
 	private void OnBuildingDestroyed(BuildingComponent buildingComponent)

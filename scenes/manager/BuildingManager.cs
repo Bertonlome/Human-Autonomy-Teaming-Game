@@ -70,18 +70,21 @@ public partial class BuildingManager : Node
 				}
 				if(evt.IsActionPressed(ACTION_LEFT_CLICK))
 				{
-					if(selectedBuildingComponent == null)
+					if(selectedBuildingComponent == null) 
 					{
 					selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
 					if(selectedBuildingComponent == null) return;
 					HighlightSelectedBuilding(selectedBuildingComponent);
 					}
-					else if (SelectBuildingAtHoveredCellPosition() == selectedBuildingComponent)
+					else if (SelectBuildingAtHoveredCellPosition() == selectedBuildingComponent) //Clicked on the same robot
 					{
 						UnHighlightSelectedBuilding(selectedBuildingComponent);
 						selectedBuildingComponent = null;
 					}
-					else if(selectedBuildingComponent != null && SelectBuildingAtHoveredCellPosition() != selectedBuildingComponent)
+					else if(selectedBuildingComponent != null //Switch to another robot
+							&& SelectBuildingAtHoveredCellPosition() != selectedBuildingComponent
+							&& SelectBuildingAtHoveredCellPosition() != null
+							&& !selectedBuildingComponent.IsDestroying)
 					{
 						UnHighlightSelectedBuilding(selectedBuildingComponent);
 						selectedBuildingComponent = null;
@@ -237,7 +240,7 @@ public partial class BuildingManager : Node
 		var originArea = selectedBuildingComponent.GetAreaOccupied((Vector2I)originPos);
 		originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
 		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64))/64), (int)((buildingNode.Position.Y + (directionVector.Y * 64))/64));
-		if(!IsBuildingComponentMoveableAtArea(originArea, selectedBuildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition)))
+		if(!IsMoveableAtArea(selectedBuildingComponent, originArea, selectedBuildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition)))
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", selectedBuildingComponent);
 			return;
@@ -270,6 +273,7 @@ public partial class BuildingManager : Node
 
 		currentlyUsedResourceCount -= buildingComponent.BuildingResource.ResourceCost;
 		buildingComponent.Destroy();
+		selectedBuildingComponent = null;
 		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
@@ -290,12 +294,14 @@ public partial class BuildingManager : Node
 	{
 		var highlightZone = buildingComponent.GetNode<ColorRect>("%HighlightZone");
 		highlightZone.Visible = true;
+		gridManager.HighlightBuildableTiles();
 	}
 
 	public void UnHighlightSelectedBuilding(BuildingComponent buildingComponent)
 	{
 		var highlightZone = buildingComponent.GetNode<ColorRect>("%HighlightZone");
 		highlightZone.Visible = false;
+		gridManager.ClearHighlightedTiles();
 	}
 
 	private void ClearBuildingGhost()
@@ -328,9 +334,9 @@ public partial class BuildingManager : Node
 		return allTilesBuildable;
 	}
 
-	private bool IsBuildingComponentMoveableAtArea(Rect2I originArea, Rect2I tileArea)
+	private bool IsMoveableAtArea(BuildingComponent buildingComponent, Rect2I originArea, Rect2I tileArea)
 	{
-		var allTilesMovable = gridManager.IsTileAreaMovable(originArea, tileArea);
+		var allTilesMovable = gridManager.IsTileAreaMovable(buildingComponent, originArea, tileArea);
 		return allTilesMovable;
 	}
 
@@ -381,7 +387,7 @@ public partial class BuildingManager : Node
 	{
 		ChangeState(State.PlacingBuilding);
 		hoveredGridArea.Size = buildingResource.Dimensions;
-		var buildingSprite = buildingResource.SpriteScene.Instantiate<Sprite2D>();
+		var buildingSprite = buildingResource.SpriteScene.Instantiate<AnimatedSprite2D>();
 		buildingGhost.AddSpriteNode(buildingSprite);
 		buildingGhost.SetDimensions(buildingResource.Dimensions);
 		buildingGhostDimensions = buildingResource.Dimensions;

@@ -54,8 +54,6 @@ public partial class BuildingGhost : Node2D
 	public void AddSpriteNode(Node2D spriteNode)
 	{
 		upDownRoot.AddChild(spriteNode);
-		spriteNode.MoveLocalY(-32f);
-		spriteNode.MoveLocalX(-32f);
 	}
 
 	public void DoHoverAnimation()
