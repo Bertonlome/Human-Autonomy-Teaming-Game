@@ -1,72 +1,8 @@
-[gd_scene load_steps=13 format=3 uid="uid://bb2ug053frok2"]
+[gd_scene load_steps=4 format=3 uid="uid://bb2ug053frok2"]
 
 [ext_resource type="PackedScene" uid="uid://ce2hqhobmdg47" path="res://scenes/component/BuildingComponent.tscn" id="3_0a6pq"]
+[ext_resource type="PackedScene" uid="uid://5c855rmarlp6" path="res://scenes/building/sprite/GroundRobotAnimatedSprite2D.tscn" id="3_rtdwq"]
 [ext_resource type="PackedScene" uid="uid://dtadqyklji2e7" path="res://scenes/component/BuildingAnimatorComponent.tscn" id="4_ps8v2"]
-[ext_resource type="Texture2D" uid="uid://csifi0fgq36j3" path="res://assets/buildings/robots.png" id="5_ctc6u"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_jhe3q"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(0, 576, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_gwdhk"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(96, 576, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_nfy74"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(192, 576, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_p1gqu"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(288, 576, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_8f6f8"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(480, 576, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ydfeg"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(576, 576, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_odk0n"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(672, 576, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_1mtls"]
-atlas = ExtResource("5_ctc6u")
-region = Rect2(768, 576, 96, 96)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_x0pb4"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_jhe3q")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_gwdhk")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_nfy74")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_p1gqu")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_8f6f8")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ydfeg")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_odk0n")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_1mtls")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}]
 
 [node name="GroundRobot" type="Node2D"]
 y_sort_enabled = true
@@ -77,13 +13,7 @@ buildingAnimatorComponent = NodePath("../BuildingAnimatorComponent")
 
 [node name="BuildingAnimatorComponent" parent="." instance=ExtResource("4_ps8v2")]
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="BuildingAnimatorComponent"]
-position = Vector2(32, 58)
-sprite_frames = SubResource("SpriteFrames_x0pb4")
-autoplay = "default"
-frame_progress = 0.89978
-centered = false
-offset = Vector2(-48, -90)
+[node name="GroundRobotAnimatedSprite2D" parent="BuildingAnimatorComponent" instance=ExtResource("3_rtdwq")]
 
 [node name="Node2D" type="Node2D" parent="BuildingAnimatorComponent"]
 position = Vector2(-35, -53)
