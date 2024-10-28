@@ -102,30 +102,7 @@ public partial class BuildingAnimatorComponent : Node2D
 
 	public void PlayMoveAnimation(Vector2I originPos, Vector2I destinationPos)
 	{
-		SetupSpriteNode();
-		originPos = originPos.ToBase64();
-		if (robotSprite == null) return;
-
-		if (activeTween != null && activeTween.IsValid())
-		{
-			activeTween.Kill();
-		}
-
-		//animationRootNode.Position = Vector2.Zero;
-
-
 		AudioHelpers.PlayMove();
-
-		activeTween = CreateTween();
-
-		activeTween.TweenProperty(robotSprite, "position", (Vector2)destinationPos, 2)
-			.FromCurrent()
-			.SetTrans(Tween.TransitionType.Linear)
-			.SetEase(Tween.EaseType.In);
-		activeTween.Finished += () =>
-		{
-			EmitSignal(SignalName.MoveAnimationFinished);
-		};
 	}
 
 	private void SetupNodes()
@@ -150,10 +127,5 @@ public partial class BuildingAnimatorComponent : Node2D
 
 		animationRootNode.AddChild(spriteNode);
 		spriteNode.Position = new Vector2(0, 0);
-	}
-
-	private void SetupSpriteNode()
-	{
-		robotSprite = this.GetFirstNodeOfType<AnimatedSprite2D>();
 	}
 }

@@ -14,6 +14,7 @@ public partial class GridManager : Node
 	private const string IS_BUILDABLE = "is_buildable";
 	private const string IS_WOOD = "is_wood";
 	private const string IS_IGNORED = "is_ignored";
+	private const string IS_ROUGH_TERRAIN = "is_rough_terrain";
 
 	[Signal]
 	public delegate void ResourceTilesUpdatedEventHandler(int collectedTiles);
@@ -23,10 +24,12 @@ public partial class GridManager : Node
 	private HashSet<Vector2I> validBuildableTiles = new();
 	private HashSet<Vector2I> validBuildableAttackTiles = new();
 	private HashSet<Vector2I> allTilesInBuildingRadius = new();
+	private IEnumerable<Vector2I> listOfTilesInBuildingRadius;
 	private HashSet<Vector2I> collectedResourceTiles = new();
 	private HashSet<Vector2I> occupiedTiles = new();
 	private HashSet<Vector2I> dangerOccupiedTiles = new();
 	private HashSet<Vector2I> attackTiles = new();
+	private HashSet<Vector2I> baseAntennaCoveredTiles = new();
 
 	[Export]
 	private TileMapLayer highlightTilemapLayer;
@@ -108,8 +111,10 @@ public partial class GridManager : Node
 	{
 		IEnumerable<Vector2I> tileSetToCheckGround;
 		IEnumerable<Vector2I> tileSetToCheckAerial;
+
 		var tilesDestination = destinationArea.ToTiles();
 		var tilesOrigin = originArea.ToTiles();
+
 		if (tilesDestination.Count == 0) return false;
 
 		(TileMapLayer firstTileMapLayer, _) = GetTileCustomData(tilesDestination[0], IS_BUILDABLE);
@@ -130,14 +135,52 @@ public partial class GridManager : Node
 			(TileMapLayer tileMapLayer, bool isBuildable) = GetTileCustomData(tilePosition, IS_BUILDABLE);
 			var elevationLayer = tileMapLayer != null ? tileMapLayerToElevationLayer[tileMapLayer] : null;
 			(tileMapLayer, bool isWood) = GetTileCustomData(tilePosition, IS_WOOD);
+			(tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
+			
+			//Check for ground vehicle
 			var check1 = tileSetToCheckGround.Contains(tilePosition) ? true: false;
 			var check2 = elevationLayer == targetElevationLayer ? true: false;
 			var check3 = OriginElevationLayer == targetElevationLayer ? true: false;
+			var check7 = !isRoulable;
+			//Check for aerial vehicle
 			var check4 = buildingComponent.BuildingResource.IsAerial;
 			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false: true;
 			var check6 = !isWood;
-			return (check1 && check2 && check3) || (check4 && check5 && check6);
+			return (check1 && check2 && check3 && check7) || (check4 && check5 && check6);
 		});
+	}
+
+	public bool isInAntennaCoverage(BuildingComponent buildingComponent, Rect2I destinationArea)
+	{
+		IEnumerable<Vector2I> allTiles = new List<Vector2I>();
+		bool isConnected = false;
+
+		GD.Print("BASE antenna range : " + baseAntennaCoveredTiles.Count());
+		GD.Print("Valid buildable tiles : " + allTilesInBuildingRadius.Count());
+		var allTilesInBuildingRadiusWithoutBase = allTilesInBuildingRadius.Except(baseAntennaCoveredTiles);
+		GD.Print("chain of robots alone: " + allTilesInBuildingRadiusWithoutBase.Count());
+		var tilesInRadiusofRobotArrival = GetValidTilesInRadius(destinationArea, buildingComponent.BuildingResource.BuildableRadius);
+		GD.Print("ROBOT alone : " + tilesInRadiusofRobotArrival.Count());
+
+		//if(robotAlone.Intersect(baseAntennaCoveredTiles).Count() > 0) return true;
+
+
+		var buildingComponents = BuildingComponent.GetValidBuildingComponents(this);
+		foreach(var myBuildingComponent in buildingComponents)
+		{
+			if (myBuildingComponent == buildingComponent) continue;
+			
+			var tileArea = myBuildingComponent.GetTileArea();
+			var buildingCoverage = GetTilesInRadius(tileArea, myBuildingComponent.BuildingResource.BuildableRadius, (_) => true);
+
+			if(buildingCoverage.Intersect(tilesInRadiusofRobotArrival).Count()>0)
+			{
+				//isConnected = CanMoveBuilding(buildingComponent, tilesInRadiusofRobotArrival);
+			}
+		}
+		GD.Print("Destination connected = " + isConnected);
+
+		return isConnected;
 	}
 
 	public void HighlightDangerOccupiedTiles()
@@ -216,6 +259,18 @@ public partial class GridManager : Node
 		var tilePosition = worldPosition / 64;
 		tilePosition = tilePosition.Floor();
 		return new Vector2I((int)tilePosition.X, (int)tilePosition.Y);
+	}
+
+	public bool CanMoveBuilding(BuildingComponent toMoveBuildingComponent, Rect2I destinationArea)
+	{
+		var tilesInRadiusofRobotArrival = GetValidTilesInRadius(destinationArea, toMoveBuildingComponent.BuildingResource.BuildableRadius);
+
+		if(toMoveBuildingComponent.BuildingResource.BuildableRadius > 0)
+		{
+			return !WillRobotMoveCreateUnconnectedRobots(toMoveBuildingComponent, tilesInRadiusofRobotArrival);
+					//&& IsBuildingNetworkConnected(toMoveBuildingComponent);
+		}
+		return true;
 	}
 
 	public bool CanDestroyBuilding(BuildingComponent toDestroyBuildingComponent)
@@ -309,18 +364,53 @@ public partial class GridManager : Node
 		return false;
 	}
 
-	private bool IsBuildingNetworkConnected(BuildingComponent toDestroyBuildingComponent)
+	private bool WillRobotMoveCreateUnconnectedRobots(BuildingComponent toMoveBuildingComponent, List<Vector2I> robotCoverageAtDestination)
+	{
+		var dependentBuildings = BuildingComponent.GetNonDangerBuildingComponents(this)
+			.Where((buildingComponent) =>
+			{
+				if (buildingComponent == toMoveBuildingComponent) return false;
+				if (buildingComponent.BuildingResource.IsBase) return false;
+
+				var anyTilesInRadius = GetValidTilesInRadius(buildingComponent.GetAreaOccupiedFromAbsolutePos(buildingComponent.GlobalPosition), buildingComponent.BuildingResource.BuildableRadius)
+					.Any((tilePosition) => robotCoverageAtDestination.Contains(tilePosition));
+				return anyTilesInRadius;
+			});
+
+		var allBuildingsStillValid = dependentBuildings.All((dependentBuilding) =>
+		{
+			var tilesForBuilding = GetValidTilesInRadius(dependentBuilding.GetAreaOccupiedFromAbsolutePos(dependentBuilding.GlobalPosition), dependentBuilding.BuildingResource.BuildableRadius);
+			var buildingsToCheck = buildingToBuildableTiles.Keys
+				.Where((key) => key != toMoveBuildingComponent && key != dependentBuilding);
+
+			return tilesForBuilding.Any((tilePosition) =>
+			{
+				var tileIsInSet = buildingsToCheck
+					.Any((buildingComponent) => buildingToBuildableTiles[buildingComponent].Contains(tilePosition));
+				return tileIsInSet;
+			});
+		});
+
+		if (!allBuildingsStillValid)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	private bool IsBuildingNetworkConnected(BuildingComponent toMoveBuildingComponent)
 	{
 		var baseBuilding = BuildingComponent.GetValidBuildingComponents(this)
 			.First((buildingComponent) => buildingComponent.BuildingResource.IsBase);
 
 		var visitedBuildings = new HashSet<BuildingComponent>();
-		VisitAllConnectedBuildings(baseBuilding, toDestroyBuildingComponent, visitedBuildings);
+		VisitAllConnectedBuildings(baseBuilding, toMoveBuildingComponent, visitedBuildings);
 
 		var totalBuildingsToVisit = BuildingComponent.GetValidBuildingComponents(this)
 			.Count((buildingComponent) =>
 			{
-				return buildingComponent != toDestroyBuildingComponent && buildingComponent.BuildingResource.BuildableRadius > 0;
+				return buildingComponent != toMoveBuildingComponent && buildingComponent.BuildingResource.BuildableRadius > 0;
 			});
 
 		return totalBuildingsToVisit == visitedBuildings.Count;
@@ -430,10 +520,18 @@ public partial class GridManager : Node
 
 		validBuildableTiles.ExceptWith(dangerOccupiedTiles);
 		EmitSignal(SignalName.GridStateUpdated);
-		GD.Print("NEW PRINT \n");
-		foreach(Vector2I vector in occupiedTiles)
+	}
+
+	private void SetBaseAntennaCoverage()
+	{
+		
+		var buildingComponents = BuildingComponent.GetBaseBuilding(this);
+		foreach(var buildingComponent in buildingComponents)
 		{
-			GD.Print(vector);
+			var baseOccupiedTiles = buildingComponent.GetOccupiedCellPositions();
+			var tileArea = buildingComponent.GetTileArea();
+			var allTiles = GetTilesInRadius(tileArea, buildingComponent.BuildingResource.BuildableRadius, (_) => true);
+			baseAntennaCoveredTiles = allTiles.ToHashSet();
 		}
 	}
 
@@ -572,7 +670,10 @@ public partial class GridManager : Node
 	private void OnBuildingPlaced(BuildingComponent buildingComponent)
 	{
 		UpdateBuildingComponentGridState(buildingComponent);
-		
+		if(baseAntennaCoveredTiles.Count() == 0)
+		{
+			SetBaseAntennaCoverage();
+		}
 		CheckDangerBuildingDestruction();
 	}
 

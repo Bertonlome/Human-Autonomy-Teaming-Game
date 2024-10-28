@@ -45,6 +45,13 @@ public partial class BuildingComponent : Node2D
 			.Where((buildingComponent) => !buildingComponent.BuildingResource.IsDangerBuilding());
 	}
 
+	public static IEnumerable<BuildingComponent> GetBaseBuilding(Node node)
+	{
+		return node.GetTree()
+				.GetNodesInGroup(nameof(BuildingComponent)).Cast<BuildingComponent>()
+				.Where((buildingComponent) => buildingComponent.BuildingResource.IsBase);
+	}
+
 	public override void _Ready()
 	{
 		if (buildingResourcePath != null)
@@ -122,7 +129,7 @@ public partial class BuildingComponent : Node2D
 	public void Moved(Vector2I originPos, Vector2I destinationPos)
 	{
 		GameEvents.EmitBuildingMoved(this);
-		//buildingAnimatorComponent?.PlayMoveAnimation(originPos, destinationPos);
+		buildingAnimatorComponent?.PlayMoveAnimation(originPos, destinationPos);
 		Initialize();
 	}
 
@@ -130,6 +137,15 @@ public partial class BuildingComponent : Node2D
 	{
 		Vector2I dimensionVector = new Vector2I(BuildingResource.Dimensions.X, BuildingResource.Dimensions.Y);
 		Rect2I area = new Rect2I(position, dimensionVector);
+		return area;
+	}
+
+	public Rect2I GetAreaOccupiedFromAbsolutePos(Vector2 AbsolutePos)
+	{
+		Vector2I base64pos = (Vector2I)AbsolutePos;
+		base64pos = base64pos.ToBase64();
+        Vector2I dimensionVector = new Vector2I(BuildingResource.Dimensions.X, BuildingResource.Dimensions.Y);
+		Rect2I area = new Rect2I(base64pos, dimensionVector);
 		return area;
 	}
 

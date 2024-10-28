@@ -66,6 +66,7 @@ public partial class BuildingManager : Node
 				if (evt.IsActionPressed(ACTION_RIGHT_CLICK))
 				{
 					DestroyBuildingAtHoveredCellPosition();
+					gridManager.ClearHighlightedTiles();
 					GetViewport().SetInputAsHandled();
 				}
 				if(evt.IsActionPressed(ACTION_LEFT_CLICK))
@@ -204,7 +205,7 @@ public partial class BuildingManager : Node
 
 	private void PlaceBuildingAtHoveredCellPosition()
 	{
-		if(!CanAffortBuilding())
+		if(!CanAffordBuilding())
 		{
 			FloatingTextManager.ShowMessageAtMousePosition("Can't afford!");
 			return;
@@ -240,7 +241,15 @@ public partial class BuildingManager : Node
 		var originArea = selectedBuildingComponent.GetAreaOccupied((Vector2I)originPos);
 		originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
 		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64))/64), (int)((buildingNode.Position.Y + (directionVector.Y * 64))/64));
-		if(!IsMoveableAtArea(selectedBuildingComponent, originArea, selectedBuildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition)))
+		Rect2I destinationArea = selectedBuildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
+
+		if(!gridManager.CanMoveBuilding(selectedBuildingComponent, destinationArea))
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot will exit the antenna coverage zone", selectedBuildingComponent);
+			return;
+		}
+
+		if(!IsMoveableAtArea(selectedBuildingComponent, originArea, destinationArea))
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", selectedBuildingComponent);
 			return;
@@ -250,8 +259,6 @@ public partial class BuildingManager : Node
 
 		buildingNode.Position +=  directionVector * 64;
 		selectedBuildingComponent.Moved((Vector2I)originPos, destinationPosition);
-
-
 
 		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
@@ -315,7 +322,7 @@ public partial class BuildingManager : Node
 		buildingGhost = null;
 	}
 
-	private bool CanAffortBuilding()
+	private bool CanAffordBuilding()
 	{
 		return AvailableResourceCount >= toPlaceBuildingResource.ResourceCost;
 	}
@@ -324,7 +331,7 @@ public partial class BuildingManager : Node
 	{
 		var isAttackTiles = toPlaceBuildingResource.IsAttackBuilding();
 		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, isAttackTiles);
-		return allTilesBuildable && CanAffortBuilding();
+		return allTilesBuildable && CanAffordBuilding();
 	}
 
 	private bool IsBuildingComponentPlaceableAtArea(Rect2I tileArea)
@@ -334,9 +341,9 @@ public partial class BuildingManager : Node
 		return allTilesBuildable;
 	}
 
-	private bool IsMoveableAtArea(BuildingComponent buildingComponent, Rect2I originArea, Rect2I tileArea)
+	private bool IsMoveableAtArea(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea)
 	{
-		var allTilesMovable = gridManager.IsTileAreaMovable(buildingComponent, originArea, tileArea);
+		var allTilesMovable = gridManager.IsTileAreaMovable(buildingComponent, originArea, destinationArea);
 		return allTilesMovable;
 	}
 

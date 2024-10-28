@@ -41,6 +41,7 @@ bus = &"SFX"
 
 [node name="VictoryAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_ihlbg")
+volume_db = -15.0
 bus = &"SFX"
 
 [node name="MusicAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
@@ -52,4 +53,5 @@ bus = &"Music"
 
 [node name="RobotMoveAudioStreamPlayer" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("12_ptdvl")
+volume_db = -10.0
 bus = &"SFX"
