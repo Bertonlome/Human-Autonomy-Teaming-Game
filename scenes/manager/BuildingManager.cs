@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Game.Autoload;
@@ -46,6 +47,7 @@ public partial class BuildingManager : Node
 	private State currentState;
 	private int startingResourceCount;
 	public static BuildingComponent selectedBuildingComponent {get; private set;} = null;
+	private static Random random = new Random();
 
 	private int AvailableResourceCount => startingResourceCount + currentResourceCount - currentlyUsedResourceCount;
 
@@ -53,6 +55,7 @@ public partial class BuildingManager : Node
 	{
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
 		gameUI.BuildingResourceSelected += OnBuildingResourceSelected;
+		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
 		
 
 		Callable.From(() => EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount)).CallDeferred();
@@ -76,11 +79,13 @@ public partial class BuildingManager : Node
 					selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
 					if(selectedBuildingComponent == null) return;
 					HighlightSelectedBuilding(selectedBuildingComponent);
+					GetViewport().SetInputAsHandled();
 					}
 					else if (SelectBuildingAtHoveredCellPosition() == selectedBuildingComponent) //Clicked on the same robot
 					{
 						UnHighlightSelectedBuilding(selectedBuildingComponent);
 						selectedBuildingComponent = null;
+						GetViewport().SetInputAsHandled();
 					}
 					else if(selectedBuildingComponent != null //Switch to another robot
 							&& SelectBuildingAtHoveredCellPosition() != selectedBuildingComponent
@@ -91,6 +96,7 @@ public partial class BuildingManager : Node
 						selectedBuildingComponent = null;
 						selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
 						HighlightSelectedBuilding(selectedBuildingComponent);
+						GetViewport().SetInputAsHandled();
 					}
 				}
 				if (evt.IsActionPressed(MOVE_UP))
@@ -98,6 +104,7 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent != null)
 					{
 						MoveBuildingInDirection(MOVE_UP);
+						GetViewport().SetInputAsHandled();
 					}
 				}
 				if (evt.IsActionPressed(MOVE_DOWN))
@@ -105,6 +112,7 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent != null)
 					{
 						MoveBuildingInDirection(MOVE_DOWN);
+						GetViewport().SetInputAsHandled();
 					}
 				}
 				if (evt.IsActionPressed(MOVE_LEFT))
@@ -112,6 +120,7 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent != null)
 					{
 						MoveBuildingInDirection(MOVE_LEFT);
+						GetViewport().SetInputAsHandled();
 					}
 				}
 				if (evt.IsActionPressed(MOVE_RIGHT))
@@ -119,6 +128,7 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent != null)
 					{
 						MoveBuildingInDirection(MOVE_RIGHT);
+						GetViewport().SetInputAsHandled();
 					}
 				}
 				break;
@@ -229,6 +239,9 @@ public partial class BuildingManager : Node
 
 	public void MoveBuildingInDirection(StringName direction)
 	{
+		if(selectedBuildingComponent.IsStuck) return;
+
+
 		Vector2I directionVector;
 		if(direction == MOVE_UP) directionVector = new Vector2I(0, -1);
 		else if(direction == MOVE_DOWN) directionVector = new Vector2I(0,1);
@@ -245,7 +258,7 @@ public partial class BuildingManager : Node
 
 		if(!gridManager.CanMoveBuilding(selectedBuildingComponent, destinationArea))
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Robot will exit the antenna coverage zone", selectedBuildingComponent);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", selectedBuildingComponent);
 			return;
 		}
 
@@ -254,6 +267,16 @@ public partial class BuildingManager : Node
 			FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", selectedBuildingComponent);
 			return;
 		}
+
+		double chance = random.NextDouble();
+		if(chance <= selectedBuildingComponent.BuildingResource.stuckChancePerMove)
+		{
+			MoveBuildingInDirection(GetRandomDirection());
+			FloatingTextManager.ShowMessageAtBuildingPosition("The robot got stuck while attempting to move", selectedBuildingComponent);
+			selectedBuildingComponent.SetToStuck();
+			return;
+		}
+
 		selectedBuildingComponent.FreeOccupiedCellPosition();
 		gridManager.UpdateBuildingComponentGridState(selectedBuildingComponent);
 
@@ -261,6 +284,16 @@ public partial class BuildingManager : Node
 		selectedBuildingComponent.Moved((Vector2I)originPos, destinationPosition);
 
 		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+
+		var test = gridManager.CanMoveBuilding(selectedBuildingComponent);
+		if (!test)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", selectedBuildingComponent);
+			if(direction == MOVE_DOWN) MoveBuildingInDirection(MOVE_UP);
+			else if (direction == MOVE_LEFT) MoveBuildingInDirection(MOVE_RIGHT);
+			else if (direction == MOVE_RIGHT) MoveBuildingInDirection(MOVE_LEFT);
+			else if (direction == MOVE_UP) MoveBuildingInDirection(MOVE_DOWN);
+		}
 	}
 
 	private void DestroyBuildingAtHoveredCellPosition()
@@ -272,12 +305,12 @@ public partial class BuildingManager : Node
 				return buildingComponent.BuildingResource.IsDeletable && buildingComponent.IsTileInBuildingArea(rootCell);
 			});
 		if (buildingComponent == null) return;
-		if (!gridManager.CanDestroyBuilding(buildingComponent)) 
+		/*if (!gridManager.CanDestroyBuilding(buildingComponent)) 
 		{
 			FloatingTextManager.ShowMessageAtMousePosition("Can't destroy");
 			return;
 		};
-
+		*/
 		currentlyUsedResourceCount -= buildingComponent.BuildingResource.ResourceCost;
 		buildingComponent.Destroy();
 		selectedBuildingComponent = null;
@@ -294,14 +327,28 @@ public partial class BuildingManager : Node
 			});
 		if (buildingComponent == null) return null;
 		else return buildingComponent;
-		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
 		public void HighlightSelectedBuilding(BuildingComponent buildingComponent)
 	{
+		if (buildingComponent.IsStuck == true)
+		{
+			HighlightStuckBuilding(buildingComponent);
+			return;
+		}
 		var highlightZone = buildingComponent.GetNode<ColorRect>("%HighlightZone");
 		highlightZone.Visible = true;
 		gridManager.HighlightBuildableTiles();
+		gridManager.HighlightExpandedBuildableTiles(buildingComponent.GetTileArea(), buildingComponent.BuildingResource.BuildableRadius);
+	}
+
+		public void HighlightStuckBuilding(BuildingComponent buildingComponent)
+	{
+		var highlightZone = buildingComponent.GetNode<ColorRect>("%HighlightZone");
+		highlightZone.Visible = false;
+		highlightZone.Color = Colors.Red;
+		highlightZone.Visible = true;
+		gridManager.ClearHighlightedTiles();
 	}
 
 	public void UnHighlightSelectedBuilding(BuildingComponent buildingComponent)
@@ -343,7 +390,7 @@ public partial class BuildingManager : Node
 
 	private bool IsMoveableAtArea(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea)
 	{
-		var allTilesMovable = gridManager.IsTileAreaMovable(buildingComponent, originArea, destinationArea);
+		var allTilesMovable = gridManager.IsBuildingMovable(buildingComponent, originArea, destinationArea);
 		return allTilesMovable;
 	}
 
@@ -400,5 +447,21 @@ public partial class BuildingManager : Node
 		buildingGhostDimensions = buildingResource.Dimensions;
 		toPlaceBuildingResource = buildingResource;
 		UpdateGridDisplay();
+	}
+
+	private void OnBuildingStuck(BuildingComponent buildingComponent)
+	{
+		if (selectedBuildingComponent == buildingComponent)
+		{
+			UnHighlightSelectedBuilding(buildingComponent);
+			HighlightStuckBuilding(buildingComponent);
+		}
+	}
+
+	private string GetRandomDirection()
+	{
+		string[] directions = {MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT, MOVE_UP};
+		int index = random.Next(directions.Length);
+		return directions[index];
 	}
 }

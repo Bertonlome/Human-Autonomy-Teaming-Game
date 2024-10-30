@@ -63,7 +63,6 @@ public partial class ResourceIndicatorManager : Node
 
 	private void OnResourceTilesUpdated(int _)
 	{
-		GD.Print("Signal_handler");
 		Callable.From(HandleResourceTilesUpdated).CallDeferred();
 	}
 

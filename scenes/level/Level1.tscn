@@ -44,6 +44,6 @@ tile_set = ExtResource("2_s36uk")
 position = Vector2(0, 64)
 
 [node name="GoldMine" parent="YSortRoot" index="2"]
-position = Vector2(832, 384)
+position = Vector2(704, 704)
 
 [editable path="YSortRoot/BaseTerrainTileMapLayer/ElevationLayer"]

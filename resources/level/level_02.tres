@@ -5,5 +5,5 @@
 [resource]
 script = ExtResource("1_y4qqd")
 Id = "cats_are_playing"
-StartingResourceCount = 6
+StartingResourceCount = 4
 LevelScenePath = "res://scenes/level/Level2.tscn"
