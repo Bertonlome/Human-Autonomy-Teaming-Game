@@ -107,7 +107,7 @@ public partial class GridManager : Node
 		});
 	}
 
-	public bool IsTileAreaMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea)
+	public bool IsBuildingMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea)
 	{
 		IEnumerable<Vector2I> tileSetToCheckGround;
 		IEnumerable<Vector2I> tileSetToCheckAerial;
@@ -125,10 +125,9 @@ public partial class GridManager : Node
 
 		var transitionTile = originArea.ToTiles().Intersect(destinationArea.ToTiles()).ToHashSet();
 
-		tileSetToCheckGround = GetBuildableTileSet().Union(transitionTile).ToHashSet();
+		tileSetToCheckGround = GetBuildableTileSet().Union(transitionTile).ToHashSet(); //Buildable takes into account rocks and plants
 		
-		//GetTileCustomData(tilePosition, IS_WOOD).Item2;
-		tileSetToCheckAerial = occupiedTiles.ToHashSet();
+		tileSetToCheckAerial = occupiedTiles.ToHashSet(); //UAV can fly over rocks and plants
 
 		return tilesDestination.All((tilePosition) =>
 		{
@@ -150,37 +149,31 @@ public partial class GridManager : Node
 		});
 	}
 
-	public bool isInAntennaCoverage(BuildingComponent buildingComponent, Rect2I destinationArea)
+	public bool IsGettingOutOfACoverage(BuildingComponent buildingComponent, Rect2I destinationArea)
 	{
-		IEnumerable<Vector2I> allTiles = new List<Vector2I>();
-		bool isConnected = false;
-
-		GD.Print("BASE antenna range : " + baseAntennaCoveredTiles.Count());
-		GD.Print("Valid buildable tiles : " + allTilesInBuildingRadius.Count());
-		var allTilesInBuildingRadiusWithoutBase = allTilesInBuildingRadius.Except(baseAntennaCoveredTiles);
-		GD.Print("chain of robots alone: " + allTilesInBuildingRadiusWithoutBase.Count());
 		var tilesInRadiusofRobotArrival = GetValidTilesInRadius(destinationArea, buildingComponent.BuildingResource.BuildableRadius);
-		GD.Print("ROBOT alone : " + tilesInRadiusofRobotArrival.Count());
+		
+		buildingToBuildableTiles.Remove(buildingComponent);
 
-		//if(robotAlone.Intersect(baseAntennaCoveredTiles).Count() > 0) return true;
-
-
-		var buildingComponents = BuildingComponent.GetValidBuildingComponents(this);
-		foreach(var myBuildingComponent in buildingComponents)
+		var allTilesFromDictionary = new HashSet<Vector2I>();
+		foreach(var tileSet in buildingToBuildableTiles.Values)
 		{
-			if (myBuildingComponent == buildingComponent) continue;
-			
-			var tileArea = myBuildingComponent.GetTileArea();
-			var buildingCoverage = GetTilesInRadius(tileArea, myBuildingComponent.BuildingResource.BuildableRadius, (_) => true);
-
-			if(buildingCoverage.Intersect(tilesInRadiusofRobotArrival).Count()>0)
-			{
-				//isConnected = CanMoveBuilding(buildingComponent, tilesInRadiusofRobotArrival);
-			}
+			allTilesFromDictionary.UnionWith(tileSet);
 		}
-		GD.Print("Destination connected = " + isConnected);
 
-		return isConnected;
+		var anyTilesInRadius = tilesInRadiusofRobotArrival		
+			.Any((tilePosition) => 
+			{
+				return allTilesFromDictionary.Contains(tilePosition);
+			});
+	
+		//GD.Print("Nmbr of intersect with base : " +tilesInRadiusofRobotArrival.Intersect(baseAntennaCoveredTiles).Count());
+		//GD.Print("anytiles in radius ? " + anyTilesInRadius);
+		bool testfinal = (tilesInRadiusofRobotArrival.Intersect(baseAntennaCoveredTiles).Count() > 0) || anyTilesInRadius == true;
+		//GD.Print("Conjunction just to be sure : " + testfinal);
+
+		if((tilesInRadiusofRobotArrival.Intersect(baseAntennaCoveredTiles).Count() > 0) || anyTilesInRadius) return true;
+		else return true;
 	}
 
 	public void HighlightDangerOccupiedTiles()
@@ -261,16 +254,20 @@ public partial class GridManager : Node
 		return new Vector2I((int)tilePosition.X, (int)tilePosition.Y);
 	}
 
-	public bool CanMoveBuilding(BuildingComponent toMoveBuildingComponent, Rect2I destinationArea)
+	public bool CanMoveBuilding(BuildingComponent toMoveBuildingComponent, Rect2I destinationArea = new Rect2I())
 	{
+		if(destinationArea.Area == 0)
+		{
+			destinationArea = toMoveBuildingComponent.GetAreaOccupied(ConvertWorldPositionToTilePosition(toMoveBuildingComponent.GlobalPosition));
+		}
+		
 		var tilesInRadiusofRobotArrival = GetValidTilesInRadius(destinationArea, toMoveBuildingComponent.BuildingResource.BuildableRadius);
 
 		if(toMoveBuildingComponent.BuildingResource.BuildableRadius > 0)
 		{
-			return !WillRobotMoveCreateUnconnectedRobots(toMoveBuildingComponent, tilesInRadiusofRobotArrival)
-					&& IsRobotNetworkConnected(toMoveBuildingComponent, tilesInRadiusofRobotArrival);
+			return IsRobotNetworkConnected(toMoveBuildingComponent, tilesInRadiusofRobotArrival) && IsGettingOutOfACoverage(toMoveBuildingComponent, destinationArea);
 		}
-		return true;
+		return false;
 	}
 
 	public bool CanDestroyBuilding(BuildingComponent toDestroyBuildingComponent)
@@ -352,51 +349,6 @@ public partial class GridManager : Node
 			{
 				var tileIsInSet = buildingsToCheck
 					.Any((buildingComponent) => buildingToBuildableTiles[buildingComponent].Contains(tilePosition));
-				return tileIsInSet;
-			});
-		});
-
-		if (!allBuildingsStillValid)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	private bool WillRobotMoveCreateUnconnectedRobots(BuildingComponent toMoveBuildingComponent, List<Vector2I> robotCoverageAtDestination)
-	{
-		var dependentBuildings = BuildingComponent.GetNonDangerBuildingComponents(this)
-			.Where((buildingComponent) =>
-			{
-				if (buildingComponent == toMoveBuildingComponent) return false;
-				if (buildingComponent.BuildingResource.IsBase) return false;
-
-				var anyTilesInRadius = GetValidTilesInRadius(buildingComponent.GetAreaOccupiedFromAbsolutePos(buildingComponent.GlobalPosition), buildingComponent.BuildingResource.BuildableRadius)
-					.Any((tilePosition) => GetValidTilesInRadius(toMoveBuildingComponent.GetAreaOccupiedFromAbsolutePos(toMoveBuildingComponent.GlobalPosition), buildingComponent.BuildingResource.BuildableRadius).Contains(tilePosition));
-				return anyTilesInRadius;
-			});
-
-		var allBuildingsStillValid = dependentBuildings.All((dependentBuilding) =>
-		{
-			var tilesForBuilding = GetValidTilesInRadius(
-				dependentBuilding.GetAreaOccupiedFromAbsolutePos(dependentBuilding.GlobalPosition), 
-				dependentBuilding.BuildingResource.BuildableRadius);
-
-			var buildingsToCheck = buildingToBuildableTiles.Keys
-				.Where((key) => key != dependentBuilding);
-
-			return tilesForBuilding.Any((tilePosition) =>
-			{
-				var tileIsInSet = buildingsToCheck
-					.Any((buildingComponent) => 
-					{
-						var validTiles = buildingComponent == toMoveBuildingComponent
-                        ? robotCoverageAtDestination.ToHashSet()
-						: buildingToBuildableTiles[buildingComponent];
-					return validTiles.Contains(tilePosition);
-					});
-					
 				return tileIsInSet;
 			});
 		});
@@ -730,7 +682,7 @@ public partial class GridManager : Node
 	{
 		ClearHighlightedTiles();
 		RecalculateGrid();
-		UpdateBuildingComponentGridState(buildingComponent);
+		//UpdateBuildingComponentGridState(buildingComponent);
 		HighlightBuildableTiles();
 	}
 

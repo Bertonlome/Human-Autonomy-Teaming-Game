@@ -1,0 +1,118 @@
+[gd_scene load_steps=17 format=3 uid="uid://dieh0l6t7rv2q"]
+
+[ext_resource type="Texture2D" uid="uid://c0dg40kvqbs7c" path="res://assets/buildings/sheep_sprite.png" id="1_0126t"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mnfwn"]
+atlas = ExtResource("1_0126t")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_moxo5"]
+atlas = ExtResource("1_0126t")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ct6jb"]
+atlas = ExtResource("1_0126t")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pm3ts"]
+atlas = ExtResource("1_0126t")
+region = Rect2(384, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s663w"]
+atlas = ExtResource("1_0126t")
+region = Rect2(512, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yxrjm"]
+atlas = ExtResource("1_0126t")
+region = Rect2(640, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kteha"]
+atlas = ExtResource("1_0126t")
+region = Rect2(768, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xjrh4"]
+atlas = ExtResource("1_0126t")
+region = Rect2(896, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pvy2w"]
+atlas = ExtResource("1_0126t")
+region = Rect2(0, 128, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_81ryk"]
+atlas = ExtResource("1_0126t")
+region = Rect2(128, 128, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_docml"]
+atlas = ExtResource("1_0126t")
+region = Rect2(256, 128, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xabms"]
+atlas = ExtResource("1_0126t")
+region = Rect2(384, 128, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jdl5j"]
+atlas = ExtResource("1_0126t")
+region = Rect2(512, 128, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tw5er"]
+atlas = ExtResource("1_0126t")
+region = Rect2(640, 128, 128, 128)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_8hk6q"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mnfwn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_moxo5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ct6jb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pm3ts")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s663w")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yxrjm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kteha")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xjrh4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pvy2w")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_81ryk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_docml")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xabms")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jdl5j")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tw5er")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="AerialRobotAnimatedSprite2D" type="AnimatedSprite2D"]
+modulate = Color(0, 0.741728, 0.409184, 1)
+position = Vector2(32, 58)
+sprite_frames = SubResource("SpriteFrames_8hk6q")
+autoplay = "default"
+frame_progress = 0.350305
+centered = false
+offset = Vector2(-48, -90)

@@ -1,10 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://dqoljijx36x6a"]
+[gd_scene load_steps=7 format=3 uid="uid://dqoljijx36x6a"]
 
 [ext_resource type="Script" path="res://scenes/ui/GameUI.cs" id="1_ig7ao"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="2_2jsg4"]
 [ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/ground_robot.tres" id="3_7ve0q"]
 [ext_resource type="PackedScene" uid="uid://dldi351241g0a" path="res://scenes/ui/BuildingSection.tscn" id="4_bv77p"]
-[ext_resource type="Resource" uid="uid://cofysia182eue" path="res://resources/building/barracks.tres" id="4_qh1hu"]
 [ext_resource type="Texture2D" uid="uid://c38q546jteu6h" path="res://assets/ui/wood_icon.png" id="5_ngx1v"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_riax6"]
@@ -13,7 +12,7 @@ region = Rect2(39, 72, 32, 28)
 
 [node name="GameUI" type="CanvasLayer"]
 script = ExtResource("1_ig7ao")
-buildingResources = Array[Object]([ExtResource("3_7ve0q"), ExtResource("2_2jsg4"), ExtResource("4_qh1hu")])
+buildingResources = Array[Object]([ExtResource("3_7ve0q"), ExtResource("2_2jsg4")])
 buildingSectionScene = ExtResource("4_bv77p")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]

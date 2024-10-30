@@ -23,6 +23,7 @@ public partial class BuildingComponent : Node2D
 	public BuildingResource BuildingResource { get; private set; }
 	public bool IsDestroying { get; private set; }
 	public bool IsDisabled { get; private set; }
+	public bool IsStuck {get; private set;} = false; 
 
 	private HashSet<Vector2I> occupiedTiles = new();
 
@@ -119,6 +120,13 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
+	public void SetToStuck()
+	{
+		IsStuck = true;
+		GameEvents.EmitBuildingStuck(this);
+		buildingAnimatorComponent.Rotate(-1.05f);
+	}
+
 	public Rect2I GetAreaOccupiedAfterMovingFromPos(Vector2I position)
 	{
 		Vector2I dimensionVector = new Vector2I(BuildingResource.Dimensions.X, BuildingResource.Dimensions.Y);
@@ -174,6 +182,7 @@ public partial class BuildingComponent : Node2D
 			}
 		}
 	}
+	
 
 	private void Initialize()
 	{

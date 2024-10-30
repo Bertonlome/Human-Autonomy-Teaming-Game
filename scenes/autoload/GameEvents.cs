@@ -17,6 +17,8 @@ public partial class GameEvents : Node
 	public delegate void BuildingEnabledEventHandler(BuildingComponent buildingComponent);
 	[Signal]
 	public delegate void BuildingMovedEventHandler(BuildingComponent buildingComponent);
+	[Signal]
+	public delegate void BuildingStuckEventHandler(BuildingComponent buildingComponent);
 
 	public override void _Notification(int what)
 	{
@@ -49,5 +51,10 @@ public partial class GameEvents : Node
 	public static void EmitBuildingEnabled(BuildingComponent buildingComponent)
 	{
 		Instance.EmitSignal(SignalName.BuildingEnabled, buildingComponent);
+	}
+
+	public static void EmitBuildingStuck(BuildingComponent buildingComponent)
+	{
+		Instance.EmitSignal(SignalName.BuildingStuck, buildingComponent);
 	}
 }
