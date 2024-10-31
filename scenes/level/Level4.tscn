@@ -5,7 +5,7 @@
 [ext_resource type="TileSet" uid="uid://dvqwr0ci0x55u" path="res://resources/tiles.tres" id="3_qby2l"]
 [ext_resource type="PackedScene" uid="uid://iv4rk5h4ybki" path="res://scenes/level/util/ElevationLayer.tscn" id="4_g4gl0"]
 
-[node name="Level3" instance=ExtResource("1_jc1wc")]
+[node name="Level4" instance=ExtResource("1_jc1wc")]
 levelDefinitionResource = ExtResource("2_5nryv")
 
 [node name="BaseTerrainTileMapLayer" parent="YSortRoot" index="0"]
@@ -46,7 +46,7 @@ tile_map_data = PackedByteArray("AAAVAAUAAQAAAAAAAAAXAAQAAQAAAAAAAAAWAAUAAQAAAAA
 tile_set = ExtResource("3_qby2l")
 
 [node name="Base" parent="YSortRoot" index="1"]
-position = Vector2(1216, -448)
+position = Vector2(-64, -192)
 
 [node name="GoldMine" parent="YSortRoot" index="2"]
 position = Vector2(6592, 2176)

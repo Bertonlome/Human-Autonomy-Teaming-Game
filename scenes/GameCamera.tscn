@@ -8,6 +8,6 @@ seed = 36
 frequency = 0.75
 
 [node name="GameCamera" type="Camera2D"]
-zoom = Vector2(0.75, 0.75)
+zoom = Vector2(0.9, 0.9)
 script = ExtResource("1_t1kp6")
 shakeNoise = SubResource("FastNoiseLite_b30tp")

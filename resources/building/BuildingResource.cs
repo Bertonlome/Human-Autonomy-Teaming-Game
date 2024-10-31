@@ -18,7 +18,9 @@ public partial class BuildingResource : Resource
 	[Export]
 	public Vector2I Dimensions { get; private set; } = Vector2I.One;
 	[Export]
-	public float stuckChancePerMove {get; private set; } = 0f;
+	public float StuckChancePerMove {get; private set; } = 0f;
+	[Export]
+	public float moveInterval {get; private set; } = 1.0f; // Time between moves in seconds
 	[Export]
 	public int ResourceCost { get; private set; }
 	[Export]

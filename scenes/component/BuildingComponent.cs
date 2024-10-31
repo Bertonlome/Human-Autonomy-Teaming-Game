@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Game.Autoload;
+using Game.Manager;
 using Game.Resources.Building;
 using Godot;
 
@@ -21,11 +22,23 @@ public partial class BuildingComponent : Node2D
 	private BuildingAnimatorComponent buildingAnimatorComponent;
 
 	public BuildingResource BuildingResource { get; private set; }
+	public BuildingManager buildingManager;
 	public bool IsDestroying { get; private set; }
 	public bool IsDisabled { get; private set; }
+	public bool IsRandomMode {get; set;} = false;
 	public bool IsStuck {get; private set;} = false; 
+	public int Battery {get; set;} = 100;
 
 	private HashSet<Vector2I> occupiedTiles = new();
+
+	private readonly StringName MOVE_UP = "move_up";
+	private readonly StringName MOVE_DOWN = "move_down";
+	private readonly StringName MOVE_LEFT = "move_left";
+	private readonly StringName MOVE_RIGHT = "move_right";
+
+	// Timer variables
+    private float timer = 0.0f; // Tracks time since last move
+
 
 	public static IEnumerable<BuildingComponent> GetValidBuildingComponents(Node node)
 	{
@@ -66,9 +79,52 @@ public partial class BuildingComponent : Node2D
 		}
 		AddToGroup(nameof(BuildingComponent));
 		Callable.From(Initialize).CallDeferred();
+
+		// Get the root node of the current scene
+		Node rootNode = GetTree().Root;
+
+		// Attempt to get the BaseLevel node
+		BaseLevel level = rootNode.GetFirstNodeOfType<BaseLevel>();
+
+		if (level != null)
+		{
+			// Attempt to get the BuildingManager node from BaseLevel
+			buildingManager = level.GetFirstNodeOfType<BuildingManager>();
+
+			if (buildingManager != null)
+			{
+				GD.Print($"First child of the root: {buildingManager.Name}");
+			}
+			else
+			{
+				GD.PushError("BuildingManager node not found.");
+			}
+		}
+		else
+		{
+			GD.PushError("BaseLevel node not found.");
+		}
 	}
 
-	public Vector2I GetGridCellPosition()
+    public override void _Process(double delta)
+    {
+        if (IsRandomMode == true && !IsStuck)
+        {
+            // Update the timer
+            timer += (float)delta;
+
+            // Check if enough time has passed to move
+            if (timer >= this.BuildingResource.moveInterval)
+            {
+				var randDir = buildingManager.GetRandomDirection();
+        		GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
+                buildingManager.MoveBuildingInDirectionAutomated(this, randDir);
+                timer = 0.0f; // Reset the timer
+            }
+        }
+	}
+
+    public Vector2I GetGridCellPosition()
 	{
 		var gridPosition = GlobalPosition / 64;
 		gridPosition = gridPosition.Floor();
@@ -85,6 +141,19 @@ public partial class BuildingComponent : Node2D
 		var rootCell = GetGridCellPosition();
 		var tileArea = new Rect2I(rootCell, BuildingResource.Dimensions);
 		return tileArea;
+	}
+
+	public HashSet<Vector2I> GetTileAndAdjacent()
+	{
+		var tileAreaAndAdjacent = new HashSet<Vector2I>(occupiedTiles); 
+		foreach (var tile in occupiedTiles)
+		{
+			tileAreaAndAdjacent.Add(new Vector2I(tile.X + 1, tile.Y));
+			tileAreaAndAdjacent.Add(new Vector2I(tile.X-1, tile.Y));
+			tileAreaAndAdjacent.Add(new Vector2I(tile.X, tile.Y -1));
+			tileAreaAndAdjacent.Add(new Vector2I(tile.X, tile.Y + 1));
+		} 
+		return tileAreaAndAdjacent.ToHashSet();
 	}
 
 	public bool IsTileInBuildingArea(Vector2I tilePosition)
@@ -123,8 +192,15 @@ public partial class BuildingComponent : Node2D
 	public void SetToStuck()
 	{
 		IsStuck = true;
-		GameEvents.EmitBuildingStuck(this);
 		buildingAnimatorComponent.Rotate(-1.05f);
+		GameEvents.EmitBuildingStuck(this);
+	}
+
+	public void SetToUnstuck()
+	{
+		IsStuck = false;
+		buildingAnimatorComponent.Rotate(1.05f);
+		GameEvents.EmitBuildingUnStuck(this);
 	}
 
 	public Rect2I GetAreaOccupiedAfterMovingFromPos(Vector2I position)
@@ -139,6 +215,8 @@ public partial class BuildingComponent : Node2D
 		GameEvents.EmitBuildingMoved(this);
 		buildingAnimatorComponent?.PlayMoveAnimation(originPos, destinationPos);
 		Initialize();
+		if (Battery >= 0) Battery -= 1;
+		GD.Print("Battery left in robot : " + Battery);
 	}
 
 	public Rect2I GetAreaOccupied(Vector2I position)
