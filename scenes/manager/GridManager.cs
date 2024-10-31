@@ -24,7 +24,6 @@ public partial class GridManager : Node
 	private HashSet<Vector2I> validBuildableTiles = new();
 	private HashSet<Vector2I> validBuildableAttackTiles = new();
 	private HashSet<Vector2I> allTilesInBuildingRadius = new();
-	private IEnumerable<Vector2I> listOfTilesInBuildingRadius;
 	private HashSet<Vector2I> collectedResourceTiles = new();
 	private HashSet<Vector2I> occupiedTiles = new();
 	private HashSet<Vector2I> dangerOccupiedTiles = new();
@@ -41,6 +40,7 @@ public partial class GridManager : Node
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingToBuildableTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> dangerBuildingToTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> attackBuildingToTiles = new();
+	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingStuckToTiles = new();
 
 	private Vector2I goldMinePosition;
 
@@ -51,6 +51,9 @@ public partial class GridManager : Node
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingEnabled, Callable.From<BuildingComponent>(OnBuildingEnabled));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingDisabled, Callable.From<BuildingComponent>(OnBuildingDisabled));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnBuildingMoved));
+		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
+		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingUnStuck, Callable.From<BuildingComponent>(OnBuildingUnStuck));
+
 
 		allTilemapLayers = GetAllTilemapLayers(baseTerrainTilemapLayer);
 		MapTileMapLayersToElevationLayers();
@@ -581,7 +584,7 @@ public partial class GridManager : Node
 		{
 			UpdateBuildingComponentGridState(buildingComponent);
 		}
-
+		CheckStuckRobotNearby();
 		CheckDangerBuildingDestruction();
 
 		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
@@ -612,6 +615,22 @@ public partial class GridManager : Node
 			else
 			{
 				building.Enable();
+			}
+		}
+	}
+
+	private void CheckStuckRobotNearby()
+	{
+		var occupiedTilesExceptStuck = new HashSet<Vector2I>(occupiedTiles);
+		bool isNear = false;
+		foreach(var robot in buildingStuckToTiles.Keys)
+		{
+			HashSet<Vector2I> positions = buildingStuckToTiles[robot];
+			occupiedTilesExceptStuck.ExceptWith(robot.GetOccupiedCellPositions());
+        	isNear = positions.Any(position => occupiedTilesExceptStuck.Contains(position));
+			if(isNear)
+			{
+				robot.SetToUnstuck();
 			}
 		}
 	}
@@ -681,9 +700,19 @@ public partial class GridManager : Node
 	private void OnBuildingMoved(BuildingComponent buildingComponent)
 	{
 		ClearHighlightedTiles();
-		RecalculateGrid();
-		//UpdateBuildingComponentGridState(buildingComponent);
+		CallDeferred("RecalculateGrid");
 		HighlightBuildableTiles();
+	}
+
+	private void OnBuildingStuck(BuildingComponent buildingComponent)
+	{
+		var tileAreaOccupied = buildingComponent.GetTileAndAdjacent();
+		buildingStuckToTiles[buildingComponent] = tileAreaOccupied;
+	}
+
+	private void OnBuildingUnStuck(BuildingComponent buildingComponent)
+	{
+		buildingStuckToTiles.Clear();
 	}
 
 	private void OnBuildingDestroyed(BuildingComponent buildingComponent)

@@ -19,6 +19,12 @@ public partial class GameEvents : Node
 	public delegate void BuildingMovedEventHandler(BuildingComponent buildingComponent);
 	[Signal]
 	public delegate void BuildingStuckEventHandler(BuildingComponent buildingComponent);
+	[Signal]
+	public delegate void BuildingUnStuckEventHandler(BuildingComponent buildingComponent);
+	[Signal]
+	public delegate void RobotSelectedEventHandler(BuildingComponent buildingComponent);
+	[Signal]
+	public delegate void NoMoreRobotSelectedEventHandler(BuildingComponent buildingComponent);
 
 	public override void _Notification(int what)
 	{
@@ -36,6 +42,16 @@ public partial class GameEvents : Node
 	public static void EmitBuildingMoved(BuildingComponent buildingComponent)
 	{
 		Instance.EmitSignal(SignalName.BuildingMoved, buildingComponent);
+	}
+	
+	public static void EmitRobotSelected(BuildingComponent buildingComponent)
+	{
+		Instance.EmitSignal(SignalName.RobotSelected, buildingComponent);
+	}
+
+	public static void EmitNoMoreRobotSelected(BuildingComponent buildingComponent)
+	{
+		Instance.EmitSignal(SignalName.NoMoreRobotSelected, buildingComponent);
 	}
 
 	public static void EmitBuildingDestroyed(BuildingComponent buildingComponent)
@@ -56,5 +72,10 @@ public partial class GameEvents : Node
 	public static void EmitBuildingStuck(BuildingComponent buildingComponent)
 	{
 		Instance.EmitSignal(SignalName.BuildingStuck, buildingComponent);
+	}
+	
+	public static void EmitBuildingUnStuck(BuildingComponent buildingComponent)
+	{
+		Instance.EmitSignal(SignalName.BuildingUnStuck, buildingComponent);
 	}
 }

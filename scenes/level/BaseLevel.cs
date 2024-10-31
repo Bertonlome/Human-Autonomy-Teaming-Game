@@ -1,3 +1,6 @@
+using System;
+using Game.Autoload;
+using Game.Component;
 using Game.Manager;
 using Game.Resources.Level;
 using Game.Ui;
@@ -12,6 +15,8 @@ public partial class BaseLevel : Node
 	[Export]
 	private PackedScene levelCompleteScreenScene;
 	[Export]
+	private PackedScene selectedRobotUIScene;
+	[Export]
 	private LevelDefinitionResource levelDefinitionResource;
 	[Export]
 	private PackedScene escapeMenuScene;
@@ -24,6 +29,7 @@ public partial class BaseLevel : Node
 	private GameUI gameUI;
 	private BuildingManager buildingManager;
 	private bool isComplete;
+	SelectedRobotUI selectedRobotUI;
 
 	public override void _Ready()
 	{
@@ -43,7 +49,10 @@ public partial class BaseLevel : Node
 		gridManager.SetGoldMinePosition(gridManager.ConvertWorldPositionToTilePosition(goldMine.GlobalPosition));
 
 		gridManager.GridStateUpdated += OnGridStateUpdated;
+
+		GameEvents.Instance.Connect(GameEvents.SignalName.RobotSelected, Callable.From<BuildingComponent>(OnRobotSelected));
 	}
+
 
     public override void _UnhandledInput(InputEvent evt)
     {
@@ -73,5 +82,12 @@ public partial class BaseLevel : Node
 		{
 			ShowLevelComplete();
 		}
+	}
+
+	private void OnRobotSelected(BuildingComponent buildingComponent)
+	{
+		selectedRobotUI = selectedRobotUIScene.Instantiate<SelectedRobotUI>();
+		AddChild(selectedRobotUI);
+		selectedRobotUI.selectedBuildingComponent = buildingComponent;
 	}
 }

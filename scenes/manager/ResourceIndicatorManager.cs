@@ -53,7 +53,6 @@ public partial class ResourceIndicatorManager : Node
 
 	private void HandleResourceTilesUpdated()
 	{
-		GD.Print("TEST");
 		var currentResourceTiles = gridManager.GetCollectedResourcetiles();
 		var newlyIndicatedTiles = currentResourceTiles.Except(indicatedTiles);
 		var toRemoveTiles = indicatedTiles.Except(currentResourceTiles);
