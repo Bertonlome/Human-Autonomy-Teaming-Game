@@ -223,28 +223,33 @@ texture_region_size = Vector2i(192, 192)
 0:0/0 = 0
 0:0/0/texture_origin = Vector2i(0, 64)
 0:0/0/custom_data_1 = true
+0:0/0/custom_data_4 = "tree"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_evcl8"]
 texture = ExtResource("3_8afw2")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
 0:0/0/custom_data_3 = true
+0:0/0/custom_data_4 = "big_bush"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vy377"]
 texture = ExtResource("4_r44bm")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
 0:0/0/custom_data_3 = true
+0:0/0/custom_data_4 = "medium_bush"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_i8xly"]
 texture = ExtResource("5_r8onc")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
+0:0/0/custom_data_4 = "plant_big"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_wm0ms"]
 texture = ExtResource("6_ohjl0")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
+0:0/0/custom_data_4 = "plant"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_od7h3"]
 texture = ExtResource("3_jlq83")
@@ -359,6 +364,7 @@ texture_region_size = Vector2i(192, 192)
 0:0/animation_frame_7/duration = 0.15
 0:0/0 = 0
 0:0/0/z_index = -1
+0:0/0/custom_data_4 = "foam"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_04vi6"]
 texture = ExtResource("6_eanwi")
@@ -393,22 +399,26 @@ texture = ExtResource("11_3cttr")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
 0:0/0/custom_data_3 = true
+0:0/0/custom_data_4 = "big_rock"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_pphwk"]
 texture = ExtResource("12_2qlw6")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
 0:0/0/custom_data_3 = true
+0:0/0/custom_data_4 = "medium_rock"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_deeh4"]
 texture = ExtResource("13_kl4so")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
+0:0/0/custom_data_4 = "small_rock"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_7kvb4"]
 texture = ExtResource("14_05tjv")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
+0:0/0/custom_data_4 = "small_bush"
 
 [resource]
 tile_size = Vector2i(64, 64)
@@ -429,6 +439,8 @@ custom_data_layer_2/name = "is_ignored"
 custom_data_layer_2/type = 1
 custom_data_layer_3/name = "is_rough_terrain"
 custom_data_layer_3/type = 1
+custom_data_layer_4/name = "landscape_type"
+custom_data_layer_4/type = 4
 sources/0 = SubResource("TileSetAtlasSource_3miq1")
 sources/1 = SubResource("TileSetAtlasSource_4ixhk")
 sources/2 = SubResource("TileSetAtlasSource_od7h3")

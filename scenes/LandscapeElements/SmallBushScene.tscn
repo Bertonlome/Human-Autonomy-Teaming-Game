@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c6vnp33w1isti"]
+
+[ext_resource type="Texture2D" uid="uid://dfjx0mu7fhmbi" path="res://assets/tiles/small bush.png" id="1_rjovm"]
+
+[node name="SmallBushScene" type="Sprite2D"]
+texture = ExtResource("1_rjovm")

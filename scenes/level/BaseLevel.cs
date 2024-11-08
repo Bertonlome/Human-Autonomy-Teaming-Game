@@ -44,7 +44,7 @@ public partial class BaseLevel : Node
 		buildingManager.SetStartingResourceCount(levelDefinitionResource.StartingResourceCount);
 
 		gameCamera.SetBoundingRect(baseTerrainTilemapLayer.GetUsedRect());
-		gameCamera.CenterOnPosition(baseBuilding.GlobalPosition);
+		gameCamera.Zoom = new Vector2((float)0.2, (float)0.2);
 
 		gridManager.SetGoldMinePosition(gridManager.ConvertWorldPositionToTilePosition(goldMine.GlobalPosition));
 
