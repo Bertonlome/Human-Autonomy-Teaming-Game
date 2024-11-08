@@ -104,6 +104,7 @@ public partial class BuildingComponent : Node2D
 		{
 			GD.PushError("BaseLevel node not found.");
 		}
+		Battery = this.BuildingResource.Battery;
 	}
 
     public override void _Process(double delta)
@@ -117,7 +118,7 @@ public partial class BuildingComponent : Node2D
             if (timer >= this.BuildingResource.moveInterval)
             {
 				var randDir = buildingManager.GetRandomDirection();
-        		GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
+        		//GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
                 buildingManager.MoveBuildingInDirectionAutomated(this, randDir);
                 timer = 0.0f; // Reset the timer
             }

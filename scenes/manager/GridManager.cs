@@ -19,12 +19,15 @@ public partial class GridManager : Node
 	[Signal]
 	public delegate void ResourceTilesUpdatedEventHandler(int collectedTiles);
 	[Signal]
+	public delegate void DiscoveredTileUpdatedEventHandler(Vector2I tile, string type);
+	[Signal]
 	public delegate void GridStateUpdatedEventHandler();
 
 	private HashSet<Vector2I> validBuildableTiles = new();
 	private HashSet<Vector2I> validBuildableAttackTiles = new();
 	private HashSet<Vector2I> allTilesInBuildingRadius = new();
 	private HashSet<Vector2I> collectedResourceTiles = new();
+	private HashSet<Vector2I> discoveredElementsTiles = new();
 	private HashSet<Vector2I> occupiedTiles = new();
 	private HashSet<Vector2I> dangerOccupiedTiles = new();
 	private HashSet<Vector2I> attackTiles = new();
@@ -73,6 +76,17 @@ public partial class GridManager : Node
 			return (layer, (bool)customData.GetCustomData(dataName));
 		}
 		return (null, false);
+	}
+
+	public string GetTileDiscoveredElements(Vector2I tilePosition)
+	{
+		foreach (var layer in allTilemapLayers)
+		{
+			var customData = layer.GetCellTileData(tilePosition);
+			if (customData == null || (bool)customData.GetCustomData(IS_IGNORED)) continue;
+			return (string)customData.GetCustomData("landscape_type");
+		}
+		return null;
 	}
 
 	public bool IsTilePositionInAnyBuildingRadius(Vector2I tilePosition)
@@ -170,10 +184,7 @@ public partial class GridManager : Node
 				return allTilesFromDictionary.Contains(tilePosition);
 			});
 	
-		//GD.Print("Nmbr of intersect with base : " +tilesInRadiusofRobotArrival.Intersect(baseAntennaCoveredTiles).Count());
-		//GD.Print("anytiles in radius ? " + anyTilesInRadius);
 		bool testfinal = (tilesInRadiusofRobotArrival.Intersect(baseAntennaCoveredTiles).Count() > 0) || anyTilesInRadius == true;
-		//GD.Print("Conjunction just to be sure : " + testfinal);
 
 		if((tilesInRadiusofRobotArrival.Intersect(baseAntennaCoveredTiles).Count() > 0) || anyTilesInRadius) return true;
 		else return true;
@@ -190,7 +201,7 @@ public partial class GridManager : Node
 
 	public void HighlightBuildableTiles(bool isAttackTiles = false)
 	{
-		foreach (var tilePosition in GetBuildableTileSet(isAttackTiles))
+		foreach (var tilePosition in GetValidTileSet())
 		{
 			highlightTilemapLayer.SetCell(tilePosition, 0, Vector2I.Zero);
 		}
@@ -329,6 +340,11 @@ public partial class GridManager : Node
 		return collectedResourceTiles.ToHashSet();
 	}
 
+	public HashSet<Vector2I> GetDiscoveredResourceTiles()
+	{
+		return discoveredElementsTiles.ToHashSet();
+	}
+
 	private bool WillBuildingDestructionCreateOrphanBuildings(BuildingComponent toDestroyBuildingComponent)
 	{
 		var dependentBuildings = BuildingComponent.GetNonDangerBuildingComponents(this)
@@ -448,6 +464,11 @@ public partial class GridManager : Node
 		return isAttackTiles ? validBuildableAttackTiles : validBuildableTiles;
 	}
 
+	private HashSet<Vector2I> GetValidTileSet()
+	{
+		return allTilesInBuildingRadius;
+	}
+
 	private List<TileMapLayer> GetAllTilemapLayers(Node2D rootNode)
 	{
 		var result = new List<TileMapLayer>();
@@ -510,7 +531,7 @@ public partial class GridManager : Node
 
 		if (buildingComponent.BuildingResource.BuildableRadius > 0)
 		{
-			var allTiles = GetTilesInRadius(tileArea, buildingComponent.BuildingResource.BuildableRadius, (_) => true);
+			var allTiles = GetTilesInRadiusFiltered(tileArea, buildingComponent.BuildingResource.BuildableRadius, (_) => true);
 			allTilesInBuildingRadius.UnionWith(allTiles);
 
 			var validTiles = GetValidTilesInRadius(tileArea, buildingComponent.BuildingResource.BuildableRadius);
@@ -534,7 +555,7 @@ public partial class GridManager : Node
 		{
 			var baseOccupiedTiles = buildingComponent.GetOccupiedCellPositions();
 			var tileArea = buildingComponent.GetTileArea();
-			var allTiles = GetTilesInRadius(tileArea, buildingComponent.BuildingResource.BuildableRadius, (_) => true);
+			var allTiles = GetTilesInRadiusFiltered(tileArea, buildingComponent.BuildingResource.BuildableRadius, (_) => true);
 			baseAntennaCoveredTiles = allTiles.ToHashSet();
 		}
 	}
@@ -554,12 +575,30 @@ public partial class GridManager : Node
 		EmitSignal(SignalName.GridStateUpdated);
 	}
 
+	private void UpdateDiscoveredTiles(BuildingComponent buildingComponent)
+	{
+		var tileArea = buildingComponent.GetTileArea();
+		var discoveredTiles = GetDiscoveredTilesInRadius(tileArea, buildingComponent.BuildingResource.VisionRadius);
+
+		var oldDiscoveredTileCount = discoveredElementsTiles.Count;
+		discoveredElementsTiles.UnionWith(discoveredTiles.Keys);
+
+		if (oldDiscoveredTileCount != discoveredElementsTiles.Count)
+		{
+			foreach(var entry in discoveredTiles)
+			{
+			EmitSignal(SignalName.DiscoveredTileUpdated, entry.Key, entry.Value);
+			}
+		}
+		EmitSignal(SignalName.GridStateUpdated);
+	}
+
 	private void UpdateAttackTiles(BuildingComponent buildingComponent)
 	{
 		if (!buildingComponent.BuildingResource.IsAttackBuilding()) return;
 
 		var tileArea = buildingComponent.GetTileArea();
-		var newAttackTiles = GetTilesInRadius(tileArea, buildingComponent.BuildingResource.AttackRadius, (_) => true)
+		var newAttackTiles = GetTilesInRadiusFiltered(tileArea, buildingComponent.BuildingResource.AttackRadius, (_) => true)
 			.ToHashSet();
 		attackBuildingToTiles[buildingComponent] = newAttackTiles;
 		attackTiles.UnionWith(newAttackTiles);
@@ -583,6 +622,7 @@ public partial class GridManager : Node
 		foreach (var buildingComponent in buildingComponents)
 		{
 			UpdateBuildingComponentGridState(buildingComponent);
+			UpdateDiscoveredTiles(buildingComponent);
 		}
 		CheckStuckRobotNearby();
 		CheckDangerBuildingDestruction();
@@ -643,7 +683,7 @@ public partial class GridManager : Node
 		return distanceSquared <= radius * radius;
 	}
 
-	private List<Vector2I> GetTilesInRadius(Rect2I tileArea, int radius, Func<Vector2I, bool> filterFn)
+	private List<Vector2I> GetTilesInRadiusFiltered(Rect2I tileArea, int radius, Func<Vector2I, bool> filterFn)
 	{
 		var result = new List<Vector2I>();
 		var tileAreaF = tileArea.ToRect2F();
@@ -662,9 +702,28 @@ public partial class GridManager : Node
 		return result;
 	}
 
+		private List<Vector2I> GetTilesInRadius(Rect2I tileArea, int radius)
+	{
+		var result = new List<Vector2I>();
+		var tileAreaF = tileArea.ToRect2F();
+		var tileAreaCenter = tileAreaF.GetCenter();
+		var radiusMod = Mathf.Max(tileAreaF.Size.X, tileAreaF.Size.Y) / 2;
+
+		for (var x = tileArea.Position.X - radius; x < tileArea.End.X + radius; x++)
+		{
+			for (var y = tileArea.Position.Y - radius; y < tileArea.End.Y + radius; y++)
+			{
+				var tilePosition = new Vector2I(x, y);
+				if (!IsTileInsideCircle(tileAreaCenter, tilePosition, radius + radiusMod)) continue;
+				result.Add(tilePosition);
+			}
+		}
+		return result;
+	}
+
 	private List<Vector2I> GetValidTilesInRadius(Rect2I tileArea, int radius)
 	{
-		return GetTilesInRadius(tileArea, radius, (tilePosition) =>
+		return GetTilesInRadiusFiltered(tileArea, radius, (tilePosition) =>
 		{
 			return GetTileCustomData(tilePosition, IS_BUILDABLE).Item2 || tilePosition == goldMinePosition;
 		});
@@ -672,10 +731,26 @@ public partial class GridManager : Node
 
 	private List<Vector2I> GetResourceTilesInRadius(Rect2I tileArea, int radius)
 	{
-		return GetTilesInRadius(tileArea, radius, (tilePosition) =>
+		return GetTilesInRadiusFiltered(tileArea, radius, (tilePosition) =>
 		{
 			return GetTileCustomData(tilePosition, IS_WOOD).Item2;
 		});
+	}
+
+	private Dictionary<Vector2I, string> GetDiscoveredTilesInRadius(Rect2I tileArea, int radius)
+	{
+		Dictionary<Vector2I, string> tileToLandscapeType = new();
+		var tilesInRadius  = GetTilesInRadius(tileArea, radius);
+		string type;
+		foreach (var tile in tilesInRadius)
+		{
+			type = GetTileDiscoveredElements(tile);
+			if(type != "")
+			{
+				tileToLandscapeType.Add(tile, type);
+			}
+		}
+		return tileToLandscapeType;
 	}
 
 	public void UpdateBuildingComponentGridState(BuildingComponent buildingComponent)
@@ -690,6 +765,7 @@ public partial class GridManager : Node
 	private void OnBuildingPlaced(BuildingComponent buildingComponent)
 	{
 		UpdateBuildingComponentGridState(buildingComponent);
+		UpdateDiscoveredTiles(buildingComponent);
 		if(baseAntennaCoveredTiles.Count() == 0)
 		{
 			SetBaseAntennaCoverage();

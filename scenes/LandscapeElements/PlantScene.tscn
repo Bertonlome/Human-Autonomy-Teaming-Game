@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://de70vqw1rx75w"]
+
+[ext_resource type="Texture2D" uid="uid://b8qidkdedb3bv" path="res://assets/tiles/plant.png" id="1_nyegg"]
+
+[node name="PlantScene" type="Sprite2D"]
+texture = ExtResource("1_nyegg")

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://qes078q2x7ks"]
+
+[ext_resource type="Texture2D" uid="uid://cmwmqd34wgapq" path="res://assets/tiles/big_rock.png" id="1_hgf7r"]
+
+[node name="BigRockScene" type="Sprite2D"]
+texture = ExtResource("1_hgf7r")

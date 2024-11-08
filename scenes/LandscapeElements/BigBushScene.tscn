@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://5l4qenm6ohdm"]
+
+[ext_resource type="Texture2D" uid="uid://bultjk7tum5ne" path="res://assets/tiles/big_bush.png" id="1_ex5o0"]
+
+[node name="BigBushScene" type="Sprite2D"]
+texture = ExtResource("1_ex5o0")

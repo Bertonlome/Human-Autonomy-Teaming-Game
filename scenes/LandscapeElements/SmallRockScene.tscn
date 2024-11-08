@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cq4eyveg6twgu"]
+
+[ext_resource type="Texture2D" uid="uid://y7cwnt11mst0" path="res://assets/tiles/small_rock.png" id="1_i2nbg"]
+
+[node name="SmallRockScene" type="Sprite2D"]
+texture = ExtResource("1_i2nbg")

@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="BuildingResource" load_steps=3 format=3 uid="uid://c6ijwfjsh0ejg"]
+[gd_resource type="Resource" script_class="BuildingResource" load_steps=4 format=3 uid="uid://c6ijwfjsh0ejg"]
 
 [ext_resource type="PackedScene" uid="uid://cv6tnl0bv6sfg" path="res://scenes/building/Base.tscn" id="1_e17cx"]
 [ext_resource type="Script" path="res://resources/building/BuildingResource.cs" id="1_oqr3e"]
+[ext_resource type="PackedScene" uid="uid://cdwcq1uh666vw" path="res://scenes/building/sprite/BaseSprite2D.tscn" id="2_126ep"]
 
 [resource]
 script = ExtResource("1_oqr3e")
@@ -11,9 +12,12 @@ IsBase = true
 IsDeletable = false
 IsAerial = false
 Dimensions = Vector2i(5, 2)
+StuckChancePerMove = 0.0
+moveInterval = 1.0
 ResourceCost = 0
 BuildableRadius = 8
 ResourceRadius = 0
 DangerRadius = 0
 AttackRadius = 0
 BuildingScene = ExtResource("1_e17cx")
+SpriteScene = ExtResource("2_126ep")

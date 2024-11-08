@@ -88,13 +88,13 @@ public partial class GameCamera : Camera2D
 
 	public override void _UnhandledInput(InputEvent evt)
 	{
-		if (evt.IsActionPressed(ACTION_SCROLL_FORWARD) && Zoom.X <= 1.5)
+		if (evt.IsActionPressed(ACTION_SCROLL_FORWARD) && Zoom.X <= 1.5f)
 		{
-			Zoom = new Vector2((float)(Zoom.X +  0.1), (float)(Zoom.Y + 0.1));
+			Zoom = new Vector2((float)(Zoom.X +  0.1f), (float)(Zoom.Y + 0.1f));
 		}
 		if (evt.IsActionPressed(ACTION_SCROLL_BACKWARD) && Zoom.X >= 0.2f)
 		{
-			Zoom = new Vector2((float)(Zoom.X -  0.1), (float)(Zoom.Y - 0.1));
+			Zoom = new Vector2((float)(Zoom.X -  0.1f), (float)(Zoom.Y - 0.1f));
 		}
 	}
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bipxsk1snp5nq"]
+[gd_scene load_steps=20 format=3 uid="uid://bipxsk1snp5nq"]
 
 [ext_resource type="Script" path="res://scenes/level/BaseLevel.cs" id="1_oetcv"]
 [ext_resource type="TileSet" uid="uid://be2deub8k3gjr" path="res://resources/highlight_tileset.tres" id="2_8gl76"]
@@ -14,7 +14,11 @@
 [ext_resource type="PackedScene" uid="uid://bocvnu5ijh44c" path="res://scenes/manager/ResourceIndicatorManager.tscn" id="6_2ofsf"]
 [ext_resource type="PackedScene" uid="uid://bh0jxs1odudla" path="res://scenes/building/BuildingGhost.tscn" id="8_c56o1"]
 [ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/GoldMine.tscn" id="9_87w6t"]
+[ext_resource type="Resource" uid="uid://c6ijwfjsh0ejg" path="res://resources/building/base.tres" id="9_y4a1x"]
+[ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/ground_robot.tres" id="10_l7o86"]
+[ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="11_vgav0"]
 [ext_resource type="PackedScene" uid="uid://b0eal3gs3jkha" path="res://scenes/manager/FloatingTextManager.tscn" id="13_p7dg5"]
+[ext_resource type="PackedScene" uid="uid://bllsmwyng6v5f" path="res://scenes/manager/DiscoveredElementsManager.tscn" id="16_6uy6k"]
 
 [node name="BaseLevel" type="Node"]
 script = ExtResource("1_oetcv")
@@ -34,6 +38,7 @@ baseTerrainTilemapLayer = NodePath("../YSortRoot/BaseTerrainTileMapLayer")
 
 [node name="GameUI" parent="." node_paths=PackedStringArray("buildingManager") instance=ExtResource("3_b6i5e")]
 buildingManager = NodePath("../BuildingManager")
+buildingResources = Array[Object]([ExtResource("9_y4a1x"), ExtResource("10_l7o86"), ExtResource("11_vgav0")])
 
 [node name="GameCamera" parent="." instance=ExtResource("5_gni5d")]
 
@@ -54,6 +59,9 @@ unique_name_in_owner = true
 
 [node name="GoldMine" parent="YSortRoot" instance=ExtResource("9_87w6t")]
 unique_name_in_owner = true
+
+[node name="DiscoveredElementsManager" parent="YSortRoot" node_paths=PackedStringArray("gridManager") instance=ExtResource("16_6uy6k")]
+gridManager = NodePath("../../GridManager")
 
 [node name="HighlightTileMapLayer" type="TileMapLayer" parent="YSortRoot"]
 modulate = Color(1, 1, 1, 0.705882)
