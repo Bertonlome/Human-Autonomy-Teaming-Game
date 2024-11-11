@@ -31,67 +31,72 @@ public partial class DiscoveredElementsManager : Node
 	[Export]
 	private PackedScene bigRockScene;
 	
-	private Dictionary<Vector2I, DiscoveredElements> tileToDiscoveredElements = new();
+	private Dictionary<Vector2I, Node2D> tileToDiscoveredElements = new();
 	private Dictionary<Vector2I, DiscoveredElements> tiletoDarkenedElements = new();
 	private Dictionary<Vector2I, string> tiletoTypeElementsString = new();
 
 	private HashSet<Vector2I> discoveredTiles = new();
 	private HashSet<Vector2I> displayedElementTiles = new();
+	DiscoveredElements discoveredElements;
 
 
 	public override void _Ready()
 	{
 		gridManager.DiscoveredTileUpdated += OnDiscoveredTileUpdated;
+		discoveredElements = DiscoveredElementsScene.Instantiate<DiscoveredElements>();
+		AddChild(discoveredElements);
 	}
 
 	private void UpdateIndicators(Vector2I tile, string type)
 	{
 		if (displayedElementTiles.Contains(tile)) return;
-		var element = DiscoveredElementsScene.Instantiate<DiscoveredElements>();
-		AddChild(element);
-		element.GlobalPosition = tile * 64;
-		tileToDiscoveredElements[tile] = element;
 
-		var elementNode2D = element.GetNode<Node2D>("%ElementNode2D");
+		var elementNode2D = discoveredElements.GetNode<Node2D>("%ElementNode2D");
+
+		Node2D elementHolder = new Node2D();
+		elementNode2D.AddChild(elementHolder);
+		elementHolder.GlobalPosition = tile * 64;
+		tileToDiscoveredElements[tile] = elementHolder;
+
 		Node2D elementScene;
 
 		switch(type)
 		{
 			case "plant":
 				elementScene = plantScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 			case "plant_big":
 				elementScene = plantBigScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 			case "medium_bush":
 				elementScene = mediumBushScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 			case "big_bush":
 				elementScene = bigBushScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 			case "small_bush":
 				elementScene = smallBushScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 			case "small_rock":
 				elementScene = smallRockScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 			case "medium_rock":
 				elementScene = mediumRockScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
-			case "big rock":
+			case "big_rock":
 				elementScene = bigRockScene.Instantiate<Sprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 			case "tree":
 				elementScene = treeScene.Instantiate<AnimatedSprite2D>();
-				elementNode2D.AddChild(elementScene);
+				elementHolder.AddChild(elementScene);
 				break;
 		}
 

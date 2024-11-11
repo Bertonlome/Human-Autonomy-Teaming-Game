@@ -3,4 +3,5 @@
 [ext_resource type="Texture2D" uid="uid://k3gfd2yrseeu" path="res://assets/tiles/medium_rock.png" id="1_n83wb"]
 
 [node name="MediumRockScene" type="Sprite2D"]
+position = Vector2(32, 32)
 texture = ExtResource("1_n83wb")

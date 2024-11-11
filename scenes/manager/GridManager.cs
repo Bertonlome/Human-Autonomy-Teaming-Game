@@ -22,7 +22,12 @@ public partial class GridManager : Node
 	public delegate void DiscoveredTileUpdatedEventHandler(Vector2I tile, string type);
 	[Signal]
 	public delegate void GridStateUpdatedEventHandler();
+	[Signal]
+	public delegate void GroundRobotTouchingMonolithEventHandler();
+	[Signal]
+	public delegate void AerialRobotHasVisionOfMonolithEventHandler();
 
+	private HashSet<Vector2I> allTilesBuildableOnTheMap = new();
 	private HashSet<Vector2I> validBuildableTiles = new();
 	private HashSet<Vector2I> validBuildableAttackTiles = new();
 	private HashSet<Vector2I> allTilesInBuildingRadius = new();
@@ -32,6 +37,7 @@ public partial class GridManager : Node
 	private HashSet<Vector2I> dangerOccupiedTiles = new();
 	private HashSet<Vector2I> attackTiles = new();
 	private HashSet<Vector2I> baseAntennaCoveredTiles = new();
+	private HashSet<Vector2I> monolithTiles = new();
 
 	[Export]
 	private TileMapLayer highlightTilemapLayer;
@@ -45,8 +51,6 @@ public partial class GridManager : Node
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> attackBuildingToTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingStuckToTiles = new();
 
-	private Vector2I goldMinePosition;
-
 	public override void _Ready()
 	{
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingPlaced, Callable.From<BuildingComponent>(OnBuildingPlaced));
@@ -59,12 +63,13 @@ public partial class GridManager : Node
 
 
 		allTilemapLayers = GetAllTilemapLayers(baseTerrainTilemapLayer);
+		allTilesBuildableOnTheMap = GetAllBaseTerrainTiles(baseTerrainTilemapLayer).ToHashSet();
 		MapTileMapLayersToElevationLayers();
 	}
 
-	public void SetGoldMinePosition(Vector2I position)
+	public void SetMonolithPosition(Vector2I position)
 	{
-		goldMinePosition = position;
+		monolithTiles.Add(position);
 	}
 
 	public (TileMapLayer, bool) GetTileCustomData(Vector2I tilePosition, string dataName)
@@ -94,7 +99,7 @@ public partial class GridManager : Node
 		return allTilesInBuildingRadius.Contains(tilePosition);
 	}
 
-	public bool IsTileAreaBuildable(Rect2I tileArea, bool isAttackTiles = false)
+	public bool IsTileAreaBuildable(Rect2I tileArea, bool isAttackTiles = false, bool isBase = false)
 	{
 		IEnumerable<Vector2I> tileSetToCheck;
 		var tiles = tileArea.ToTiles();
@@ -106,6 +111,10 @@ public partial class GridManager : Node
 		if(BuildingManager.selectedBuildingComponent != null)
 		{
 			tileSetToCheck = GetBuildableTileSet(isAttackTiles).Except(BuildingManager.selectedBuildingComponent.GetOccupiedCellPositions());
+		}
+		else if (isBase)
+		{
+			tileSetToCheck = allTilesBuildableOnTheMap;
 		}
 		else
 		{
@@ -488,6 +497,23 @@ public partial class GridManager : Node
 		}
 		return result;
 	}
+
+	private List<Vector2I> GetAllBaseTerrainTiles(TileMapLayer tileMapLayer)
+	{
+		// Loop through all possible cells in the TileMap
+        var usedTiles = tileMapLayer.GetUsedCells();
+    	// Filter tiles where the custom data indicates they are buildable
+    	var buildableTiles = usedTiles
+        .Where(tilePosition =>
+        {
+            var (tileMapLayer, isBuildable) = GetTileCustomData(tilePosition, IS_BUILDABLE);
+            return isBuildable;
+        })
+        .ToList();
+		return buildableTiles;
+	}
+
+
 	private void MapTileMapLayersToElevationLayers()
 	{
 		foreach (var layer in allTilemapLayers)
@@ -623,6 +649,8 @@ public partial class GridManager : Node
 		{
 			UpdateBuildingComponentGridState(buildingComponent);
 			UpdateDiscoveredTiles(buildingComponent);
+			CheckGroundRobotTouchingMonolith(buildingComponent);
+			CheckAerialRobotVisualMonolith(buildingComponent);
 		}
 		CheckStuckRobotNearby();
 		CheckDangerBuildingDestruction();
@@ -671,6 +699,34 @@ public partial class GridManager : Node
 			if(isNear)
 			{
 				robot.SetToUnstuck();
+			}
+		}
+	}
+
+	private void CheckGroundRobotTouchingMonolith(BuildingComponent buildingComponent)
+	{
+		if(buildingComponent.BuildingResource.IsAerial || buildingComponent.BuildingResource.IsBase) return;
+		foreach(var adjacentTile in buildingComponent.GetTileAndAdjacent())
+		{
+			if (monolithTiles.Contains(adjacentTile))
+			{
+				EmitSignal(SignalName.GroundRobotTouchingMonolith);
+				return;
+			}
+		}
+	}
+
+	private void CheckAerialRobotVisualMonolith(BuildingComponent buildingComponent)
+	{
+		if(buildingComponent.BuildingResource.IsAerial)
+		{
+			foreach(var visionTile in GetTilesInRadius(buildingComponent.GetAreaOccupied(ConvertWorldPositionToTilePosition(buildingComponent.GlobalPosition)),buildingComponent.BuildingResource.VisionRadius))
+			{
+				if (monolithTiles.Contains(visionTile))
+				{
+					EmitSignal(SignalName.AerialRobotHasVisionOfMonolith);
+					return;
+				}
 			}
 		}
 	}
@@ -725,7 +781,7 @@ public partial class GridManager : Node
 	{
 		return GetTilesInRadiusFiltered(tileArea, radius, (tilePosition) =>
 		{
-			return GetTileCustomData(tilePosition, IS_BUILDABLE).Item2 || tilePosition == goldMinePosition;
+			return GetTileCustomData(tilePosition, IS_BUILDABLE).Item2 || monolithTiles.Contains(tilePosition);
 		});
 	}
 

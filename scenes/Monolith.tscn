@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://bky5c7di5gcc0"]
+
+[ext_resource type="Script" path="res://scenes/Monolith.cs" id="1_0vk1o"]
+[ext_resource type="Texture2D" uid="uid://b3sr4a2hk1aer" path="res://assets/forestmonolith_inactive.png" id="3_7gpmp"]
+
+[node name="Monolith" type="Node2D"]
+y_sort_enabled = true
+position = Vector2(32, 32)
+script = ExtResource("1_0vk1o")
+
+[node name="UpDownRoot" type="Node2D" parent="."]
+unique_name_in_owner = true
+y_sort_enabled = true
+position = Vector2(0, 32)
+
+[node name="MonolithSprite2D" type="Sprite2D" parent="UpDownRoot"]
+unique_name_in_owner = true
+texture = ExtResource("3_7gpmp")
+centered = false
+offset = Vector2(-18, -119)

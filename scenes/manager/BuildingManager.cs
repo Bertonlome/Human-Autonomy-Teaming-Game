@@ -22,6 +22,8 @@ public partial class BuildingManager : Node
 
 	[Signal]
 	public delegate void AvailableResourceCountChangedEventHandler(int availableResourceCount);
+	[Signal]
+	public delegate void BasePlacedEventHandler();
 
 	[Export]
 	private GridManager gridManager;
@@ -141,7 +143,7 @@ public partial class BuildingManager : Node
 				}
 				else if (toPlaceBuildingResource != null && evt.IsActionPressed(ACTION_LEFT_CLICK))
 				{
-					PlaceBuildingAtHoveredCellPosition();
+					PlaceBuildingAtHoveredCellPosition(toPlaceBuildingResource);
 					GetViewport().SetInputAsHandled();
 				}
 				break;
@@ -194,7 +196,19 @@ public partial class BuildingManager : Node
 			gridManager.HighlightDangerOccupiedTiles();
 		}
 
-		if (IsBuildingResourcePlaceableAtArea(hoveredGridArea))
+		if(toPlaceBuildingResource.IsBase)
+		{
+			if(IsBasePlaceableAtArea(hoveredGridArea))
+			{
+				gridManager.HighlightExpandedBuildableTiles(hoveredGridArea, toPlaceBuildingResource.BuildableRadius);
+				buildingGhost.SetValid();
+			}
+			else
+			{
+				buildingGhost.SetInvalid();
+			}
+		}
+		else if (IsBuildingResourcePlaceableAtArea(hoveredGridArea))
 		{
 			if (toPlaceBuildingResource.IsAttackBuilding())
 			{
@@ -214,18 +228,33 @@ public partial class BuildingManager : Node
 		buildingGhost.DoHoverAnimation();
 	}
 
-	private void PlaceBuildingAtHoveredCellPosition()
+	private void EmitSignalBasePlaced()
+	{
+		EmitSignal(SignalName.BasePlaced);
+	}
+
+	private void PlaceBuildingAtHoveredCellPosition(BuildingResource buildingResource)
 	{
 		if(!CanAffordBuilding())
 		{
 			FloatingTextManager.ShowMessageAtMousePosition("Can't afford!");
 			return;
 		}
-		if(!IsBuildingResourcePlaceableAtArea(hoveredGridArea))
+		if(buildingResource.IsBase)
+		{
+			if(!IsBasePlaceableAtArea(hoveredGridArea))
+			{
+				FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
+				return;
+			}
+			CallDeferred("EmitSignalBasePlaced");
+		}
+		else if(!IsBuildingResourcePlaceableAtArea(hoveredGridArea))
 		{
 			FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
 			return;
 		}
+		
 		var building = toPlaceBuildingResource.BuildingScene.Instantiate<Node2D>();
 		ySortRoot.AddChild(building);
 
@@ -306,6 +335,12 @@ public partial class BuildingManager : Node
 	public void MoveBuildingInDirectionAutomated(BuildingComponent buildingComponent, StringName direction)
 	{
 		if(buildingComponent.IsStuck) return;
+
+		if (selectedBuildingComponent.Battery <= 0)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", selectedBuildingComponent);
+			return;
+		}
 
 
 		Vector2I directionVector;
@@ -466,6 +501,13 @@ public partial class BuildingManager : Node
 		var isAttackTiles = toPlaceBuildingResource.IsAttackBuilding();
 		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, isAttackTiles);
 		return allTilesBuildable && CanAffordBuilding();
+	}
+
+	private bool IsBasePlaceableAtArea(Rect2I tileArea)
+	{
+		var isBase = true;
+		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, false, isBase);
+		return allTilesBuildable;
 	}
 
 	private bool IsBuildingComponentPlaceableAtArea(Rect2I tileArea)

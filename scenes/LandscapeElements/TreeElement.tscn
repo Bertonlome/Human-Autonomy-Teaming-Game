@@ -39,6 +39,7 @@ animations = [{
 }]
 
 [node name="TreeElement" type="AnimatedSprite2D"]
+position = Vector2(32, -32)
 sprite_frames = SubResource("SpriteFrames_46xrq")
 autoplay = "default"
 frame_progress = 0.397486

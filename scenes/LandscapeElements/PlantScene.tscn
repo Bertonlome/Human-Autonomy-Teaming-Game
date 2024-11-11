@@ -3,4 +3,5 @@
 [ext_resource type="Texture2D" uid="uid://b8qidkdedb3bv" path="res://assets/tiles/plant.png" id="1_nyegg"]
 
 [node name="PlantScene" type="Sprite2D"]
+position = Vector2(32, 32)
 texture = ExtResource("1_nyegg")

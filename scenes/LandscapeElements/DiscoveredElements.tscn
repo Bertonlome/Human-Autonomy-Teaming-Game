@@ -3,8 +3,10 @@
 [ext_resource type="Script" path="res://scenes/LandscapeElements/DiscoveredElements.cs" id="1_nwpe3"]
 
 [node name="DiscoveredElements" type="Node2D"]
+y_sort_enabled = true
 script = ExtResource("1_nwpe3")
 
 [node name="ElementNode2D" type="Node2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(32, 32)
+y_sort_enabled = true
+position = Vector2(32, -32)

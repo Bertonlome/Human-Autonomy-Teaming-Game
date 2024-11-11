@@ -3,4 +3,5 @@
 [ext_resource type="Texture2D" uid="uid://bultjk7tum5ne" path="res://assets/tiles/big_bush.png" id="1_ex5o0"]
 
 [node name="BigBushScene" type="Sprite2D"]
+position = Vector2(32, 32)
 texture = ExtResource("1_ex5o0")
