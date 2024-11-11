@@ -4,3 +4,4 @@
 
 [node name="SmallBushScene" type="Sprite2D"]
 texture = ExtResource("1_rjovm")
+offset = Vector2(32, 32)

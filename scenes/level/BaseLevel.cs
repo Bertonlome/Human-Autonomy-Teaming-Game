@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Game.Autoload;
 using Game.Component;
 using Game.Manager;
@@ -22,7 +23,7 @@ public partial class BaseLevel : Node
 	private PackedScene escapeMenuScene;
 
 	private GridManager gridManager;
-	private GoldMine goldMine;
+	private Monolith monolith;
 	private GameCamera gameCamera;
 	private Node2D baseBuilding;
 	private TileMapLayer baseTerrainTilemapLayer;
@@ -34,25 +35,33 @@ public partial class BaseLevel : Node
 	public override void _Ready()
 	{
 		gridManager = GetNode<GridManager>("GridManager");
-		goldMine = GetNode<GoldMine>("%GoldMine");
+		monolith = GetNode<Monolith>("%Monolith");
 		gameCamera = GetNode<GameCamera>("GameCamera");
 		baseTerrainTilemapLayer = GetNode<TileMapLayer>("%BaseTerrainTileMapLayer");
-		baseBuilding = GetNode<Node2D>("%Base");
 		gameUI = GetNode<GameUI>("GameUI");
 		buildingManager = GetNode<BuildingManager>("BuildingManager");
 
 		buildingManager.SetStartingResourceCount(levelDefinitionResource.StartingResourceCount);
+		buildingManager.BasePlaced += OnBasePlaced;
 
 		gameCamera.SetBoundingRect(baseTerrainTilemapLayer.GetUsedRect());
 		gameCamera.Zoom = new Vector2((float)0.2, (float)0.2);
+		gameCamera.CameraZoom += OnCameraZoom;
 
-		gridManager.SetGoldMinePosition(gridManager.ConvertWorldPositionToTilePosition(goldMine.GlobalPosition));
+		gridManager.SetMonolithPosition(gridManager.ConvertWorldPositionToTilePosition(monolith.GlobalPosition));
 
-		gridManager.GridStateUpdated += OnGridStateUpdated;
+		gridManager.AerialRobotHasVisionOfMonolith += OnAerialRobotHasVisionOfMonolith;
+		gridManager.GroundRobotTouchingMonolith += OnGroundRobotTouchingMonolith;
+
 
 		GameEvents.Instance.Connect(GameEvents.SignalName.RobotSelected, Callable.From<BuildingComponent>(OnRobotSelected));
 	}
 
+	public void OnBasePlaced()
+	{
+		baseBuilding = BuildingComponent.GetValidBuildingComponents(this)
+			.First((buildingComponent) => buildingComponent.BuildingResource.IsBase);
+	}
 
     public override void _UnhandledInput(InputEvent evt)
     {
@@ -70,18 +79,27 @@ public partial class BaseLevel : Node
 		SaveManager.SavelevelCompletion(levelDefinitionResource);
 		var levelCompleteScreen = levelCompleteScreenScene.Instantiate<LevelCompleteScreen>();
 		AddChild(levelCompleteScreen);
-		goldMine.SetActive();
+		monolith.SetActive();
 		gameUI.HideUI();
 	}
 
-	private void OnGridStateUpdated()
+	private void OnCameraZoom()
 	{
-		if(isComplete) return;
-		var goldMineTilePosition = gridManager.ConvertWorldPositionToTilePosition(goldMine.GlobalPosition);
-		if (gridManager.IsTilePositionInAnyBuildingRadius(goldMineTilePosition))
+		if(baseBuilding != null)
 		{
-			ShowLevelComplete();
+			gameCamera.CenterOnPosition(baseBuilding.GlobalPosition);
 		}
+	}
+
+	private void OnAerialRobotHasVisionOfMonolith()
+	{
+		monolith.SetVisible();
+	}
+
+	private void OnGroundRobotTouchingMonolith()
+	{
+		if (isComplete) return;
+		ShowLevelComplete();
 	}
 
 	private void OnRobotSelected(BuildingComponent buildingComponent)

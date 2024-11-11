@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://bipxsk1snp5nq"]
+[gd_scene load_steps=19 format=3 uid="uid://bipxsk1snp5nq"]
 
 [ext_resource type="Script" path="res://scenes/level/BaseLevel.cs" id="1_oetcv"]
 [ext_resource type="TileSet" uid="uid://be2deub8k3gjr" path="res://resources/highlight_tileset.tres" id="2_8gl76"]
@@ -10,10 +10,9 @@
 [ext_resource type="PackedScene" uid="uid://dqoljijx36x6a" path="res://scenes/ui/GameUI.tscn" id="3_b6i5e"]
 [ext_resource type="PackedScene" uid="uid://cx2k42pew5v1f" path="res://scenes/ui/EscapeMenu.tscn" id="3_qe475"]
 [ext_resource type="PackedScene" uid="uid://du6yrfdf7n3so" path="res://scenes/GameCamera.tscn" id="5_gni5d"]
-[ext_resource type="PackedScene" uid="uid://cv6tnl0bv6sfg" path="res://scenes/building/Base.tscn" id="5_xjsmf"]
 [ext_resource type="PackedScene" uid="uid://bocvnu5ijh44c" path="res://scenes/manager/ResourceIndicatorManager.tscn" id="6_2ofsf"]
 [ext_resource type="PackedScene" uid="uid://bh0jxs1odudla" path="res://scenes/building/BuildingGhost.tscn" id="8_c56o1"]
-[ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/GoldMine.tscn" id="9_87w6t"]
+[ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/Monolith.tscn" id="9_87w6t"]
 [ext_resource type="Resource" uid="uid://c6ijwfjsh0ejg" path="res://resources/building/base.tres" id="9_y4a1x"]
 [ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/ground_robot.tres" id="10_l7o86"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="11_vgav0"]
@@ -54,11 +53,9 @@ tile_set = ExtResource("2_ik0op")
 y_sort_enabled = true
 tile_set = ExtResource("2_ik0op")
 
-[node name="Base" parent="YSortRoot" instance=ExtResource("5_xjsmf")]
+[node name="Monolith" parent="YSortRoot" instance=ExtResource("9_87w6t")]
 unique_name_in_owner = true
-
-[node name="GoldMine" parent="YSortRoot" instance=ExtResource("9_87w6t")]
-unique_name_in_owner = true
+visible = false
 
 [node name="DiscoveredElementsManager" parent="YSortRoot" node_paths=PackedStringArray("gridManager") instance=ExtResource("16_6uy6k")]
 gridManager = NodePath("../../GridManager")

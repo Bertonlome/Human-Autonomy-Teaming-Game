@@ -5,5 +5,5 @@
 [resource]
 script = ExtResource("1_bfefd")
 Id = "concrete_bricks"
-StartingResourceCount = 100
+StartingResourceCount = 104
 LevelScenePath = "res://scenes/level/Level4.tscn"

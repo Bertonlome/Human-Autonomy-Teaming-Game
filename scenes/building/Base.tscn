@@ -1,7 +1,8 @@
-[gd_scene load_steps=10 format=3 uid="uid://cv6tnl0bv6sfg"]
+[gd_scene load_steps=11 format=3 uid="uid://cv6tnl0bv6sfg"]
 
 [ext_resource type="PackedScene" uid="uid://ce2hqhobmdg47" path="res://scenes/component/BuildingComponent.tscn" id="1_o8g7c"]
 [ext_resource type="PackedScene" uid="uid://cbvhb7esh2723" path="res://BaseSprite2D.tscn" id="2_8hh2p"]
+[ext_resource type="PackedScene" uid="uid://dtadqyklji2e7" path="res://scenes/component/BuildingAnimatorComponent.tscn" id="2_35dp5"]
 [ext_resource type="Texture2D" uid="uid://tj0p2a3nhymk" path="res://assets/buildings/npc.png" id="2_jg1ve"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_j01oo"]
@@ -53,10 +54,13 @@ y_sort_enabled = true
 [node name="BuildingComponent" parent="." instance=ExtResource("1_o8g7c")]
 buildingResourcePath = "res://resources/building/base.tres"
 
-[node name="Sprite2D" parent="." instance=ExtResource("2_8hh2p")]
+[node name="BuildingAnimatorComponent" parent="." instance=ExtResource("2_35dp5")]
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(320, 97)
+[node name="Sprite2D" parent="BuildingAnimatorComponent" instance=ExtResource("2_8hh2p")]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="BuildingAnimatorComponent/Sprite2D"]
+position = Vector2(30.2754, 0.2243)
+scale = Vector2(0.191617, 0.224301)
 sprite_frames = SubResource("SpriteFrames_iy2xi")
 autoplay = "default"
 frame_progress = 0.171805
