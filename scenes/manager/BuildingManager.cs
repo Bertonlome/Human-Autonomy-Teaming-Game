@@ -208,6 +208,17 @@ public partial class BuildingManager : Node
 				buildingGhost.SetInvalid();
 			}
 		}
+		else if (!toPlaceBuildingResource.IsAerial)
+		{
+			if(!gridManager.IsInBaseProximity(hoveredGridArea.Position))
+			{
+				buildingGhost.SetInvalid();
+			}
+			else
+			{
+				buildingGhost.SetValid();
+			}
+		}
 		else if (IsBuildingResourcePlaceableAtArea(hoveredGridArea))
 		{
 			if (toPlaceBuildingResource.IsAttackBuilding())
@@ -253,6 +264,14 @@ public partial class BuildingManager : Node
 		{
 			FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
 			return;
+		}
+		else if(!buildingResource.IsAerial)
+		{
+			if(!gridManager.IsInBaseProximity(hoveredGridArea.Position))
+			{
+				FloatingTextManager.ShowMessageAtMousePosition("Too far from base!");
+				return;
+			}
 		}
 		
 		var building = toPlaceBuildingResource.BuildingScene.Instantiate<Node2D>();

@@ -32,6 +32,7 @@ public partial class BuildingComponent : Node2D
 	public bool IsDisabled { get; private set; }
 	public bool IsRandomMode {get; set;} = false;
 	public bool IsStuck {get; private set;} = false; 
+	public bool IsRecharging {get; set;} = false;
 	public int Battery {get; set;} = 100;
 
 	private HashSet<Vector2I> occupiedTiles = new();
@@ -43,7 +44,9 @@ public partial class BuildingComponent : Node2D
 	private string previousDir = "";
 
 	// Timer variables
-    private float timer = 0.0f; // Tracks time since last move
+    private float timerMove = 0.0f; // Tracks time since last move
+	private float timerRecharge = 0.0f; // Tracks time since last move
+	public const float RECHARGE_INTERVAL = 3.0f;
 
 
 	public static IEnumerable<BuildingComponent> GetValidBuildingComponents(Node node)
@@ -110,7 +113,7 @@ public partial class BuildingComponent : Node2D
 		{
 			GD.PushError("BaseLevel node not found.");
 		}
-		Battery = this.BuildingResource.Battery;
+		Battery = this.BuildingResource.BatteryMax;
 		gridManager = level.GetFirstNodeOfType<GridManager>();
 	}
 
@@ -119,18 +122,29 @@ public partial class BuildingComponent : Node2D
         if (IsRandomMode == true && !IsStuck)
         {
             // Update the timer
-            timer += (float)delta;
+            timerMove += (float)delta;
 
             // Check if enough time has passed to move
-            if (timer >= this.BuildingResource.moveInterval)
+            if (timerMove >= this.BuildingResource.moveInterval)
             {
 				var randDir = buildingManager.GetRandomDirection(previousDir);
         		//GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
                 buildingManager.MoveBuildingInDirectionAutomated(this, randDir);
 				previousDir = randDir;
-                timer = 0.0f; // Reset the timer
+                timerMove = 0.0f; // Reset the timer
             }
         }
+		if(IsRecharging)
+		{
+			timerRecharge += (float)delta;
+
+			if(timerRecharge >= RECHARGE_INTERVAL && Battery <= this.BuildingResource.BatteryMax - 5)
+			{
+				Battery += 10;
+				EmitSignal(SignalName.BatteryChange, Battery);
+				timerRecharge = 0.0f;
+			}
+		}
 	}
 
 	public void EnableRandomMode()
