@@ -71,7 +71,12 @@ public partial class BuildingManager : Node
 			case State.Normal:
 				if (evt.IsActionPressed(ACTION_RIGHT_CLICK))
 				{
-					DestroyBuildingAtHoveredCellPosition();
+					//DestroyBuildingAtHoveredCellPosition();
+					if(selectedBuildingComponent!= null)
+					{
+						UnHighlightSelectedBuilding(selectedBuildingComponent);
+						selectedBuildingComponent = null;
+					}
 					gridManager.ClearHighlightedTiles();
 					GetViewport().SetInputAsHandled();
 				}
