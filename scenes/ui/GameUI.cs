@@ -1,3 +1,5 @@
+using Game.Autoload;
+using Game.Component;
 using Game.Manager;
 using Game.Resources.Building;
 using Godot;
@@ -11,6 +13,7 @@ public partial class GameUI : CanvasLayer
 
 	private VBoxContainer buildingSectionContainer;
 	private Label resourceLabel;
+	private Button stopRobotButton;
 
 	[Export]
 	private BuildingManager buildingManager;
@@ -23,8 +26,10 @@ public partial class GameUI : CanvasLayer
 	{
 		buildingSectionContainer = GetNode<VBoxContainer>("%BuildingSectionContainer");
 		resourceLabel = GetNode<Label>("%ResourceLabel");
+		stopRobotButton = GetNode<Button>("%StopRobotButton");
 		CreateBuildingSections();
 
+		stopRobotButton.Pressed += OnStopRobotButtonPressed;
 		buildingManager.AvailableResourceCountChanged += OnAvailableResourceCountChanged;
 	}
 
@@ -46,6 +51,16 @@ public partial class GameUI : CanvasLayer
 				EmitSignal(SignalName.BuildingResourceSelected, buildingResource);
 			};
 		}
+	}
+
+	private void OnStopRobotButtonPressed()
+	{
+		var allRobots = BuildingComponent.GetValidBuildingComponents(this);
+		foreach(var robot in allRobots)
+		{
+			robot.StopRandomMode();
+		}
+		GameEvents.EmitAllRobotStop();
 	}
 
 	private void OnAvailableResourceCountChanged(int availableResourceCount)

@@ -13,6 +13,10 @@ public partial class BuildingComponent : Node2D
 	public delegate void DisabledEventHandler();
 	[Signal]
 	public delegate void EnabledEventHandler();
+	[Signal]
+	public delegate void NewAnomalyReadingEventHandler(int value);
+	[Signal]
+	public delegate void BatteryChangeEventHandler(int value);
 	
 
 
@@ -23,6 +27,7 @@ public partial class BuildingComponent : Node2D
 
 	public BuildingResource BuildingResource { get; private set; }
 	public BuildingManager buildingManager;
+	public GridManager gridManager;
 	public bool IsDestroying { get; private set; }
 	public bool IsDisabled { get; private set; }
 	public bool IsRandomMode {get; set;} = false;
@@ -35,6 +40,7 @@ public partial class BuildingComponent : Node2D
 	private readonly StringName MOVE_DOWN = "move_down";
 	private readonly StringName MOVE_LEFT = "move_left";
 	private readonly StringName MOVE_RIGHT = "move_right";
+	private string previousDir = "";
 
 	// Timer variables
     private float timer = 0.0f; // Tracks time since last move
@@ -105,6 +111,7 @@ public partial class BuildingComponent : Node2D
 			GD.PushError("BaseLevel node not found.");
 		}
 		Battery = this.BuildingResource.Battery;
+		gridManager = level.GetFirstNodeOfType<GridManager>();
 	}
 
     public override void _Process(double delta)
@@ -117,12 +124,23 @@ public partial class BuildingComponent : Node2D
             // Check if enough time has passed to move
             if (timer >= this.BuildingResource.moveInterval)
             {
-				var randDir = buildingManager.GetRandomDirection();
+				var randDir = buildingManager.GetRandomDirection(previousDir);
         		//GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
                 buildingManager.MoveBuildingInDirectionAutomated(this, randDir);
+				previousDir = randDir;
                 timer = 0.0f; // Reset the timer
             }
         }
+	}
+
+	public void EnableRandomMode()
+	{
+		IsRandomMode = true;
+	}
+
+	public void StopRandomMode()
+	{
+		IsRandomMode = false;
 	}
 
     public Vector2I GetGridCellPosition()
@@ -217,7 +235,15 @@ public partial class BuildingComponent : Node2D
 		buildingAnimatorComponent?.PlayMoveAnimation(originPos, destinationPos);
 		Initialize();
 		if (Battery >= 0) Battery -= 1;
+		EmitSignal(SignalName.BatteryChange, Battery);
 		GD.Print("Battery left in robot : " + Battery);
+		var anomalyValue = gridManager.ComputeAnomalyValue(destinationPos);
+		EmitSignal(SignalName.NewAnomalyReading, anomalyValue);
+	}
+
+	public int GetAnomalyReadingAtCurrentPos()
+	{
+		return gridManager.ComputeAnomalyValue(GetGridCellPosition());
 	}
 
 	public Rect2I GetAreaOccupied(Vector2I position)

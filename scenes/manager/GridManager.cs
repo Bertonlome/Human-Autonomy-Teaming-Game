@@ -50,6 +50,7 @@ public partial class GridManager : Node
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> dangerBuildingToTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> attackBuildingToTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingStuckToTiles = new();
+	private Dictionary<Vector2I, int> positionToGravitationAnomaly = new();
 
 	public override void _Ready()
 	{
@@ -70,7 +71,49 @@ public partial class GridManager : Node
 	public void SetMonolithPosition(Vector2I position)
 	{
 		monolithTiles.Add(position);
+		SetGravitationAnomalyGradient(position);
 	}
+
+	public void SetGravitationAnomalyGradient(Vector2I monolithPosition)
+	{
+		int maxDistance = 100; // Maximum distance to affect tiles, adjust as needed
+		int maxValue = 100; // Highest value near the monolith
+		int minValue = 0; // Lowest value farthest from the monolith
+
+		// Loop through a square region centered on the monolith
+		for (int x = monolithPosition.X - maxDistance; x <= monolithPosition.X + maxDistance; x++)
+		{
+			for (int y = monolithPosition.Y - maxDistance; y <= monolithPosition.Y + maxDistance; y++)
+			{
+				Vector2I currentTile = new Vector2I(x, y);
+
+				// Calculate Manhattan distance from the monolith
+				int manhattanDistance = Mathf.Abs(monolithPosition.X - x) + Mathf.Abs(monolithPosition.Y - y);
+
+				// If the tile is within the maxDistance
+				if (manhattanDistance <= maxDistance)
+				{
+					// Calculate the value based on the distance, the closer the tile, the higher the value
+					float normalizedDistance = (float)manhattanDistance / maxDistance;
+					int anomalyValue = Mathf.RoundToInt(Mathf.Lerp(maxValue, minValue, normalizedDistance));
+
+					// Set the gravitational anomaly value for the current tile
+					positionToGravitationAnomaly.Add(currentTile, anomalyValue);
+				}
+			}
+		}
+	}
+
+	public int ComputeAnomalyValue(Vector2I position)
+	{
+		if (positionToGravitationAnomaly.ContainsKey(position))
+		{
+			return positionToGravitationAnomaly[position];
+		}
+		else return 0;
+	}
+
+
 
 	public (TileMapLayer, bool) GetTileCustomData(Vector2I tilePosition, string dataName)
 	{

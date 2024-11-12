@@ -81,6 +81,7 @@ public partial class BaseLevel : Node
 		AddChild(levelCompleteScreen);
 		monolith.SetActive();
 		gameUI.HideUI();
+		selectedRobotUI.HideUI();
 	}
 
 	private void OnCameraZoom()
