@@ -4,6 +4,6 @@
 
 [resource]
 script = ExtResource("1_bfefd")
-Id = "concrete_bricks"
+Id = "ski_baba_balabop"
 StartingResourceCount = 104
 LevelScenePath = "res://scenes/level/Level4.tscn"

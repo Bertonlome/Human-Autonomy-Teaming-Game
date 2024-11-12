@@ -22,7 +22,7 @@ public partial class BuildingResource : Resource
 	[Export]
 	public float moveInterval {get; private set; } = 1.0f; // Time between moves in seconds
 	[Export]
-	public int Battery {get; private set;} = 100;
+	public int BatteryMax {get; private set;} = 100;
 	[Export]
 	public int ResourceCost { get; private set; }
 	[Export]

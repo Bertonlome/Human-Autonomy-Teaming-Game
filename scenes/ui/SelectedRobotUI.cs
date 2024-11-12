@@ -66,8 +66,6 @@ public partial class SelectedRobotUI : CanvasLayer
 		statusLabel.Text = "Available";
 	}
 
-
-
     private void OnRandomExplorButtonPressed()
 	{
 		selectedBuildingComponent.EnableRandomMode();

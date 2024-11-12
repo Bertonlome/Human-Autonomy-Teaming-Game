@@ -57,6 +57,7 @@ buildingResourcePath = "res://resources/building/base.tres"
 [node name="BuildingAnimatorComponent" parent="." instance=ExtResource("2_35dp5")]
 
 [node name="Sprite2D" parent="BuildingAnimatorComponent" instance=ExtResource("2_8hh2p")]
+position = Vector2(162, 160)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="BuildingAnimatorComponent/Sprite2D"]
 position = Vector2(30.2754, 0.2243)
