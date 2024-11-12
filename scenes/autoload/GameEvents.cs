@@ -25,6 +25,8 @@ public partial class GameEvents : Node
 	public delegate void RobotSelectedEventHandler(BuildingComponent buildingComponent);
 	[Signal]
 	public delegate void NoMoreRobotSelectedEventHandler(BuildingComponent buildingComponent);
+	[Signal]
+	public delegate void AllRobotStoppedEventHandler();
 
 	public override void _Notification(int what)
 	{
@@ -77,5 +79,10 @@ public partial class GameEvents : Node
 	public static void EmitBuildingUnStuck(BuildingComponent buildingComponent)
 	{
 		Instance.EmitSignal(SignalName.BuildingUnStuck, buildingComponent);
+	}
+
+	public static void EmitAllRobotStop()
+	{
+		Instance.EmitSignal(SignalName.AllRobotStopped);
 	}
 }

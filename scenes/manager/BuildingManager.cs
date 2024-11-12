@@ -334,11 +334,15 @@ public partial class BuildingManager : Node
 	
 	public void MoveBuildingInDirectionAutomated(BuildingComponent buildingComponent, StringName direction)
 	{
-		if(buildingComponent.IsStuck) return;
-
+		if(buildingComponent.IsStuck) 
+		{
+			buildingComponent.IsRandomMode = false;
+			return;
+		}
 		if (selectedBuildingComponent.Battery <= 0)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", selectedBuildingComponent);
+			buildingComponent.IsRandomMode = false;
 			return;
 		}
 
@@ -450,7 +454,7 @@ public partial class BuildingManager : Node
 		{
 		var highlightZone = buildingComponent.GetNode<ColorRect>("%HighlightZone");
 		highlightZone.Visible = true;
-		highlightZone.Color = Colors.White;
+		highlightZone.Color = Colors.Green;
 		gridManager.HighlightBuildableTiles();
 		gridManager.HighlightExpandedBuildableTiles(buildingComponent.GetTileArea(), buildingComponent.BuildingResource.BuildableRadius);
 		}
@@ -473,11 +477,27 @@ public partial class BuildingManager : Node
 		GameEvents.EmitNoMoreRobotSelected(buildingComponent);
 	}
 
-	public string GetRandomDirection()
+	public string GetRandomDirection(string previousDir = "")
 	{
 		string[] directions = {MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT, MOVE_UP};
-		int index = random.Next(directions.Length);
-		return directions[index];
+
+		// Define opposite directions
+		var oppositeDirections = new Dictionary<string, string>
+		{
+			{ MOVE_UP, MOVE_DOWN },
+			{ MOVE_DOWN, MOVE_UP },
+			{ MOVE_LEFT, MOVE_RIGHT },
+			{ MOVE_RIGHT, MOVE_LEFT }
+		};
+
+		// Filter out the opposite direction if previousDir is provided
+		var availableDirections = previousDir != "" && oppositeDirections.ContainsKey(previousDir) 
+			? directions.Where(dir => dir != oppositeDirections[previousDir]).ToArray()
+			: directions;
+
+		// Get a random direction from the remaining available directions
+		int index = random.Next(availableDirections.Length);
+		return availableDirections[index];
 	}
 
 	private void ClearBuildingGhost()

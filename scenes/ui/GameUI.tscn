@@ -53,6 +53,14 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 48
 text = "4"
 
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="StopRobotButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Stop all robots"
+
 [node name="BuildingSectionContainer" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
