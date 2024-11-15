@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("3_0f206")
 DisplayName = "Ground Robot"
-Description = "Gathers resources"
+Description = "Perform sample analysis"
 IsBase = false
 IsDeletable = true
 IsAerial = false
@@ -15,9 +15,9 @@ Dimensions = Vector2i(1, 1)
 StuckChancePerMove = 0.005
 moveInterval = 0.5
 BatteryMax = 500
-ResourceCost = 1
-BuildableRadius = 4
-ResourceRadius = 1
+ResourceCost = 2
+BuildableRadius = 8
+ResourceRadius = 0
 VisionRadius = 2
 DangerRadius = 0
 AttackRadius = 0

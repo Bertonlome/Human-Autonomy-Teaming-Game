@@ -1,6 +1,7 @@
 using System;
 using Game.Autoload;
 using Game.Component;
+using Game.Manager;
 using Godot;
 
 namespace Game;
@@ -18,6 +19,7 @@ public partial class GameCamera : Camera2D
 	private readonly StringName ACTION_PAN_RIGHT = "pan_right";
 	private readonly StringName ACTION_PAN_UP = "pan_up";
 	private readonly StringName ACTION_PAN_DOWN = "pan_down";
+	private readonly StringName ACTION_SPACEBAR = "spacebar";
 
 	private readonly StringName ACTION_SCROLL_FORWARD = "scroll_forward";
 	private readonly StringName ACTION_SCROLL_BACKWARD = "scroll_backward";
@@ -30,6 +32,8 @@ public partial class GameCamera : Camera2D
 
 	[Export]
 	private FastNoiseLite shakeNoise;
+	[Export]
+	private BuildingManager buildingManager;
 	[Signal]
 	public delegate void CameraZoomEventHandler();
 
@@ -90,6 +94,11 @@ public partial class GameCamera : Camera2D
 
 	public override void _UnhandledInput(InputEvent evt)
 	{
+		if(evt.IsActionPressed(ACTION_SPACEBAR) && currentState == State.CameraFree)
+		{
+			CenterOnPosition(buildingManager.hoveredGridArea.Position * 64);
+			GetViewport().SetInputAsHandled();
+		}
 		if (evt.IsActionPressed(ACTION_SCROLL_FORWARD) && Zoom.X <= 1.5f)
 		{
 			Zoom = new Vector2((float)(Zoom.X +  0.1f), (float)(Zoom.Y + 0.1f));
@@ -146,5 +155,4 @@ public partial class GameCamera : Camera2D
 		ChangeState(State.CameraFree);
 		robotTracked = null;
 	}
-
 }

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="LevelDefinitionResource" load_steps=2 format=3 uid="uid://dd0a247267xtx"]
+
+[ext_resource type="Script" path="res://resources/level/LevelDefinitionResource.cs" id="1_aq4nx"]
+
+[resource]
+script = ExtResource("1_aq4nx")
+Id = "pull_off_your_skin"
+StartingResourceCount = 108
+LevelScenePath = "res://scenes/level/Level5.tscn"

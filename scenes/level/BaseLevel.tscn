@@ -39,7 +39,8 @@ baseTerrainTilemapLayer = NodePath("../YSortRoot/BaseTerrainTileMapLayer")
 buildingManager = NodePath("../BuildingManager")
 buildingResources = Array[Object]([ExtResource("9_y4a1x"), ExtResource("10_l7o86"), ExtResource("11_vgav0")])
 
-[node name="GameCamera" parent="." instance=ExtResource("5_gni5d")]
+[node name="GameCamera" parent="." node_paths=PackedStringArray("buildingManager") instance=ExtResource("5_gni5d")]
+buildingManager = NodePath("../BuildingManager")
 
 [node name="YSortRoot" type="Node2D" parent="."]
 y_sort_enabled = true
