@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BuildingResource" load_steps=4 format=3 uid="uid://0b7icpp7al8y"]
 
 [ext_resource type="PackedScene" uid="uid://bkk040smvshyh" path="res://scenes/building/AerialRobot.tscn" id="1_hekwi"]
-[ext_resource type="PackedScene" uid="uid://dj3uo7meto58s" path="res://scenes/building/sprite/AerialRobotAnimatedSprite2D.tscn" id="2_3g6nv"]
+[ext_resource type="PackedScene" uid="uid://dj3uo7meto58s" path="res://scenes/autoload/AerialRobotAnimatedSprite2D.tscn" id="2_3g6nv"]
 [ext_resource type="Script" path="res://resources/building/BuildingResource.cs" id="3_oadmm"]
 
 [resource]
@@ -16,7 +16,7 @@ StuckChancePerMove = 0.0
 moveInterval = 0.1
 BatteryMax = 300
 ResourceCost = 2
-BuildableRadius = 6
+BuildableRadius = 12
 ResourceRadius = 0
 VisionRadius = 6
 DangerRadius = 0
