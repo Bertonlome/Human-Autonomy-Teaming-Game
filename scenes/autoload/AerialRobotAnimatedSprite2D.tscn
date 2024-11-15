@@ -1,0 +1,74 @@
+[gd_scene load_steps=11 format=3 uid="uid://dj3uo7meto58s"]
+
+[ext_resource type="Texture2D" uid="uid://csifi0fgq36j3" path="res://assets/buildings/robots.png" id="1_nl6ep"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_u8t3f"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uo06r"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4ypho"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qda1c"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(288, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_m31v8"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(0, 96, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4kqc8"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(96, 96, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ioeed"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(192, 96, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p2u18"]
+atlas = ExtResource("1_nl6ep")
+region = Rect2(288, 96, 96, 96)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_8hk6q"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_u8t3f")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uo06r")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4ypho")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qda1c")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_m31v8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4kqc8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ioeed")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_p2u18")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="AerialRobotAnimatedSprite2D" type="AnimatedSprite2D"]
+position = Vector2(32, 58)
+sprite_frames = SubResource("SpriteFrames_8hk6q")
+frame_progress = 0.923279
+centered = false
+offset = Vector2(-48, -90)

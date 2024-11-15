@@ -44,7 +44,7 @@ public partial class BuildingManager : Node
 	private int currentResourceCount;
 	private int currentlyUsedResourceCount;
 	private BuildingResource toPlaceBuildingResource;
-	private Rect2I hoveredGridArea = new(Vector2I.Zero, Vector2I.One);
+	public Rect2I hoveredGridArea = new(Vector2I.Zero, Vector2I.One);
 	private BuildingGhost buildingGhost;
 	private Vector2 buildingGhostDimensions;
 	private State currentState;
@@ -71,7 +71,12 @@ public partial class BuildingManager : Node
 			case State.Normal:
 				if (evt.IsActionPressed(ACTION_RIGHT_CLICK))
 				{
-					DestroyBuildingAtHoveredCellPosition();
+					//DestroyBuildingAtHoveredCellPosition();
+					if(selectedBuildingComponent!= null)
+					{
+						UnHighlightSelectedBuilding(selectedBuildingComponent);
+						selectedBuildingComponent = null;
+					}
 					gridManager.ClearHighlightedTiles();
 					GetViewport().SetInputAsHandled();
 				}

@@ -14,6 +14,7 @@ public partial class GameUI : CanvasLayer
 	private VBoxContainer buildingSectionContainer;
 	private Label resourceLabel;
 	private Button stopRobotButton;
+	private readonly StringName ACTION_SPACEBAR = "spacebar";
 
 	[Export]
 	private BuildingManager buildingManager;
@@ -31,6 +32,15 @@ public partial class GameUI : CanvasLayer
 
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
 		buildingManager.AvailableResourceCountChanged += OnAvailableResourceCountChanged;
+	}
+
+		public override void _UnhandledInput(InputEvent evt)
+	{
+		if(evt.IsActionPressed(ACTION_SPACEBAR))
+		{
+			GetViewport().SetInputAsHandled();
+			return;
+		}
 	}
 
 	public void HideUI()

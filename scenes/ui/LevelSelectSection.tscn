@@ -1,12 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://vfsckashhxio"]
+[gd_scene load_steps=3 format=3 uid="uid://vfsckashhxio"]
 
-[ext_resource type="Texture2D" uid="uid://c38q546jteu6h" path="res://assets/ui/wood_icon.png" id="1_47nql"]
 [ext_resource type="Script" path="res://scenes/ui/LevelSelectSection.cs" id="1_arpcr"]
 [ext_resource type="Texture2D" uid="uid://byp1qt1614dgp" path="res://assets/ui/check.png" id="3_4gafv"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_xq55x"]
-atlas = ExtResource("1_47nql")
-region = Rect2(39, 73, 32, 27)
 
 [node name="LevelSelectSection" type="PanelContainer"]
 theme_type_variation = &"PanelContainerAlternate"
@@ -36,10 +31,9 @@ text = "Level 1"
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
-texture = SubResource("AtlasTexture_xq55x")
-stretch_mode = 3
+text = "Resources: "
 
 [node name="ResourceCountLabel" type="Label" parent="MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 unique_name_in_owner = true

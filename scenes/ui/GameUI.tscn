@@ -1,14 +1,9 @@
-[gd_scene load_steps=7 format=3 uid="uid://dqoljijx36x6a"]
+[gd_scene load_steps=5 format=3 uid="uid://dqoljijx36x6a"]
 
 [ext_resource type="Script" path="res://scenes/ui/GameUI.cs" id="1_ig7ao"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="2_2jsg4"]
 [ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/ground_robot.tres" id="3_7ve0q"]
 [ext_resource type="PackedScene" uid="uid://dldi351241g0a" path="res://scenes/ui/BuildingSection.tscn" id="4_bv77p"]
-[ext_resource type="Texture2D" uid="uid://c38q546jteu6h" path="res://assets/ui/wood_icon.png" id="5_ngx1v"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_riax6"]
-atlas = ExtResource("5_ngx1v")
-region = Rect2(39, 72, 32, 28)
 
 [node name="GameUI" type="CanvasLayer"]
 script = ExtResource("1_ig7ao")
@@ -36,13 +31,12 @@ layout_mode = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 18
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
-size_flags_vertical = 8
-texture = SubResource("AtlasTexture_riax6")
-stretch_mode = 3
+theme_override_font_sizes/font_size = 20
+text = "Resources"
 
 [node name="ResourceLabel" type="Label" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
@@ -53,14 +47,16 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 48
 text = "4"
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-
-[node name="StopRobotButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Stop all robots"
-
 [node name="BuildingSectionContainer" type="VBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="StopRobotButton" type="Button" parent="MarginContainer/PanelContainer/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Stop all robots"
