@@ -45,7 +45,7 @@ version_control/autoload_on_startup=true
 
 [gui]
 
-theme/custom="res://resources/theme.tres"
+theme/custom="res://resources/sci-fi-theme.tres"
 
 [input]
 

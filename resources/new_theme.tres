@@ -1,0 +1,11 @@
+[gd_resource type="Theme" load_steps=3 format=3 uid="uid://ddjb4f6o8qxnh"]
+
+[ext_resource type="FontFile" uid="uid://b58qupht0etta" path="res://resources/Inter-VariableFont_opsz,wght.ttf" id="1_fyswy"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5mcsi"]
+bg_color = Color(0.63268, 0.587923, 0.591108, 1)
+
+[resource]
+default_font = ExtResource("1_fyswy")
+default_font_size = 16
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_5mcsi")
