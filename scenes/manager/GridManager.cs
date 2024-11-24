@@ -40,10 +40,17 @@ public partial class GridManager : Node
 	private HashSet<Vector2I> baseProximityTiles = new();
 	private HashSet<Vector2I> monolithTiles = new();
 
+	private Monolith monolith;
+	public Vector2I monolithPosition = new();
+
+	private List<Vector2I> allTilesBaseLayer;
+
 	[Export]
 	private TileMapLayer highlightTilemapLayer;
 	[Export]
 	private TileMapLayer baseTerrainTilemapLayer;
+	[Export]
+	private GravitationalAnomalyMap gravitationalAnomalyMap;
 
 	private List<TileMapLayer> allTilemapLayers = new();
 	private Dictionary<TileMapLayer, ElevationLayer> tileMapLayerToElevationLayer = new();
@@ -63,58 +70,21 @@ public partial class GridManager : Node
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingUnStuck, Callable.From<BuildingComponent>(OnBuildingUnStuck));
 
+		monolith = GetNode<Monolith>("%Monolith");
+		SetMonolithPosition(ConvertWorldPositionToTilePosition(monolith.GlobalPosition));
 
 		allTilemapLayers = GetAllTilemapLayers(baseTerrainTilemapLayer);
-		allTilesBuildableOnTheMap = GetAllBaseTerrainTiles(baseTerrainTilemapLayer).ToHashSet();
+		allTilesBuildableOnTheMap = GetAllBuildableBaseTerrainTiles(baseTerrainTilemapLayer).ToHashSet();
+		allTilesBaseLayer = baseTerrainTilemapLayer.GetUsedCells().ToList();
 		MapTileMapLayersToElevationLayers();
 	}
 
 	public void SetMonolithPosition(Vector2I position)
 	{
+		monolithPosition = position;
 		monolithTiles.Add(position);
-		SetGravitationAnomalyGradient(position);
+		//SetGravitationAnomalyGradient(position);
 	}
-
-	public void SetGravitationAnomalyGradient(Vector2I monolithPosition)
-	{
-		int maxDistance = 100; // Maximum distance to affect tiles, adjust as needed
-		int maxValue = 100; // Highest value near the monolith
-		int minValue = 0; // Lowest value farthest from the monolith
-
-		// Loop through a square region centered on the monolith
-		for (int x = monolithPosition.X - maxDistance; x <= monolithPosition.X + maxDistance; x++)
-		{
-			for (int y = monolithPosition.Y - maxDistance; y <= monolithPosition.Y + maxDistance; y++)
-			{
-				Vector2I currentTile = new Vector2I(x, y);
-
-				// Calculate Manhattan distance from the monolith
-				int manhattanDistance = Mathf.Abs(monolithPosition.X - x) + Mathf.Abs(monolithPosition.Y - y);
-
-				// If the tile is within the maxDistance
-				if (manhattanDistance <= maxDistance)
-				{
-					// Calculate the value based on the distance, the closer the tile, the higher the value
-					float normalizedDistance = (float)manhattanDistance / maxDistance;
-					int anomalyValue = Mathf.RoundToInt(Mathf.Lerp(maxValue, minValue, normalizedDistance));
-
-					// Set the gravitational anomaly value for the current tile
-					positionToGravitationAnomaly.Add(currentTile, anomalyValue);
-				}
-			}
-		}
-	}
-
-	public int ComputeAnomalyValue(Vector2I position)
-	{
-		if (positionToGravitationAnomaly.ContainsKey(position))
-		{
-			return positionToGravitationAnomaly[position];
-		}
-		else return 0;
-	}
-
-
 
 	public (TileMapLayer, bool) GetTileCustomData(Vector2I tilePosition, string dataName)
 	{
@@ -548,7 +518,7 @@ public partial class GridManager : Node
 		return result;
 	}
 
-	private List<Vector2I> GetAllBaseTerrainTiles(TileMapLayer tileMapLayer)
+	private List<Vector2I> GetAllBuildableBaseTerrainTiles(TileMapLayer tileMapLayer)
 	{
 		// Loop through all possible cells in the TileMap
         var usedTiles = tileMapLayer.GetUsedCells();
@@ -562,7 +532,6 @@ public partial class GridManager : Node
         .ToList();
 		return buildableTiles;
 	}
-
 
 	private void MapTileMapLayersToElevationLayers()
 	{

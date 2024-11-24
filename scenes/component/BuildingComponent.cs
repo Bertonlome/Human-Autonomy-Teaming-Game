@@ -27,7 +27,7 @@ public partial class BuildingComponent : Node2D
 
 	public BuildingResource BuildingResource { get; private set; }
 	public BuildingManager buildingManager;
-	public GridManager gridManager;
+	public GravitationalAnomalyMap gravitationalAnomalyMap;
 	public bool IsDestroying { get; private set; }
 	public bool IsDisabled { get; private set; }
 	public bool IsRandomMode {get; set;} = false;
@@ -114,7 +114,7 @@ public partial class BuildingComponent : Node2D
 			GD.PushError("BaseLevel node not found.");
 		}
 		Battery = this.BuildingResource.BatteryMax;
-		gridManager = level.GetFirstNodeOfType<GridManager>();
+		gravitationalAnomalyMap = level.GetFirstNodeOfType<GravitationalAnomalyMap>();
 	}
 
     public override void _Process(double delta)
@@ -250,14 +250,14 @@ public partial class BuildingComponent : Node2D
 		Initialize();
 		if (Battery >= 0) Battery -= 1;
 		EmitSignal(SignalName.BatteryChange, Battery);
-		GD.Print("Battery left in robot : " + Battery);
-		var anomalyValue = gridManager.ComputeAnomalyValue(destinationPos);
+		//GD.Print("Battery left in robot : " + Battery);
+		var anomalyValue = gravitationalAnomalyMap.GetAnomalyAt(destinationPos.X, destinationPos.Y);
 		EmitSignal(SignalName.NewAnomalyReading, anomalyValue);
 	}
 
 	public int GetAnomalyReadingAtCurrentPos()
 	{
-		return gridManager.ComputeAnomalyValue(GetGridCellPosition());
+		return (int)gravitationalAnomalyMap.GetAnomalyAt(GetGridCellPosition().X, GetGridCellPosition().Y);
 	}
 
 	public Rect2I GetAreaOccupied(Vector2I position)
