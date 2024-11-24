@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://bipxsk1snp5nq"]
+[gd_scene load_steps=21 format=3 uid="uid://bipxsk1snp5nq"]
 
 [ext_resource type="Script" path="res://scenes/level/BaseLevel.cs" id="1_oetcv"]
 [ext_resource type="TileSet" uid="uid://be2deub8k3gjr" path="res://resources/highlight_tileset.tres" id="2_8gl76"]
@@ -12,12 +12,18 @@
 [ext_resource type="PackedScene" uid="uid://du6yrfdf7n3so" path="res://scenes/GameCamera.tscn" id="5_gni5d"]
 [ext_resource type="PackedScene" uid="uid://bocvnu5ijh44c" path="res://scenes/manager/ResourceIndicatorManager.tscn" id="6_2ofsf"]
 [ext_resource type="PackedScene" uid="uid://bh0jxs1odudla" path="res://scenes/building/BuildingGhost.tscn" id="8_c56o1"]
+[ext_resource type="Script" path="res://scenes/level/GravitationalAnomalyMap.cs" id="8_ufxub"]
 [ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/Monolith.tscn" id="9_87w6t"]
 [ext_resource type="Resource" uid="uid://c6ijwfjsh0ejg" path="res://resources/building/base.tres" id="9_y4a1x"]
 [ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/ground_robot.tres" id="10_l7o86"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="11_vgav0"]
 [ext_resource type="PackedScene" uid="uid://b0eal3gs3jkha" path="res://scenes/manager/FloatingTextManager.tscn" id="13_p7dg5"]
 [ext_resource type="PackedScene" uid="uid://bllsmwyng6v5f" path="res://scenes/manager/DiscoveredElementsManager.tscn" id="16_6uy6k"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_uikxx"]
+noise_type = 4
+frequency = 0.04
+metadata/_preview_in_3d_space_ = true
 
 [node name="BaseLevel" type="Node"]
 script = ExtResource("1_oetcv")
@@ -31,9 +37,10 @@ gameUI = NodePath("../GameUI")
 ySortRoot = NodePath("../YSortRoot")
 buildingGhostScene = ExtResource("8_c56o1")
 
-[node name="GridManager" parent="." node_paths=PackedStringArray("highlightTilemapLayer", "baseTerrainTilemapLayer") instance=ExtResource("2_46an4")]
+[node name="GridManager" parent="." node_paths=PackedStringArray("highlightTilemapLayer", "baseTerrainTilemapLayer", "gravitationalAnomalyMap") instance=ExtResource("2_46an4")]
 highlightTilemapLayer = NodePath("../YSortRoot/HighlightTileMapLayer")
 baseTerrainTilemapLayer = NodePath("../YSortRoot/BaseTerrainTileMapLayer")
+gravitationalAnomalyMap = NodePath("../GravitationalAnomalyMap")
 
 [node name="GameUI" parent="." node_paths=PackedStringArray("buildingManager") instance=ExtResource("3_b6i5e")]
 buildingManager = NodePath("../BuildingManager")
@@ -70,3 +77,9 @@ tile_set = ExtResource("2_8gl76")
 gridManager = NodePath("../GridManager")
 
 [node name="FloatingTextManager" parent="." instance=ExtResource("13_p7dg5")]
+
+[node name="GravitationalAnomalyMap" type="Node" parent="." node_paths=PackedStringArray("gridManager", "baseTerrainTilemapLayer")]
+script = ExtResource("8_ufxub")
+gridManager = NodePath("../GridManager")
+noise = SubResource("FastNoiseLite_uikxx")
+baseTerrainTilemapLayer = NodePath("../YSortRoot/BaseTerrainTileMapLayer")

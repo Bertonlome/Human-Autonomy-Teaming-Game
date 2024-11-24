@@ -47,9 +47,6 @@ public partial class BaseLevel : Node
 		gameCamera.SetBoundingRect(baseTerrainTilemapLayer.GetUsedRect());
 		gameCamera.Zoom = new Vector2((float)0.2, (float)0.2);
 		gameCamera.CameraZoom += OnCameraZoom;
-
-		gridManager.SetMonolithPosition(gridManager.ConvertWorldPositionToTilePosition(monolith.GlobalPosition));
-
 		gridManager.AerialRobotHasVisionOfMonolith += OnAerialRobotHasVisionOfMonolith;
 		gridManager.GroundRobotTouchingMonolith += OnGroundRobotTouchingMonolith;
 
