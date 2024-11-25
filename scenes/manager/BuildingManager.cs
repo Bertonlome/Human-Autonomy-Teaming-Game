@@ -111,7 +111,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveBuildingInDirection(MOVE_UP);
+						MoveInDirection(MOVE_UP);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -119,7 +119,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveBuildingInDirection(MOVE_DOWN);
+						MoveInDirection(MOVE_DOWN);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -127,7 +127,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveBuildingInDirection(MOVE_LEFT);
+						MoveInDirection(MOVE_LEFT);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -135,7 +135,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveBuildingInDirection(MOVE_RIGHT);
+						MoveInDirection(MOVE_RIGHT);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -291,7 +291,7 @@ public partial class BuildingManager : Node
 		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
-	public void MoveBuildingInDirection(StringName direction)
+	public void MoveInDirection(StringName direction)
 	{
 		if(selectedBuildingComponent.IsStuck) return;
 
@@ -310,9 +310,9 @@ public partial class BuildingManager : Node
 		else return;
 
 		Node2D buildingNode = (Node2D)selectedBuildingComponent.GetParent();
-		var originPos = buildingNode.Position;
-		var originArea = selectedBuildingComponent.GetAreaOccupied((Vector2I)originPos);
-		originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
+		var originPos = selectedBuildingComponent.GetGridCellPosition();
+		var originArea = selectedBuildingComponent.GetAreaOccupied(originPos);
+		//originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
 		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64))/64), (int)((buildingNode.Position.Y + (directionVector.Y * 64))/64));
 		Rect2I destinationArea = selectedBuildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
 
@@ -336,6 +336,8 @@ public partial class BuildingManager : Node
 			return;
 		}
 
+		selectedBuildingComponent.UpdateMoveHistory(originPos, direction);
+
 		selectedBuildingComponent.FreeOccupiedCellPosition();
 		gridManager.UpdateBuildingComponentGridState(selectedBuildingComponent);
 
@@ -348,25 +350,25 @@ public partial class BuildingManager : Node
 		if (!test)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", selectedBuildingComponent);
-			if(direction == MOVE_DOWN) MoveBuildingInDirection(MOVE_UP);
-			else if (direction == MOVE_LEFT) MoveBuildingInDirection(MOVE_RIGHT);
-			else if (direction == MOVE_RIGHT) MoveBuildingInDirection(MOVE_LEFT);
-			else if (direction == MOVE_UP) MoveBuildingInDirection(MOVE_DOWN);
+			if(direction == MOVE_DOWN) MoveInDirection(MOVE_UP);
+			else if (direction == MOVE_LEFT) MoveInDirection(MOVE_RIGHT);
+			else if (direction == MOVE_RIGHT) MoveInDirection(MOVE_LEFT);
+			else if (direction == MOVE_UP) MoveInDirection(MOVE_DOWN);
 		}
 	}
 
 	
-	public void MoveBuildingInDirectionAutomated(BuildingComponent buildingComponent, StringName direction)
+	public void MoveInDirectionAutomated(BuildingComponent buildingComponent, StringName direction)
 	{
 		if(buildingComponent.IsStuck) 
 		{
-			buildingComponent.IsRandomMode = false;
+			buildingComponent.currentExplorMode = BuildingComponent.ExplorMode.None;
 			return;
 		}
-		if (selectedBuildingComponent.Battery <= 0)
+		if (buildingComponent.Battery <= 0)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", selectedBuildingComponent);
-			buildingComponent.IsRandomMode = false;
+			buildingComponent.currentExplorMode = BuildingComponent.ExplorMode.None;
 			return;
 		}
 
@@ -379,11 +381,12 @@ public partial class BuildingManager : Node
 		else return;
 
         Node2D buildingNode = (Node2D)buildingComponent.GetParent();
-		var originPos = buildingNode.Position;
-		var originArea = buildingComponent.GetAreaOccupied((Vector2I)originPos);
-		originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
+		var originPos = buildingComponent.GetGridCellPosition();
+		var originArea = buildingComponent.GetAreaOccupied(originPos);
+		//originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
 		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64))/64), (int)((buildingNode.Position.Y + (directionVector.Y * 64))/64));
         Rect2I destinationArea = buildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
+
 
 		if(!gridManager.CanMoveBuilding(buildingComponent, destinationArea))
 		{
@@ -400,10 +403,15 @@ public partial class BuildingManager : Node
 		double chance = random.NextDouble();
 		if(chance <= buildingComponent.BuildingResource.StuckChancePerMove)
 		{
-            MoveBuildingInDirectionAutomated(buildingComponent, GetRandomDirection());
+            MoveInDirectionAutomated(buildingComponent, GetRandomDirection());
             //FloatingTextManager.ShowMessageAtBuildingPosition("The robot got stuck while attempting to move", buildingComponent);
             buildingComponent.SetToStuck();
 			return;
+		}
+
+		if(buildingComponent.currentExplorMode != BuildingComponent.ExplorMode.ReturnToBase)
+		{
+			buildingComponent.UpdateMoveHistory(originPos, direction);
 		}
 
         buildingComponent.FreeOccupiedCellPosition();
@@ -418,10 +426,10 @@ public partial class BuildingManager : Node
 		if (!test)
 		{
             //FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", buildingComponent);
-			if(direction == MOVE_DOWN) MoveBuildingInDirectionAutomated(buildingComponent, MOVE_UP);
-			else if (direction == MOVE_LEFT) MoveBuildingInDirectionAutomated(buildingComponent, MOVE_RIGHT);
-			else if (direction == MOVE_RIGHT) MoveBuildingInDirectionAutomated(buildingComponent, MOVE_LEFT);
-			else if (direction == MOVE_UP) MoveBuildingInDirectionAutomated(buildingComponent, MOVE_DOWN);
+			if(direction == MOVE_DOWN) MoveInDirectionAutomated(buildingComponent, MOVE_UP);
+			else if (direction == MOVE_LEFT) MoveInDirectionAutomated(buildingComponent, MOVE_RIGHT);
+			else if (direction == MOVE_RIGHT) MoveInDirectionAutomated(buildingComponent, MOVE_LEFT);
+			else if (direction == MOVE_UP) MoveInDirectionAutomated(buildingComponent, MOVE_DOWN);
 		}
 	}
 

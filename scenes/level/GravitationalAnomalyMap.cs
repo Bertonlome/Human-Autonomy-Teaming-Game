@@ -10,6 +10,7 @@ public partial class GravitationalAnomalyMap : Node
     private const float MinAnomaly = 0f;
     private const float MaxAnomaly = 255f;
     private List<Vector2I> allTilesBaseLayer;
+    private bool fullMapDisplayed = false;
 
     [Export]
     private GridManager gridManager;
@@ -37,9 +38,6 @@ public partial class GravitationalAnomalyMap : Node
         // Generate anomaly map
         anomalyMap = GenerateGravitationalAnomalyMap(xMin, yMin, xRange, yRange);
         AddMonolithToAnomalyMap(gridManager.monolithPosition, anomalyMap);
-
-        // Display anomaly map visually
-        DisplayAnomalyMap(anomalyMap);
     }
 
     private (int, int, int, int) AnalyzeVector2IList(List<Vector2I> vectorList)
@@ -87,26 +85,38 @@ public partial class GravitationalAnomalyMap : Node
         return map;
     }
 
-    private void DisplayAnomalyMap(Dictionary<Vector2I, float> map)
+    public void DisplayAnomalyMap()
     {
-        Vector2 size = new Vector2(64, 64);
-
-        foreach (KeyValuePair<Vector2I, float> entry in map)
+        if (fullMapDisplayed == true)
         {
-            Vector2I cell = entry.Key;
-            float scaledAnomaly = entry.Value;
-            ColorRect colorRect = new ColorRect();
-            colorRect.SetSize(size);
+            foreach(Node child in GetChildren())
+            {
+                child.QueueFree();
+            }
+            fullMapDisplayed = false;
+        }
+        else
+            {
+            Vector2 size = new Vector2(64, 64);
 
-            // Position it in world space
-            colorRect.GlobalPosition = new Vector2(cell.X * 64, cell.Y * 64);
+            foreach (KeyValuePair<Vector2I, float> entry in anomalyMap)
+            {
+                Vector2I cell = entry.Key;
+                float scaledAnomaly = entry.Value;
+                ColorRect colorRect = new ColorRect();
+                colorRect.SetSize(size);
 
-            // Set its color with opacity based on the anomaly value
-            Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
-            colorRect.Color = squareColor;
+                // Position it in world space
+                colorRect.GlobalPosition = new Vector2(cell.X * 64, cell.Y * 64);
 
-            // Add it to the scene tree
-            AddChild(colorRect);
+                // Set its color with opacity based on the anomaly value
+                Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
+                colorRect.Color = squareColor;
+
+                // Add it to the scene tree
+                AddChild(colorRect);
+            }
+            fullMapDisplayed = true;
         }
     }
 

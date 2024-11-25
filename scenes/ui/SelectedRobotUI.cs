@@ -12,6 +12,10 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Button randomExplorButton;
 	private Button stopExplorbutton;
 	private Button trackRobotButton;
+	private Button gradientSearchButton;
+	private Button returnToBaseButton;
+	private Button rewindMovesButton;
+	private OptionButton explorModeOptionsButton;
 	private Label gravAnomValueLabel;
 	private Label statusLabel;
 	private Label batteryLabel;
@@ -32,7 +36,11 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	private void InitializeUI()
 	{
+		explorModeOptionsButton = GetNode<OptionButton>("%ExplorModeOptionsButton");
 		randomExplorButton = GetNode<Button>("%RandomExplorButton");
+		gradientSearchButton = GetNode<Button>("%GradientSearchButton");
+		returnToBaseButton= GetNode<Button>("%ReturnToBaseButton");
+		rewindMovesButton = GetNode<Button>("%RewindMovesButton");
 		stopExplorbutton = GetNode<Button>("%StopExplorButton");
 		trackRobotButton = GetNode<Button>("%TrackRobotButton");
 		gravAnomValueLabel = GetNode<Label>("%GravAnomValueLabel");
@@ -41,8 +49,12 @@ public partial class SelectedRobotUI : CanvasLayer
 
 
 		randomExplorButton.Pressed += OnRandomExplorButtonPressed;
+		gradientSearchButton.Pressed += OnGradientSearchButtonPressed;
+		returnToBaseButton.Pressed += OnReturnToBaseButtonPressed;
+		rewindMovesButton.Pressed += OnRewindMovesButtonPressed;
 		stopExplorbutton.Pressed += OnStopExplorButtonPressed;
 		trackRobotButton.Pressed += OnTrackRobotButtonPressed;
+		explorModeOptionsButton.ItemSelected += OnOptionsButtonItemSelected;
 	}
 
     private void OnNoMoreRobotSelected(BuildingComponent component)
@@ -69,12 +81,50 @@ public partial class SelectedRobotUI : CanvasLayer
     private void OnRandomExplorButtonPressed()
 	{
 		selectedBuildingComponent.EnableRandomMode();
-		statusLabel.Text = "Busy";
+		statusLabel.Text = "Exploring randomly";
+	}
+
+	private void OnGradientSearchButtonPressed()
+	{
+		selectedBuildingComponent.EnableGradientSearchMode();
+		statusLabel.Text = "Searching for high anomaly";
+	}
+
+	private void OnReturnToBaseButtonPressed()
+	{
+		selectedBuildingComponent.EnableReturnToBase();
+		statusLabel.Text = "Returning to base";
+	}
+
+	private void OnRewindMovesButtonPressed()
+	{
+		selectedBuildingComponent.EnableRewindMovesMode();
+		statusLabel.Text = "Returning to base";
+	}
+
+	private void OnOptionsButtonItemSelected(long index)
+	{
+		if(index == 0)
+		{
+			OnRandomExplorButtonPressed();
+		}
+		else if(index == 1)
+		{
+			OnGradientSearchButtonPressed();
+		}
+		else if(index == 2)
+		{
+			OnRewindMovesButtonPressed();
+		}
+		else if(index == 3)
+		{
+			OnReturnToBaseButtonPressed();
+		}
 	}
 
 	private void OnStopExplorButtonPressed()
 	{
-		selectedBuildingComponent.StopRandomMode();
+		selectedBuildingComponent.StopAnyAutomatedMovementMode();
 		statusLabel.Text = "Available";
 	}
 
@@ -97,7 +147,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		selectedBuildingComponent.NewAnomalyReading += OnNewAnomalyReading;
 		gravAnomValueLabel.Text = "Value: " + selectedBuildingComponent.GetAnomalyReadingAtCurrentPos(); 
 		if (selectedBuildingComponent.IsStuck){statusLabel.Text = "Stuck";}
-		else if(selectedBuildingComponent.IsRandomMode) statusLabel.Text = "Busy";
+		else if(selectedBuildingComponent.currentExplorMode != BuildingComponent.ExplorMode.None) statusLabel.Text = "Busy";
 		else statusLabel.Text = "Available";
 	}
 

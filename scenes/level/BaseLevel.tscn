@@ -42,7 +42,8 @@ highlightTilemapLayer = NodePath("../YSortRoot/HighlightTileMapLayer")
 baseTerrainTilemapLayer = NodePath("../YSortRoot/BaseTerrainTileMapLayer")
 gravitationalAnomalyMap = NodePath("../GravitationalAnomalyMap")
 
-[node name="GameUI" parent="." node_paths=PackedStringArray("buildingManager") instance=ExtResource("3_b6i5e")]
+[node name="GameUI" parent="." node_paths=PackedStringArray("gravitationalAnomalyMap", "buildingManager") instance=ExtResource("3_b6i5e")]
+gravitationalAnomalyMap = NodePath("../GravitationalAnomalyMap")
 buildingManager = NodePath("../BuildingManager")
 buildingResources = Array[Object]([ExtResource("9_y4a1x"), ExtResource("10_l7o86"), ExtResource("11_vgav0")])
 

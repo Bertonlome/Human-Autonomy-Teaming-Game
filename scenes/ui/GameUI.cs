@@ -14,8 +14,11 @@ public partial class GameUI : CanvasLayer
 	private VBoxContainer buildingSectionContainer;
 	private Label resourceLabel;
 	private Button stopRobotButton;
+	private Button displayAnomalyMapButton;
 	private readonly StringName ACTION_SPACEBAR = "spacebar";
 
+	[Export]
+	private GravitationalAnomalyMap gravitationalAnomalyMap;
 	[Export]
 	private BuildingManager buildingManager;
 	[Export]
@@ -28,9 +31,11 @@ public partial class GameUI : CanvasLayer
 		buildingSectionContainer = GetNode<VBoxContainer>("%BuildingSectionContainer");
 		resourceLabel = GetNode<Label>("%ResourceLabel");
 		stopRobotButton = GetNode<Button>("%StopRobotButton");
+		displayAnomalyMapButton = GetNode<Button>("%DisplayAnomalyMapButton");
 		CreateBuildingSections();
 
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
+		displayAnomalyMapButton.Pressed += OnDisplayAnomalyMapButtonPressed;
 		buildingManager.AvailableResourceCountChanged += OnAvailableResourceCountChanged;
 	}
 
@@ -68,9 +73,14 @@ public partial class GameUI : CanvasLayer
 		var allRobots = BuildingComponent.GetValidBuildingComponents(this);
 		foreach(var robot in allRobots)
 		{
-			robot.StopRandomMode();
+			robot.StopAnyAutomatedMovementMode();
 		}
 		GameEvents.EmitAllRobotStop();
+	}
+
+	private void OnDisplayAnomalyMapButtonPressed()
+	{
+		gravitationalAnomalyMap.DisplayAnomalyMap();
 	}
 
 	private void OnAvailableResourceCountChanged(int availableResourceCount)

@@ -19,6 +19,7 @@ ResourceCost = 2
 BuildableRadius = 8
 ResourceRadius = 0
 VisionRadius = 2
+AnomalySensorRadius = 1
 DangerRadius = 0
 AttackRadius = 0
 BuildingScene = ExtResource("1_j4dnl")
