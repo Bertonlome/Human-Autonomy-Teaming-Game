@@ -19,6 +19,7 @@ ResourceCost = 2
 BuildableRadius = 12
 ResourceRadius = 0
 VisionRadius = 6
+AnomalySensorRadius = 3
 DangerRadius = 0
 AttackRadius = 0
 BuildingScene = ExtResource("1_hekwi")

@@ -54,12 +54,52 @@ horizontal_alignment = 1
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4"]
 layout_mode = 2
-theme_override_constants/separation = 32
+theme_override_constants/separation = 20
 
-[node name="RandomExplorButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
+layout_mode = 2
+
+[node name="RandomExplorButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Random Exploration"
+
+[node name="GradientSearchButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Search high anomaly"
+
+[node name="RewindMovesButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Rewind moves"
+
+[node name="ReturnToBaseButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Return to base"
+
+[node name="Label2" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Choose exploration mode"
+horizontal_alignment = 1
+
+[node name="ExplorModeOptionsButton" type="OptionButton" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 4
+popup/item_0/text = "Random exploration"
+popup/item_1/text = "Search high anomaly"
+popup/item_1/id = 1
+popup/item_2/text = "Rewind moves"
+popup/item_2/id = 2
+popup/item_3/text = "Return to base"
+popup/item_3/id = 3
 
 [node name="StopExplorButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
 unique_name_in_owner = true

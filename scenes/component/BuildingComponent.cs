@@ -30,10 +30,11 @@ public partial class BuildingComponent : Node2D
 	public GravitationalAnomalyMap gravitationalAnomalyMap;
 	public bool IsDestroying { get; private set; }
 	public bool IsDisabled { get; private set; }
-	public bool IsRandomMode {get; set;} = false;
 	public bool IsStuck {get; private set;} = false; 
 	public bool IsRecharging {get; set;} = false;
 	public int Battery {get; set;} = 100;
+	
+	private List<(Vector2I,StringName)> moveHistory = new();
 
 	private HashSet<Vector2I> occupiedTiles = new();
 
@@ -47,6 +48,19 @@ public partial class BuildingComponent : Node2D
     private float timerMove = 0.0f; // Tracks time since last move
 	private float timerRecharge = 0.0f; // Tracks time since last move
 	public const float RECHARGE_INTERVAL = 3.0f;
+
+
+	public enum ExplorMode
+	{
+		Random,
+		GradientSearch,
+		RewindMoves,
+		ReturnToBase,
+		None
+	}
+
+	public ExplorMode currentExplorMode = ExplorMode.None;
+
 
 
 	public static IEnumerable<BuildingComponent> GetValidBuildingComponents(Node node)
@@ -119,21 +133,29 @@ public partial class BuildingComponent : Node2D
 
     public override void _Process(double delta)
     {
-        if (IsRandomMode == true && !IsStuck)
-        {
-            // Update the timer
-            timerMove += (float)delta;
+		switch(currentExplorMode)
+		{
+			case ExplorMode.Random:
+			if (!IsStuck)
+			{
+				// Update the timer
+				timerMove += (float)delta;
 
-            // Check if enough time has passed to move
-            if (timerMove >= this.BuildingResource.moveInterval)
-            {
-				var randDir = buildingManager.GetRandomDirection(previousDir);
-        		//GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
-                buildingManager.MoveBuildingInDirectionAutomated(this, randDir);
-				previousDir = randDir;
-                timerMove = 0.0f; // Reset the timer
-            }
-        }
+				// Check if enough time has passed to move
+				if (timerMove >= this.BuildingResource.moveInterval)
+				{
+					var randDir = buildingManager.GetRandomDirection(previousDir);
+					//GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
+					buildingManager.MoveInDirectionAutomated(this, randDir);
+					previousDir = randDir;
+					timerMove = 0.0f; // Reset the timer
+				}
+			}
+			break;
+			case ExplorMode.GradientSearch:
+			break;
+		}
+        
 		if(IsRecharging)
 		{
 			timerRecharge += (float)delta;
@@ -147,14 +169,60 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
-	public void EnableRandomMode()
+	private List<StringName> GenerateHistoryMoveList()
 	{
-		IsRandomMode = true;
+		var reversedMoveHistory = moveHistory.AsEnumerable().Reverse();
+		List<StringName> reversedDirections = new();
+		foreach((Vector2I position, StringName direction) in reversedMoveHistory)
+		{
+			reversedDirections.Add(GetOppositeDirection(direction));
+		}
+		return reversedDirections;
 	}
 
-	public void StopRandomMode()
+	public StringName GetOppositeDirection(StringName directionInput)
 	{
-		IsRandomMode = false;
+		StringName directionOutput = "";
+		
+		if(directionInput == MOVE_DOWN) directionOutput = MOVE_UP;
+		else if(directionInput == MOVE_UP) directionOutput = MOVE_DOWN;
+		else if(directionInput == MOVE_LEFT) directionOutput = MOVE_RIGHT;
+		else if(directionInput == MOVE_RIGHT) directionOutput = MOVE_LEFT;
+		
+		return directionOutput;
+	}
+
+	public void UpdateMoveHistory(Vector2I position, StringName direction)
+	{
+		moveHistory.Add((position, direction));
+	}
+
+	public void EnableRandomMode()
+	{
+		currentExplorMode = ExplorMode.Random;
+	}
+
+	public void EnableGradientSearchMode()
+	{
+		currentExplorMode = ExplorMode.GradientSearch;
+		GradientSearch();
+	}
+
+	public void EnableRewindMovesMode()
+	{
+		currentExplorMode = ExplorMode.RewindMoves;
+		RewindMoves();
+	}
+
+	public void EnableReturnToBase()
+	{
+		currentExplorMode = ExplorMode.ReturnToBase;
+		ReturnToBase();
+	}
+
+	public void StopAnyAutomatedMovementMode()
+	{
+		currentExplorMode = ExplorMode.None;
 	}
 
     public Vector2I GetGridCellPosition()
@@ -188,6 +256,31 @@ public partial class BuildingComponent : Node2D
 		} 
 		return tileAreaAndAdjacent.ToHashSet();
 	}
+
+	public HashSet<Vector2I> GetTilesWithinDistance(Vector2I startTile, int maxDistanceSensor)
+	{
+		var reachableTiles = new HashSet<Vector2I> { startTile }; // Start with the initial tile
+
+		for (int distance = 1; distance <= maxDistanceSensor; distance++)
+		{
+			var currentLevelTiles = new HashSet<Vector2I>();
+
+			foreach (var tile in reachableTiles)
+			{
+				// Add all tiles reachable in one move from the current tile
+				currentLevelTiles.Add(new Vector2I(tile.X + 1, tile.Y));
+				currentLevelTiles.Add(new Vector2I(tile.X - 1, tile.Y));
+				currentLevelTiles.Add(new Vector2I(tile.X, tile.Y + 1));
+				currentLevelTiles.Add(new Vector2I(tile.X, tile.Y - 1));
+			}
+
+			// Merge the newly found tiles into the main set
+			reachableTiles.UnionWith(currentLevelTiles);
+		}
+
+		return reachableTiles;
+	}
+
 
 	public bool IsTileInBuildingArea(Vector2I tilePosition)
 	{
@@ -301,6 +394,153 @@ public partial class BuildingComponent : Node2D
 			}
 		}
 	}
+
+	public async void RewindMoves()
+	{
+		if(Battery < moveHistory.Count)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to go back to base automatically", this);
+		}
+		if (!IsStuck && Battery > moveHistory.Count)
+		{
+			var reversedHistoryMove = GenerateHistoryMoveList();
+			foreach(StringName direction in reversedHistoryMove)
+			{
+				buildingManager.MoveInDirectionAutomated(this, direction);
+
+				await ToSignal(GetTree().CreateTimer(this.BuildingResource.moveInterval), "timeout");
+			}
+		}
+		currentExplorMode = ExplorMode.None;
+		moveHistory.Clear();
+	}
+
+	public async void ReturnToBase()
+	{
+		var myBase = GetBaseBuilding(this).FirstOrDefault();
+		var movesToReachBase = GetMovesToReachTile(GetGridCellPosition(), myBase.GetGridCellPosition());
+		if(Battery < movesToReachBase.Count)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to go back to base automatically", this);
+		}
+		if (!IsStuck && Battery > movesToReachBase.Count)
+		{
+			foreach(StringName direction in movesToReachBase)
+			{
+				buildingManager.MoveInDirectionAutomated(this, direction);
+
+				await ToSignal(GetTree().CreateTimer(this.BuildingResource.moveInterval), "timeout");
+			}
+		}
+		currentExplorMode = ExplorMode.None;
+	}
+
+	public List<string> GetMovesToReachTile(Vector2I currentPosition, Vector2I targetPosition)
+	{
+		List<string> moves = new List<string>();
+
+		// Calculate the deltas
+		int deltaX = targetPosition.X - currentPosition.X;
+		int deltaY = targetPosition.Y - currentPosition.Y;
+
+		// Add horizontal moves
+		if (deltaX > 0)
+		{
+			for (int i = 0; i < deltaX; i++)
+			{
+				moves.Add(MOVE_RIGHT);
+			}
+		}
+		else if (deltaX < 0)
+		{
+			for (int i = 0; i < -deltaX; i++)
+			{
+				moves.Add(MOVE_LEFT);
+			}
+		}
+
+		// Add vertical moves
+		if (deltaY > 0)
+		{
+			for (int i = 0; i < deltaY; i++)
+			{
+				moves.Add(MOVE_DOWN);
+			}
+		}
+		else if (deltaY < 0)
+		{
+			for (int i = 0; i < -deltaY; i++)
+			{
+				moves.Add(MOVE_UP);
+			}
+		}
+
+		return moves;
+	}
+
+
+
+
+public async void GradientSearch()
+{
+    if (currentExplorMode == ExplorMode.GradientSearch && !IsStuck)
+    {
+		bool reachedMaxima = false;
+        var currentPosition = GetGridCellPosition();
+        var candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
+
+        Vector2I highestTile = currentPosition; // Default to current position
+        float highestAnomaly = float.MinValue; // Start with a very low value
+
+		while(currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima)
+		{
+			foreach (var tile in candidateTiles)
+			{
+				// Get anomaly value
+				var anomaly = gravitationalAnomalyMap.GetAnomalyAt(tile.X, tile.Y);
+				//GD.Print($"Adjacent pos: ({tile.X}, {tile.Y}) anomaly = {anomaly}");
+
+				// Update the highest anomaly tile if a higher value is found
+				if (anomaly > highestAnomaly)
+				{
+					highestAnomaly = anomaly;
+					highestTile = tile;
+				}
+
+				// Add delay
+			}
+
+			// Calculate the relative direction
+			string relativeDirection = GetDirectionFromDelta(currentPosition, highestTile);
+
+			//GD.Print($"Tile with the highest anomaly is at {highestTile}, direction: {relativeDirection}");
+			if(relativeDirection != "CURRENT")
+			{
+			buildingManager.MoveInDirectionAutomated(this, relativeDirection);
+			}
+			else
+			{
+				reachedMaxima = true;
+			}
+			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+		}
+    }
+    currentExplorMode = ExplorMode.None;
+}
+
+private string GetDirectionFromDelta(Vector2I current, Vector2I target)
+{
+    int dx = target.X - current.X;
+    int dy = target.Y - current.Y;
+
+    if (dx > 0) return MOVE_RIGHT;
+    if (dx < 0) return MOVE_LEFT;
+    if (dy > 0) return MOVE_UP;
+    if (dy < 0) return MOVE_DOWN;
+
+    return "CURRENT"; // In case the target is the same as the current position
+}
+
 	
 
 	private void Initialize()
