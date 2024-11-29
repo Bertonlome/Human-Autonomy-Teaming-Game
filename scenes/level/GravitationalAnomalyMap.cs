@@ -11,6 +11,7 @@ public partial class GravitationalAnomalyMap : Node
     private const float MaxAnomaly = 255f;
     private List<Vector2I> allTilesBaseLayer;
     private bool fullMapDisplayed = false;
+    private bool traceDisplayed = false;
 
     [Export]
     private GridManager gridManager;
@@ -74,7 +75,7 @@ public partial class GravitationalAnomalyMap : Node
                 float rawNoise = noise.GetNoise2D(x, y);
 
                 // Normalize and scale the anomaly value
-                float scaledAnomaly = Mathf.Lerp(MinAnomaly - 1000, MaxAnomaly + 1000, (rawNoise + 1f) / 2f);
+                float scaledAnomaly = Mathf.Lerp(MinAnomaly - 500, MaxAnomaly + 500, (rawNoise + 1f) / 2f);
                 scaledAnomaly = Mathf.Clamp(scaledAnomaly, 0, 200);
 
                 // Add to the dictionary
@@ -120,6 +121,40 @@ public partial class GravitationalAnomalyMap : Node
         }
     }
 
+    public void DisplayTrace(HashSet<Vector2I> tileDiscovered)
+    {
+       if (traceDisplayed == true)
+        {
+            foreach(Node child in GetChildren())
+            {
+                child.QueueFree();
+            }
+            traceDisplayed = false;
+        }
+        else
+            {
+            Vector2 size = new Vector2(64, 64);
+
+            foreach (var tile in tileDiscovered)
+            {
+                float scaledAnomaly = anomalyMap[tile];
+                ColorRect colorRect = new ColorRect();
+                colorRect.SetSize(size);
+
+                // Position it in world space
+                colorRect.GlobalPosition = new Vector2(tile.X * 64, tile.Y * 64);
+
+                // Set its color with opacity based on the anomaly value
+                Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
+                colorRect.Color = squareColor;
+
+                // Add it to the scene tree
+                AddChild(colorRect);
+            }
+            traceDisplayed = true;
+        }
+    }
+
     public float GetAnomalyAt(int x, int y)
     {
         Vector2I cell = new Vector2I(x, y);
@@ -145,7 +180,7 @@ public partial class GravitationalAnomalyMap : Node
 		                                      .ToList();	
 
 		int maxDistance = 50; // Maximum distance to affect tiles, adjust as needed
-		int maxValue = 255; // Highest value near the monolith
+		int maxValue = 500; // Highest value near the monolith
 		int minValue = 0; // Lowest value farthest from the monolith
         var randomAnomaly = new RandomNumberGenerator();
 
@@ -160,7 +195,7 @@ public partial class GravitationalAnomalyMap : Node
 				int manhattanDistance = Mathf.Abs(monolithPosition.X - x) + Mathf.Abs(monolithPosition.Y - y);
 
                 //Add a ring
-                if(manhattanDistance == 25 || manhattanDistance == 24 || manhattanDistance == 26 || manhattanDistance == 9 || manhattanDistance == 10 || manhattanDistance == 11)
+                if(manhattanDistance == 9 || manhattanDistance == 10 || manhattanDistance == 11)
                 {
                     // Set the gravitational anomaly value for the current tile
                     if (anomalyMap.TryGetValue(new Vector2I(x,y), out float anomaly))
@@ -180,7 +215,7 @@ public partial class GravitationalAnomalyMap : Node
                     if (anomalyMap.TryGetValue(new Vector2I(x,y), out float anomaly))
                     {
                         var currentAnomaly = GetAnomalyAt(x,y);
-                        anomalyMap[new Vector2I(x,y)] = Mathf.Clamp(currentAnomaly + anomalyValue, 0, 255);
+                        anomalyMap[new Vector2I(x,y)] = Mathf.Clamp(currentAnomaly + anomalyValue, 0, maxValue);
                     }
                     else GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
 				}

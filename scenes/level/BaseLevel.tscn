@@ -22,7 +22,7 @@
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_uikxx"]
 noise_type = 4
-frequency = 0.04
+frequency = 0.08
 metadata/_preview_in_3d_space_ = true
 
 [node name="BaseLevel" type="Node"]

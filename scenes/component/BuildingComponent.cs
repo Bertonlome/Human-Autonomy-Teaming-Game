@@ -353,6 +353,16 @@ public partial class BuildingComponent : Node2D
 		return (int)gravitationalAnomalyMap.GetAnomalyAt(GetGridCellPosition().X, GetGridCellPosition().Y);
 	}
 
+	public List<Vector2I> GetTileDiscovered()
+	{
+		List<Vector2I> tileDiscovered = new();
+		foreach((var tile, _) in moveHistory)
+		{
+			tileDiscovered.Add(tile);
+		}
+		return tileDiscovered;
+	}
+
 	public Rect2I GetAreaOccupied(Vector2I position)
 	{
 		Vector2I dimensionVector = new Vector2I(BuildingResource.Dimensions.X, BuildingResource.Dimensions.Y);
@@ -494,6 +504,7 @@ public async void GradientSearch()
 
 		while(currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima)
 		{
+			highestAnomaly = float.MinValue;
 			foreach (var tile in candidateTiles)
 			{
 				// Get anomaly value
@@ -523,6 +534,8 @@ public async void GradientSearch()
 				reachedMaxima = true;
 			}
 			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+			currentPosition = GetGridCellPosition();
+			candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
 		}
     }
     currentExplorMode = ExplorMode.None;
@@ -535,8 +548,8 @@ private string GetDirectionFromDelta(Vector2I current, Vector2I target)
 
     if (dx > 0) return MOVE_RIGHT;
     if (dx < 0) return MOVE_LEFT;
-    if (dy > 0) return MOVE_UP;
-    if (dy < 0) return MOVE_DOWN;
+    if (dy < 0) return MOVE_UP;
+    if (dy > 0) return MOVE_DOWN;
 
     return "CURRENT"; // In case the target is the same as the current position
 }

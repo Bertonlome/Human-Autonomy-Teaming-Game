@@ -102,12 +102,12 @@ public partial class GameCamera : Camera2D
 		if (evt.IsActionPressed(ACTION_SCROLL_FORWARD) && Zoom.X <= 1.5f)
 		{
 			Zoom = new Vector2((float)(Zoom.X +  0.1f), (float)(Zoom.Y + 0.1f));
-			EmitSignal(SignalName.CameraZoom);
+			//EmitSignal(SignalName.CameraZoom);
 		}
 		if (evt.IsActionPressed(ACTION_SCROLL_BACKWARD) && Zoom.X >= 0.3f)
 		{
 			Zoom = new Vector2((float)(Zoom.X -  0.1f), (float)(Zoom.Y - 0.1f));
-			EmitSignal(SignalName.CameraZoom);
+			//EmitSignal(SignalName.CameraZoom);
 		}
 	}
 
