@@ -270,7 +270,7 @@ public partial class BuildingManager : Node
 			FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
 			return;
 		}
-		else if(!buildingResource.IsAerial)
+		else if(!buildingResource.IsBase)
 		{
 			if(!gridManager.IsInBaseProximity(hoveredGridArea.Position))
 			{

@@ -101,15 +101,24 @@ popup/item_2/id = 2
 popup/item_3/text = "Return to base"
 popup/item_3/id = 3
 
-[node name="StopExplorButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
+layout_mode = 2
+
+[node name="StartExplorButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer2"]
 unique_name_in_owner = true
+layout_mode = 2
+text = "Start Exploration"
+
+[node name="StopExplorButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer2"]
+unique_name_in_owner = true
+modulate = Color(0.773438, 0.181274, 0.181274, 1)
 layout_mode = 2
 text = "Stop Exploration"
 
 [node name="TrackRobotButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Track Robot"
+text = "Track"
 
 [node name="RobotInfoContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer"]
 unique_name_in_owner = true

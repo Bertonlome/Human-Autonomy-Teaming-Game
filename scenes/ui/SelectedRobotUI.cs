@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Diagnostics.Tracing;
 using Game.Autoload;
 using Game.Component;
 using Godot;
@@ -15,11 +16,23 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Button gradientSearchButton;
 	private Button returnToBaseButton;
 	private Button rewindMovesButton;
+	private Button startExplorButton;
 	private OptionButton explorModeOptionsButton;
 	private Label gravAnomValueLabel;
 	private Label statusLabel;
 	private Label batteryLabel;
 	public BuildingComponent selectedBuildingComponent;
+
+	public enum ExplorMode
+	{
+		Random,
+		Gradient,
+		ReturnToBase,
+		Rewind,
+		None
+	}
+
+	private ExplorMode currentexplorMode =  ExplorMode.None;
 
 	public override void _Ready()
 	{
@@ -43,6 +56,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		rewindMovesButton = GetNode<Button>("%RewindMovesButton");
 		stopExplorbutton = GetNode<Button>("%StopExplorButton");
 		trackRobotButton = GetNode<Button>("%TrackRobotButton");
+		startExplorButton = GetNode<Button>("%StartExplorButton");
 		gravAnomValueLabel = GetNode<Label>("%GravAnomValueLabel");
 		statusLabel = GetNode<Label>("%StatusLabel");
 		batteryLabel = GetNode<Label>("%BatteryLabel");
@@ -55,6 +69,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		stopExplorbutton.Pressed += OnStopExplorButtonPressed;
 		trackRobotButton.Pressed += OnTrackRobotButtonPressed;
 		explorModeOptionsButton.ItemSelected += OnOptionsButtonItemSelected;
+		startExplorButton.Pressed += OnStartExplorButtonSelected;
 	}
 
     private void OnNoMoreRobotSelected(BuildingComponent component)
@@ -106,24 +121,33 @@ public partial class SelectedRobotUI : CanvasLayer
 	{
 		if(index == 0)
 		{
-			OnRandomExplorButtonPressed();
+			currentexplorMode = ExplorMode.Random;
 		}
 		else if(index == 1)
 		{
-			OnGradientSearchButtonPressed();
+			currentexplorMode = ExplorMode.Gradient;
 		}
 		else if(index == 2)
 		{
-			OnRewindMovesButtonPressed();
+			currentexplorMode = ExplorMode.Rewind;
 		}
 		else if(index == 3)
 		{
-			OnReturnToBaseButtonPressed();
+			currentexplorMode = ExplorMode.ReturnToBase;
 		}
+	}
+
+	private void OnStartExplorButtonSelected()
+	{
+		if(currentexplorMode == ExplorMode.Random || explorModeOptionsButton.Selected == 0) OnRandomExplorButtonPressed();
+		else if(currentexplorMode == ExplorMode.Gradient || explorModeOptionsButton.Selected == 1) OnGradientSearchButtonPressed();
+		else if(currentexplorMode == ExplorMode.Rewind || explorModeOptionsButton.Selected == 2) OnRewindMovesButtonPressed();
+		else if(currentexplorMode == ExplorMode.ReturnToBase || explorModeOptionsButton.Selected == 3) OnReturnToBaseButtonPressed();
 	}
 
 	private void OnStopExplorButtonPressed()
 	{
+		currentexplorMode = ExplorMode.None;
 		selectedBuildingComponent.StopAnyAutomatedMovementMode();
 		statusLabel.Text = "Available";
 	}
