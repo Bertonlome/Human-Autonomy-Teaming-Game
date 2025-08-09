@@ -1,0 +1,307 @@
+[gd_scene load_steps=6 format=3 uid="uid://dnchhrrd18axl"]
+
+[ext_resource type="Script" path="res://scenes/ui/RulesMenu.cs" id="1_ajc34"]
+[ext_resource type="Theme" uid="uid://lrxwuh3o4l5k" path="res://resources/sci-fi-theme.tres" id="2_ac37y"]
+[ext_resource type="Texture2D" uid="uid://tp5kykkeslar" path="res://assets/UAV.png" id="2_u8ama"]
+[ext_resource type="Texture2D" uid="uid://rrq4o5ki0a62" path="res://assets/Base.png" id="3_leqhi"]
+[ext_resource type="Texture2D" uid="uid://caodqhxkia3hs" path="res://assets/UGV.png" id="4_4tsq1"]
+
+[node name="RulesMenu" type="CanvasLayer"]
+script = ExtResource("1_ajc34")
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 192.0
+offset_top = 256.0
+offset_right = -128.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TabContainer" type="TabContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 6
+
+[node name="CONTEXT" type="PanelContainer" parent="Panel/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/CONTEXT"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/CONTEXT/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Panel/TabContainer/CONTEXT/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"Title"
+text = "CONTEXT OF THE GAME"
+uppercase = true
+
+[node name="Label" type="Label" parent="Panel/TabContainer/CONTEXT/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"rulesText"
+text = "You play as the supervisor of an exploration mission on an unknown exoplanet, leading a swarm of robots deployed from a landing module. The objective is to strategize the best way to use the robots to complete the mission.
+
+WHY?: To familiarize with the concept of HAT (Human-Autonomy Teaming)"
+autowrap_mode = 3
+
+[node name="SCOPE" type="PanelContainer" parent="Panel/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/SCOPE"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/SCOPE/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Panel/TabContainer/SCOPE/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"Title"
+text = "SCOPE OF THE GAME"
+uppercase = true
+
+[node name="Label" type="Label" parent="Panel/TabContainer/SCOPE/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"rulesText"
+text = "GOAL: To locate and analyze a mysterious monolith hidden somewhere on the map.
+
+HOW: Map the terrain, clear the Fog of War and collect resources.
+
+Who: You will coordinate the team, consisting of up to 4 robots and a landing base."
+autowrap_mode = 3
+
+[node name="BASE" type="PanelContainer" parent="Panel/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/BASE"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/BASE/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/TabContainer/BASE/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 50
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/TabContainer/BASE/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"Title"
+text = "LANDING BASE"
+uppercase = true
+
+[node name="TextureRect" type="TextureRect" parent="Panel/TabContainer/BASE/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(132, 95)
+layout_mode = 2
+texture = ExtResource("3_leqhi")
+expand_mode = 1
+stretch_mode = 4
+
+[node name="Label" type="Label" parent="Panel/TabContainer/BASE/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"rulesText"
+text = "The game begins with the landing of a central module, which deploys a relay antenna to enable communication with the robots.  
+ANTENNA: To be operative all robots must be in range of antennas. Robots act as repeaters for telecomunications. Ranges:
+
+• 10 units around the base.
+• 6 units around each flying drone (UAV).
+• 4 units around each ground drone (UGV)."
+autowrap_mode = 3
+
+[node name="UGV" type="PanelContainer" parent="Panel/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/UGV"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/UGV/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/TabContainer/UGV/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Panel/TabContainer/UGV/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"Title"
+text = "UGV : Unmanned Ground Vehicle"
+uppercase = true
+
+[node name="TextureRect" type="TextureRect" parent="Panel/TabContainer/UGV/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("4_4tsq1")
+
+[node name="Label" type="Label" parent="Panel/TabContainer/UGV/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"rulesText"
+text = "GOOD: 
+• It can analyze the monolith (To win the game you must reach the Monolith with the UGV)
+• Can collect resources 
+• Battery capacity: 500 moves before charging
+
+BAD: 
+• Can randomly get stuck in the terrain (must be unstuck by UAV by bringing it closer)
+• slower, can’t go through rough terrain, climb or swim"
+autowrap_mode = 3
+
+[node name="UAV" type="PanelContainer" parent="Panel/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/UAV"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/UAV/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/TabContainer/UAV/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Panel/TabContainer/UAV/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"Title"
+text = "UAV : Unmanned Aerial Vehicle"
+uppercase = true
+
+[node name="TextureRect" type="TextureRect" parent="Panel/TabContainer/UAV/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("2_u8ama")
+
+[node name="Label" type="Label" parent="Panel/TabContainer/UAV/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"rulesText"
+text = "GOOD: 
+• Can unstuck the ground robot (must be brought close to it)
+• Faster than UGV 
+• Can hover over rough terrain and water
+• Good camera range (10 units)
+
+BAD: 
+• Lower battery capacity: 400 moves before charging
+• Can’t win the game with the UAV!!"
+autowrap_mode = 3
+
+[node name="MODES" type="PanelContainer" parent="Panel/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 5
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/MODES"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/MODES/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Panel/TabContainer/MODES/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"Title"
+text = "MODES"
+uppercase = true
+
+[node name="Label" type="Label" parent="Panel/TabContainer/MODES/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"rulesText"
+text = "Each robot can be moved by the player or autonomously accordingly to 4 modes:
+
+Random exploration: Good luck!
+
+SEARCH HIGH ANOMALY: The robot follows a gradient descent following high anomaly values (The higher the closer to the monolith).
+
+REWIND MOVES: let me go back...
+
+Back To base: Need to refuel!
+"
+autowrap_mode = 3
+
+[node name="CONTROLS" type="PanelContainer" parent="Panel/TabContainer"]
+layout_mode = 2
+metadata/_tab_index = 6
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/CONTROLS"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/CONTROLS/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Panel/TabContainer/CONTROLS/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"Title"
+text = "GAME CONTROLS"
+uppercase = true
+
+[node name="Label" type="Label" parent="Panel/TabContainer/CONTROLS/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme = ExtResource("2_ac37y")
+theme_type_variation = &"rulesText"
+text = "When a robot is selected, you can manually move it using W,A,S,D keys
+
+The camera can be centered around the mouse using space
+
+The camera can be panned using the arrow keys
+
+The camera be zoomed in / zoomed using the mousewheel"
+autowrap_mode = 3
+
+[node name="DoneButton" type="Button" parent="Panel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -35.0
+offset_top = -28.0
+offset_right = 35.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Done"

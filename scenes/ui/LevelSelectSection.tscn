@@ -48,15 +48,6 @@ layout_mode = 2
 texture = ExtResource("3_4gafv")
 stretch_mode = 2
 
-[node name="ColorRect" type="ColorRect" parent="MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/CompletedIndicator"]
-show_behind_parent = true
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.973
-anchor_bottom = 0.967
-offset_right = 0.998997
-offset_bottom = -0.0100021
-
 [node name="Button" type="Button" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2

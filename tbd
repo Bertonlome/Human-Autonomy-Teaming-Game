@@ -1,0 +1,19 @@
+Il faut installer un panel UI sur la droite pendant le jeu "Current situation" qui relate le nombre de robot déployé, leur état (ex: ugv bloqué)
+
+Il faut augmenter la trace que peuvent dévoiler les robots 2 unités pour l'UGV, 4 pour l'UAV
+
+Il faut pouvoir envoyer un robot à un autre robot soit depuis le panneau de droite soit depuis le panneau de contrôle du robot en bas
+
+Il faut créer deux autres maps (on peut envisager un nombre de robot différent par map)
+
+Il faut que l'exploration random soit plus intelligente et puissent être assigné à plusieurs robot en même temps qui ne font pas le même chemin (checker les algos de d'exploration)
+
+On pourrait mettre un chrono pour que le jeux soit plus challengeant.
+
+Le robot en mode gradient descent pourrait envoyer une notification sur le panneau de droite pour dire qu'il a trouver un maximum local.
+
+Il faut que les robots puissent partir en exploration hors zone couverte lorsqu'ils sont en mode autonome.
+
+Il faut pouvoir envoyer les robots vers une zone avec un clic droit comme sur age of empire (c'est un mode semi-autonome car le robot est responsable de ses déplacements)
+
+Il faudrait réfléchir à un objectif annexe (peut être collecter des ressources ?) pour que le jeux soit plus intéressant.

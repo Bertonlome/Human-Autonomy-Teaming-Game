@@ -1,17 +1,20 @@
-[gd_scene load_steps=9 format=4 uid="uid://c2im13c7kn4xj"]
+[gd_scene load_steps=11 format=4 uid="uid://c2im13c7kn4xj"]
 
 [ext_resource type="Script" path="res://scenes/ui/MainMenu.cs" id="1_k6ppd"]
 [ext_resource type="TileSet" uid="uid://dvqwr0ci0x55u" path="res://resources/tiles.tres" id="2_jc5mq"]
 [ext_resource type="PackedScene" uid="uid://cgi3e02262en8" path="res://scenes/ui/OptionsMenu.tscn" id="2_v8d5j"]
 [ext_resource type="PackedScene" uid="uid://cv6tnl0bv6sfg" path="res://scenes/building/Base.tscn" id="3_p8kyu"]
 [ext_resource type="PackedScene" uid="uid://iv4rk5h4ybki" path="res://scenes/level/util/ElevationLayer.tscn" id="3_pnm4a"]
+[ext_resource type="PackedScene" uid="uid://dnchhrrd18axl" path="res://scenes/ui/RulesMenu.tscn" id="3_w2wf4"]
 [ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/Monolith.tscn" id="4_smdta"]
 [ext_resource type="PackedScene" uid="uid://bb2ug053frok2" path="res://scenes/building/GroundRobot.tscn" id="4_tfh3j"]
 [ext_resource type="PackedScene" uid="uid://dr2vs3njjnlm4" path="res://scenes/ui/LevelSelectScreen.tscn" id="7_3j1st"]
+[ext_resource type="Texture2D" uid="uid://dnmtseao4q3vg" path="res://assets/HAT_game_logo_cropped.png" id="9_54ckx"]
 
 [node name="MainMenu" type="Node"]
 script = ExtResource("1_k6ppd")
 optionsMenuScene = ExtResource("2_v8d5j")
+rulesMenuScene = ExtResource("3_w2wf4")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(896, 320)
@@ -71,7 +74,6 @@ position = Vector2(817, 295)
 
 [node name="MainMenuContainer" type="MarginContainer" parent="CanvasLayer"]
 unique_name_in_owner = true
-visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -98,19 +100,67 @@ theme_override_constants/separation = 16
 [node name="PlayButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Play"
 
 [node name="OptionsButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Options"
 
 [node name="QuitButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Quit"
+
+[node name="RulesButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Rules"
+
+[node name="PanelContainer2" type="PanelContainer" parent="CanvasLayer/MainMenuContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+
+[node name="Label" type="Label" parent="CanvasLayer/MainMenuContainer/PanelContainer2"]
+layout_mode = 2
+text = "MIT License Copyright (c) 2025 Benjamin R. Berton - Polytechnique Montréal
+"
 
 [node name="LevelSelectScreen" parent="CanvasLayer" instance=ExtResource("7_3j1st")]
 unique_name_in_owner = true
+visible = false
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer"]
+offset_left = 25.0
+offset_top = 25.0
+offset_right = 509.0
+offset_bottom = 251.0
+
+[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/line_spacing = 26
+theme_override_font_sizes/font_size = 64
+text = "EXOPLANET
+EXPLORATION
+GAME"
+
+[node name="Control" type="Control" parent="CanvasLayer/HBoxContainer"]
+z_index = -1
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/HBoxContainer/Control"]
+layout_mode = 2
+offset_left = -120.0
+offset_top = -16.0
+offset_right = 40.0
+offset_bottom = 144.0
+texture = ExtResource("9_54ckx")
+expand_mode = 2
+stretch_mode = 4
 
 [editable path="YSortRoot/BaseTerrainTileMapLayer/ElevationLayer"]

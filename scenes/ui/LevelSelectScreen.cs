@@ -18,6 +18,7 @@ public partial class LevelSelectScreen : MarginContainer
 	{
 		gridContainer = GetNode<GridContainer>("%GridContainer");
 		backButton = GetNode<Button>("BackButton");
+		AudioHelpers.RegisterButtons(new Button[] { backButton });
 
 		var levelDefinitions = LevelManager.GetLevelDefinitions();
 		for (var i = 0; i < levelDefinitions.Length; i++)
