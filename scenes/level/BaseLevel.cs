@@ -16,6 +16,8 @@ public partial class BaseLevel : Node
 	[Export]
 	private PackedScene levelCompleteScreenScene;
 	[Export]
+	private PackedScene levelFailedScreenScene;
+	[Export]
 	private PackedScene selectedRobotUIScene;
 	[Export]
 	private LevelDefinitionResource levelDefinitionResource;
@@ -42,6 +44,8 @@ public partial class BaseLevel : Node
 		buildingManager = GetNode<BuildingManager>("BuildingManager");
 
 		buildingManager.SetStartingResourceCount(levelDefinitionResource.StartingResourceCount);
+		gameUI.SetTimeToCompleteLevel(levelDefinitionResource.LevelDuration);
+		gameUI.TimeIsUp += ShowLevelFailed;
 		buildingManager.BasePlaced += OnBasePlaced;
 
 		gameCamera.SetBoundingRect(baseTerrainTilemapLayer.GetUsedRect());
@@ -81,9 +85,20 @@ public partial class BaseLevel : Node
 		selectedRobotUI.HideUI();
 	}
 
+	public void ShowLevelFailed()
+	{
+		var levelFailedScreen = levelFailedScreenScene.Instantiate<LevelFailedScreen>();
+		AddChild(levelFailedScreen);
+		gameUI.HideUI();
+		if (selectedRobotUI != null)
+		{
+			selectedRobotUI.HideUI();
+		}
+	}
+	
 	private void OnCameraZoom()
 	{
-		if(baseBuilding != null)
+		if (baseBuilding != null)
 		{
 			gameCamera.CenterOnPosition(baseBuilding.GlobalPosition);
 		}

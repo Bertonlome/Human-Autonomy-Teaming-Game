@@ -1,3 +1,4 @@
+using System;
 using Game.Autoload;
 using Game.Resources.Level;
 using Godot;
@@ -11,6 +12,7 @@ public partial class LevelSelectSection : PanelContainer
 
 	private Button button;
 	private Label resourceCountLabel;
+	private Label timeLabel;
 	private Label levelNumberLabel;
 	private TextureRect completedIndicator;
 	private int levelIndex;
@@ -21,6 +23,7 @@ public partial class LevelSelectSection : PanelContainer
 
 		AudioHelpers.RegisterButtons(new Button[] {button});
 		resourceCountLabel = GetNode<Label>("%ResourceCountLabel");
+		timeLabel = GetNode<Label>("%TimeLabel");
 		levelNumberLabel = GetNode<Label>("%LevelNumberLabel");
 		completedIndicator = GetNode<TextureRect>("%CompletedIndicator");
 
@@ -30,6 +33,7 @@ public partial class LevelSelectSection : PanelContainer
 	public void SetLevelDefinition(LevelDefinitionResource levelDefinitionResource)
 	{
 		resourceCountLabel.Text = levelDefinitionResource.StartingResourceCount.ToString();
+		timeLabel.Text = TimeSpan.FromSeconds(levelDefinitionResource.LevelDuration).ToString(@"mm\:ss");
 		completedIndicator.Visible = SaveManager.IsLevelCompleted(levelDefinitionResource.Id);
 	}
 

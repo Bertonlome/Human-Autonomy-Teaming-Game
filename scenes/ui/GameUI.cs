@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Game.Autoload;
 using Game.Component;
@@ -11,9 +12,14 @@ public partial class GameUI : CanvasLayer
 {
 	[Signal]
 	public delegate void BuildingResourceSelectedEventHandler(BuildingResource buildingResource);
+	[Signal]
+	public delegate void TimeIsUpEventHandler();
+	private bool isTimeIsUp = false;
+	public int TimeToCompleteLevel;
 
 	private VBoxContainer buildingSectionContainer;
 	private Label resourceLabel;
+	private Label timeLeftLabel;
 	private Button stopRobotButton;
 	private Button displayAnomalyMapButton;
 	private Button displayTraceButton;
@@ -27,11 +33,14 @@ public partial class GameUI : CanvasLayer
 	private BuildingResource[] buildingResources;
 	[Export]
 	private PackedScene buildingSectionScene;
+	[Export]
+	private PackedScene UnitSectionScene;
 
 	public override void _Ready()
 	{
 		buildingSectionContainer = GetNode<VBoxContainer>("%BuildingSectionContainer");
 		resourceLabel = GetNode<Label>("%ResourceLabel");
+		timeLeftLabel = GetNode<Label>("%TimeLeftLabel");
 		stopRobotButton = GetNode<Button>("%StopRobotButton");
 		displayAnomalyMapButton = GetNode<Button>("%DisplayAnomalyMapButton");
 		displayTraceButton = GetNode<Button>("%DisplayTraceButton");
@@ -40,12 +49,55 @@ public partial class GameUI : CanvasLayer
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
 		displayAnomalyMapButton.Pressed += OnDisplayAnomalyMapButtonPressed;
 		buildingManager.AvailableResourceCountChanged += OnAvailableResourceCountChanged;
+		buildingManager.ClockIsTicking += OnClockIsTicking;
 		displayTraceButton.Pressed += OnDisplayTraceButtonPressed;
+
+	}
+	
+	public void SetTimeToCompleteLevel(int timeResource)
+	{
+		TimeToCompleteLevel = timeResource;
+		var timeSpan = TimeSpan.FromSeconds(timeResource);
+		timeLeftLabel.Text = timeSpan.ToString(@"mm\:ss");
+		isTimeIsUp = false;
 	}
 
-		public override void _UnhandledInput(InputEvent evt)
+    private void OnClockIsTicking()
 	{
-		if(evt.IsActionPressed(ACTION_SPACEBAR))
+		if (isTimeIsUp)
+		{
+			return;
+		}
+		var currentTimeLeft = timeLeftLabel.Text;
+		TimeSpan timeLeft;
+		if (!TimeSpan.TryParseExact(currentTimeLeft, @"mm\:ss", null, out timeLeft))
+		{
+			// If parsing fails, reset to 00:00 and end the level
+			timeLeftLabel.Text = "00:00";
+			isTimeIsUp = true;
+			EmitSignal(SignalName.TimeIsUp);
+			GetViewport().SetInputAsHandled();
+			return;
+		}
+		timeLeft = timeLeft.Subtract(TimeSpan.FromSeconds(1));
+		if (timeLeft.TotalSeconds <= 0)
+		{
+			isTimeIsUp = true;
+			timeLeftLabel.Text = "00:00";
+			EmitSignal(SignalName.TimeIsUp);
+			GetViewport().SetInputAsHandled();
+			return;
+		}
+		else
+		{
+			timeLeftLabel.Text = timeLeft.ToString(@"mm\:ss");
+		}
+
+	}
+
+    public override void _UnhandledInput(InputEvent evt)
+	{
+		if (evt.IsActionPressed(ACTION_SPACEBAR))
 		{
 			GetViewport().SetInputAsHandled();
 			return;
@@ -75,7 +127,7 @@ public partial class GameUI : CanvasLayer
 	private void OnStopRobotButtonPressed()
 	{
 		var allRobots = BuildingComponent.GetValidBuildingComponents(this);
-		foreach(var robot in allRobots)
+		foreach (var robot in allRobots)
 		{
 			robot.StopAnyAutomatedMovementMode();
 		}
@@ -86,10 +138,10 @@ public partial class GameUI : CanvasLayer
 	{
 		var allRobots = BuildingComponent.GetValidBuildingComponents(this);
 		HashSet<Vector2I> tileDiscoveredByAllRobots = new();
-		foreach(var robot in allRobots)
+		foreach (var robot in allRobots)
 		{
 			var tileDiscovered = robot.GetTileDiscovered();
-			foreach(var tile in tileDiscovered)
+			foreach (var tile in tileDiscovered)
 			{
 				tileDiscoveredByAllRobots.Add(tile);
 			}
@@ -106,4 +158,5 @@ public partial class GameUI : CanvasLayer
 	{
 		resourceLabel.Text = availableResourceCount.ToString();
 	}
+
 }

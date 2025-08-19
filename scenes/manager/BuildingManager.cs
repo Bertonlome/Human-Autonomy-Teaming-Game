@@ -24,6 +24,9 @@ public partial class BuildingManager : Node
 	public delegate void AvailableResourceCountChangedEventHandler(int availableResourceCount);
 	[Signal]
 	public delegate void BasePlacedEventHandler();
+	[Signal]
+	public delegate void ClockIsTickingEventHandler();
+	private double clockTickTimer = 0.0;
 
 	[Export]
 	private GridManager gridManager;
@@ -159,6 +162,12 @@ public partial class BuildingManager : Node
 
 	public override void _Process(double delta)
 	{
+		clockTickTimer += delta;
+		if (clockTickTimer >= 1.0)
+		{
+			clockTickTimer = 0.0;
+			EmitSignal(SignalName.ClockIsTicking);
+		}
 		Vector2I mouseGridPosition = Vector2I.Zero;
 
 		switch (currentState)

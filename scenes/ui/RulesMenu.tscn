@@ -27,10 +27,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-current_tab = 6
+current_tab = 0
 
 [node name="CONTEXT" type="PanelContainer" parent="Panel/TabContainer"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -259,6 +258,7 @@ Back To base: Need to refuel!
 autowrap_mode = 3
 
 [node name="CONTROLS" type="PanelContainer" parent="Panel/TabContainer"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 6
 

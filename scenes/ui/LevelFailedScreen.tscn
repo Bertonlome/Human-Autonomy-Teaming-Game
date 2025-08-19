@@ -1,10 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://db583b5wliqtp"]
+[gd_scene load_steps=2 format=3 uid="uid://b4vhtsac3dae7"]
 
-[ext_resource type="Script" path="res://scenes/ui/LevelCompleteScreen.cs" id="1_ep63h"]
+[ext_resource type="Script" path="res://scenes/ui/LevelFailedScreen.cs" id="1_o2rnn"]
 
-[node name="LevelCompleteScreen" type="CanvasLayer"]
-script = ExtResource("1_ep63h")
-mainMenuScenePath = "res://scenes/ui/MainMenu.tscn"
+[node name="LevelFailedScreen" type="CanvasLayer"]
+script = ExtResource("1_o2rnn")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchors_preset = 15
@@ -27,7 +26,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/RibbonContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "LEVEL COMPLETE!"
+text = "LEVEL FAILED!"
 horizontal_alignment = 1
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer"]
@@ -47,11 +46,11 @@ theme_override_constants/margin_top = 56
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="NextLevelButton" type="Button" parent="MarginContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer"]
+[node name="BackToMenuButton" type="Button" parent="MarginContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer"]
 unique_name_in_owner = true
 z_index = 2
 layout_mode = 2
-text = "Back To Menu"
+text = "Back to menu"
 
 [node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/MarginContainer/ScrollContainer"]
 layout_mode = 2

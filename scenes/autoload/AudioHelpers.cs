@@ -42,6 +42,11 @@ public partial class AudioHelpers : Node
 	{
 		instance.victoryAudioStreamPlayer.Play();
 	}
+
+	public static void PlayFailed()
+	{
+		instance.explosionAudioStreamPlayer.Play(); // TO CHANGE FOR A FAILURE SOUND
+	}
 	public static void PlayBuildingDestruction()
 	{
 		instance.explosionAudioStreamPlayer.Play();

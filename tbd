@@ -8,8 +8,6 @@ Il faut créer deux autres maps (on peut envisager un nombre de robot différent
 
 Il faut que l'exploration random soit plus intelligente et puissent être assigné à plusieurs robot en même temps qui ne font pas le même chemin (checker les algos de d'exploration)
 
-On pourrait mettre un chrono pour que le jeux soit plus challengeant.
-
 Le robot en mode gradient descent pourrait envoyer une notification sur le panneau de droite pour dire qu'il a trouver un maximum local.
 
 Il faut que les robots puissent partir en exploration hors zone couverte lorsqu'ils sont en mode autonome.

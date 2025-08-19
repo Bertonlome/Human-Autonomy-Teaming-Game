@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://bipxsk1snp5nq"]
+[gd_scene load_steps=22 format=3 uid="uid://bipxsk1snp5nq"]
 
 [ext_resource type="Script" path="res://scenes/level/BaseLevel.cs" id="1_oetcv"]
 [ext_resource type="TileSet" uid="uid://be2deub8k3gjr" path="res://resources/highlight_tileset.tres" id="2_8gl76"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://c0b3p1iyv2yph" path="res://scenes/manager/BuildingManager.tscn" id="2_smhdp"]
 [ext_resource type="PackedScene" uid="uid://q6gmpdlekvro" path="res://scenes/ui/SelectedRobotUI.tscn" id="3_0tugq"]
 [ext_resource type="PackedScene" uid="uid://dqoljijx36x6a" path="res://scenes/ui/GameUI.tscn" id="3_b6i5e"]
+[ext_resource type="PackedScene" uid="uid://b4vhtsac3dae7" path="res://scenes/ui/LevelFailedScreen.tscn" id="3_dwriv"]
 [ext_resource type="PackedScene" uid="uid://cx2k42pew5v1f" path="res://scenes/ui/EscapeMenu.tscn" id="3_qe475"]
 [ext_resource type="PackedScene" uid="uid://du6yrfdf7n3so" path="res://scenes/GameCamera.tscn" id="5_gni5d"]
 [ext_resource type="PackedScene" uid="uid://bocvnu5ijh44c" path="res://scenes/manager/ResourceIndicatorManager.tscn" id="6_2ofsf"]
@@ -28,6 +29,7 @@ metadata/_preview_in_3d_space_ = true
 [node name="BaseLevel" type="Node"]
 script = ExtResource("1_oetcv")
 levelCompleteScreenScene = ExtResource("2_nafao")
+levelFailedScreenScene = ExtResource("3_dwriv")
 selectedRobotUIScene = ExtResource("3_0tugq")
 escapeMenuScene = ExtResource("3_qe475")
 

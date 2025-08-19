@@ -7,3 +7,4 @@ script = ExtResource("1_netsu")
 Id = "when_cucumbers_fall"
 StartingResourceCount = 101
 LevelScenePath = "res://scenes/level/Level1.tscn"
+LevelDuration = 15

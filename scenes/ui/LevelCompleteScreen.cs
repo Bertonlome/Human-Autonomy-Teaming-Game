@@ -5,22 +5,22 @@ namespace Game.UI;
 
 public partial class LevelCompleteScreen : CanvasLayer
 {
-	private Button nextLevelButton;
+	private Button returnToMenuButton;
 	[Export(PropertyHint.File, "*.tscn")]
 	private string mainMenuScenePath;
 
 	public override void _Ready()
 	{
-		nextLevelButton = GetNode<Button>("%NextLevelButton");
+		returnToMenuButton = GetNode<Button>("%NextLevelButton");
 
 		AudioHelpers.PlayVictory();
 
 		if(LevelManager.IsLastLevel())
 		{
-			nextLevelButton.Text = "Return to Menu";
+			returnToMenuButton.Text = "Return to Menu";
 		}
 
-		nextLevelButton.Pressed += OnNextLevelButtonPressed;
+		returnToMenuButton.Pressed += OnNextLevelButtonPressed;
 
 	}
 

@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace Game.Resources.Level;
@@ -11,4 +12,6 @@ public partial class LevelDefinitionResource : Resource
     public int StartingResourceCount { get; private set; } = 4;
     [Export(PropertyHint.File, "*.tscn")]
     public string LevelScenePath { get; private set; }
+    [Export]
+    public int LevelDuration { get; private set; } = 15; // 5 minutes in seconds
 }
