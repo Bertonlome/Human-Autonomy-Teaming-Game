@@ -23,9 +23,12 @@ public partial class BuildingManager : Node
 	[Signal]
 	public delegate void AvailableResourceCountChangedEventHandler(int availableResourceCount);
 	[Signal]
+	public delegate void BuildingPlacedEventHandler(BuildingComponent buildingComponent, BuildingResource resource);
+	[Signal]
 	public delegate void BasePlacedEventHandler();
 	[Signal]
 	public delegate void ClockIsTickingEventHandler();
+	public List<Node2D> AliveRobots { get; private set; } = new();
 	private double clockTickTimer = 0.0;
 
 	[Export]
@@ -160,6 +163,25 @@ public partial class BuildingManager : Node
 		}
 	}
 
+	public void SelectBuilding(BuildingComponent buildingComponent)
+	{
+		if (buildingComponent is null) return;
+		if (selectedBuildingComponent == buildingComponent)
+		{
+			// Already selected
+			return;
+		}
+
+		if (selectedBuildingComponent != null && selectedBuildingComponent != buildingComponent)
+		{
+			UnHighlightSelectedBuilding(selectedBuildingComponent);
+		}
+
+		selectedBuildingComponent = buildingComponent;
+		HighlightSelectedBuilding(selectedBuildingComponent);
+		GameEvents.EmitRobotSelected(buildingComponent);
+	}
+
 	public override void _Process(double delta)
 	{
 		clockTickTimer += delta;
@@ -290,6 +312,10 @@ public partial class BuildingManager : Node
 		
 		var building = toPlaceBuildingResource.BuildingScene.Instantiate<Node2D>();
 		ySortRoot.AddChild(building);
+
+		var buildingComponent = building.GetFirstNodeOfType<BuildingComponent>();
+		AliveRobots.Add(building);
+		EmitSignal(SignalName.BuildingPlaced, buildingComponent, buildingResource);
 
 		building.GlobalPosition = hoveredGridArea.Position * 64;
 		building.GetFirstNodeOfType<BuildingAnimatorComponent>()?.PlayInAnimation();

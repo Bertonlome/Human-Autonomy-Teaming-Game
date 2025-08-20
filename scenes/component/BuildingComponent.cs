@@ -17,6 +17,12 @@ public partial class BuildingComponent : Node2D
 	public delegate void NewAnomalyReadingEventHandler(int value);
 	[Signal]
 	public delegate void BatteryChangeEventHandler(int value);
+	[Signal]
+	public delegate void ModeChangedEventHandler(string mode);
+	[Signal]
+	public delegate void robotStuckEventHandler();
+	[Signal]
+	public delegate void robotUnStuckEventHandler();
 	
 
 
@@ -200,29 +206,34 @@ public partial class BuildingComponent : Node2D
 	public void EnableRandomMode()
 	{
 		currentExplorMode = ExplorMode.Random;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
 	public void EnableGradientSearchMode()
 	{
 		currentExplorMode = ExplorMode.GradientSearch;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 		GradientSearch();
 	}
 
 	public void EnableRewindMovesMode()
 	{
 		currentExplorMode = ExplorMode.RewindMoves;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 		RewindMoves();
 	}
 
 	public void EnableReturnToBase()
 	{
 		currentExplorMode = ExplorMode.ReturnToBase;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 		ReturnToBase();
 	}
 
 	public void StopAnyAutomatedMovementMode()
 	{
 		currentExplorMode = ExplorMode.None;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
     public Vector2I GetGridCellPosition()
@@ -320,6 +331,7 @@ public partial class BuildingComponent : Node2D
 		IsStuck = true;
 		buildingAnimatorComponent.Rotate(-1.05f);
 		GameEvents.EmitBuildingStuck(this);
+		EmitSignal(SignalName.robotStuck);
 	}
 
 	public void SetToUnstuck()
@@ -327,6 +339,7 @@ public partial class BuildingComponent : Node2D
 		IsStuck = false;
 		buildingAnimatorComponent.Rotate(1.05f);
 		GameEvents.EmitBuildingUnStuck(this);
+		EmitSignal(SignalName.robotUnStuck);
 	}
 
 	public Rect2I GetAreaOccupiedAfterMovingFromPos(Vector2I position)
@@ -443,6 +456,7 @@ public partial class BuildingComponent : Node2D
 			}
 		}
 		currentExplorMode = ExplorMode.None;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
 	public List<string> GetMovesToReachTile(Vector2I currentPosition, Vector2I targetPosition)
@@ -539,6 +553,7 @@ public async void GradientSearch()
 		}
     }
     currentExplorMode = ExplorMode.None;
+	EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 }
 
 private string GetDirectionFromDelta(Vector2I current, Vector2I target)

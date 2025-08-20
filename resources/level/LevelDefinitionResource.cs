@@ -13,5 +13,5 @@ public partial class LevelDefinitionResource : Resource
     [Export(PropertyHint.File, "*.tscn")]
     public string LevelScenePath { get; private set; }
     [Export]
-    public int LevelDuration { get; private set; } = 15; // 5 minutes in seconds
+    public int LevelDuration { get; private set; } = 300; // 5 minutes in seconds
 }

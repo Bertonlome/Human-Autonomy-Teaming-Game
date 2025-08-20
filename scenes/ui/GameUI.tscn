@@ -1,15 +1,17 @@
-[gd_scene load_steps=6 format=3 uid="uid://dqoljijx36x6a"]
+[gd_scene load_steps=7 format=3 uid="uid://dqoljijx36x6a"]
 
 [ext_resource type="Script" path="res://scenes/ui/GameUI.cs" id="1_ig7ao"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="2_2jsg4"]
 [ext_resource type="Resource" uid="uid://ckgl0k8fdrdrn" path="res://resources/building/ground_robot.tres" id="3_7ve0q"]
 [ext_resource type="PackedScene" uid="uid://dldi351241g0a" path="res://scenes/ui/BuildingSection.tscn" id="4_bv77p"]
+[ext_resource type="PackedScene" uid="uid://c7a3firs1qi24" path="res://scenes/ui/UnitSection.tscn" id="5_ds8w2"]
 [ext_resource type="Theme" uid="uid://lrxwuh3o4l5k" path="res://resources/sci-fi-theme.tres" id="5_to3pn"]
 
 [node name="GameUI" type="CanvasLayer"]
 script = ExtResource("1_ig7ao")
 buildingResources = Array[Object]([ExtResource("3_7ve0q"), ExtResource("2_2jsg4")])
 buildingSectionScene = ExtResource("4_bv77p")
+UnitSectionScene = ExtResource("5_ds8w2")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchors_preset = 15
@@ -40,6 +42,7 @@ theme_override_constants/margin_bottom = 8
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 10
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -191,10 +194,11 @@ alignment = 1
 [node name="Label" type="Label" parent="MarginContainer3/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Status"
+text = "Deployed units"
 horizontal_alignment = 1
 
 [node name="UnitsContainer" type="VBoxContainer" parent="MarginContainer3/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4

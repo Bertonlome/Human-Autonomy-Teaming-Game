@@ -13,11 +13,16 @@ public partial class GameUI : CanvasLayer
 	[Signal]
 	public delegate void BuildingResourceSelectedEventHandler(BuildingResource buildingResource);
 	[Signal]
+	public delegate void StopRobotButtonPressedEventHandler(Node2D robot);
+	[Signal]
+	public delegate void SelectRobotButtonPressedEventHandler(Node2D robot);
+	[Signal]
 	public delegate void TimeIsUpEventHandler();
 	private bool isTimeIsUp = false;
 	public int TimeToCompleteLevel;
 
 	private VBoxContainer buildingSectionContainer;
+	private VBoxContainer unitsSectionContainer;
 	private Label resourceLabel;
 	private Label timeLeftLabel;
 	private Button stopRobotButton;
@@ -39,6 +44,7 @@ public partial class GameUI : CanvasLayer
 	public override void _Ready()
 	{
 		buildingSectionContainer = GetNode<VBoxContainer>("%BuildingSectionContainer");
+		unitsSectionContainer = GetNode<VBoxContainer>("%UnitsContainer");
 		resourceLabel = GetNode<Label>("%ResourceLabel");
 		timeLeftLabel = GetNode<Label>("%TimeLeftLabel");
 		stopRobotButton = GetNode<Button>("%StopRobotButton");
@@ -51,6 +57,8 @@ public partial class GameUI : CanvasLayer
 		buildingManager.AvailableResourceCountChanged += OnAvailableResourceCountChanged;
 		buildingManager.ClockIsTicking += OnClockIsTicking;
 		displayTraceButton.Pressed += OnDisplayTraceButtonPressed;
+
+		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
 
 	}
 	
@@ -122,6 +130,41 @@ public partial class GameUI : CanvasLayer
 				EmitSignal(SignalName.BuildingResourceSelected, buildingResource);
 			};
 		}
+	}
+
+	private void OnNewBuildingPlaced(BuildingComponent buildingComponent, BuildingResource buildingResource)
+	{
+		if (buildingResource.DisplayName == "Base") return;
+
+		var unitSection = UnitSectionScene.Instantiate<UnitSection>();
+		unitsSectionContainer.AddChild(unitSection);
+
+		if (buildingResource.DisplayName == "Ground Robot")
+		{
+			unitSection.SetRobotType(buildingResource, UnitSection.RobotType.GroundRobot);
+		}
+		else if (buildingResource.DisplayName == "Aerial Robot")
+		{
+			unitSection.SetRobotType(buildingResource, UnitSection.RobotType.AerialRobot);
+		}
+		else
+		{
+			GD.PrintErr($"Unknown robot type: {buildingResource.DisplayName}");
+			return;
+		}
+		unitSection.StopButtonPressed += () =>
+		{
+			buildingComponent.StopAnyAutomatedMovementMode();
+		};
+		unitSection.SelectButtonPressed += () =>
+		{
+			buildingManager.SelectBuilding(buildingComponent); // <-- Select robot via BuildingManager
+		};
+		buildingComponent.BatteryChange += unitSection.OnBatteryChange;
+		buildingComponent.NewAnomalyReading += unitSection.OnNewAnomalyReading;
+		buildingComponent.ModeChanged += unitSection.OnModeChanged;
+		buildingComponent.robotStuck += unitSection.OnRobotStuck;
+		buildingComponent.robotUnStuck += unitSection.OnRobotUnStuck;
 	}
 
 	private void OnStopRobotButtonPressed()
