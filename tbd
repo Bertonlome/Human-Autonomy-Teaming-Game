@@ -8,6 +8,4 @@ Le robot en mode gradient descent pourrait envoyer une notification sur le panne
 
 Il faut que les robots puissent partir en exploration hors zone couverte lorsqu'ils sont en mode autonome.
 
-Il faut pouvoir envoyer les robots vers une zone avec un clic droit comme sur age of empire (c'est un mode semi-autonome car le robot est responsable de ses déplacements)
-
 Il faudrait réfléchir à un objectif annexe (peut être collecter des ressources ?) pour que le jeux soit plus intéressant.

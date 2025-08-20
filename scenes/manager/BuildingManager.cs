@@ -29,6 +29,10 @@ public partial class BuildingManager : Node
 	public delegate void BasePlacedEventHandler();
 	[Signal]
 	public delegate void ClockIsTickingEventHandler();
+	[Signal]
+	public delegate void NewRobotSelectedEventHandler(BuildingComponent buildingComponent);
+	[Signal]
+	public delegate void NoMoreRobotSelectedEventHandler();
 	public List<Node2D> AliveRobots { get; private set; } = new();
 	private double clockTickTimer = 0.0;
 
@@ -100,6 +104,7 @@ public partial class BuildingManager : Node
 					if(selectedBuildingComponent == null) 
 					{
 					selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
+					EmitSignal(SignalName.NewRobotSelected, selectedBuildingComponent);
 					if(selectedBuildingComponent == null) return;
 					HighlightSelectedBuilding(selectedBuildingComponent);
 					GetViewport().SetInputAsHandled();
@@ -118,7 +123,9 @@ public partial class BuildingManager : Node
 					{
 						UnHighlightSelectedBuilding(selectedBuildingComponent);
 						selectedBuildingComponent = null;
+						EmitSignal(SignalName.NoMoreRobotSelected);
 						selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
+						EmitSignal(SignalName.NewRobotSelected, selectedBuildingComponent);
 						HighlightSelectedBuilding(selectedBuildingComponent);
 						GetViewport().SetInputAsHandled();
 					}
@@ -126,6 +133,7 @@ public partial class BuildingManager : Node
 					{
 						UnHighlightSelectedBuilding(selectedBuildingComponent);
 						selectedBuildingComponent = null;
+						EmitSignal(SignalName.NoMoreRobotSelected);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -191,9 +199,11 @@ public partial class BuildingManager : Node
 		if (selectedBuildingComponent != null && selectedBuildingComponent != buildingComponent)
 		{
 			UnHighlightSelectedBuilding(selectedBuildingComponent);
+			EmitSignal(SignalName.NoMoreRobotSelected);
 		}
 
 		selectedBuildingComponent = buildingComponent;
+		EmitSignal(SignalName.NewRobotSelected, selectedBuildingComponent);
 		HighlightSelectedBuilding(selectedBuildingComponent);
 		GameEvents.EmitRobotSelected(buildingComponent);
 	}

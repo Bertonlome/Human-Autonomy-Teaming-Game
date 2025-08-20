@@ -141,11 +141,11 @@ public partial class GameUI : CanvasLayer
 
 		if (buildingResource.DisplayName == "Ground Robot")
 		{
-			unitSection.SetRobotType(buildingResource, UnitSection.RobotType.GroundRobot);
+			unitSection.SetRobotType(buildingComponent, buildingResource, UnitSection.RobotType.GroundRobot);
 		}
 		else if (buildingResource.DisplayName == "Aerial Robot")
 		{
-			unitSection.SetRobotType(buildingResource, UnitSection.RobotType.AerialRobot);
+			unitSection.SetRobotType(buildingComponent, buildingResource, UnitSection.RobotType.AerialRobot);
 		}
 		else
 		{
@@ -167,6 +167,8 @@ public partial class GameUI : CanvasLayer
 		buildingComponent.robotUnStuck += unitSection.OnRobotUnStuck;
 		buildingComponent.StartCharging += unitSection.OnStartCharging;
 		buildingComponent.StopCharging += unitSection.OnStopCharging;
+		buildingManager.NewRobotSelected += unitSection.OnNewRobotSelected;
+		buildingManager.NoMoreRobotSelected += unitSection.OnNoMoreRobotSelected;
 	}
 
 	private void OnStopRobotButtonPressed()
@@ -203,5 +205,6 @@ public partial class GameUI : CanvasLayer
 	{
 		resourceLabel.Text = availableResourceCount.ToString();
 	}
+
 
 }

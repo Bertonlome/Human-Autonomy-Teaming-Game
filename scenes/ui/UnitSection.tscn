@@ -13,6 +13,11 @@ script = ExtResource("1_olqwb")
 layout_mode = 2
 tab_alignment = 1
 
+[node name="Panel" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
 theme_override_constants/margin_left = 16

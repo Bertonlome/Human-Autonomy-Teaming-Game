@@ -2,6 +2,7 @@ using System;
 using Game.Autoload;
 using Game.Resources.Building;
 using Godot;
+using Game.Component;
 
 namespace Game.UI;
 
@@ -21,6 +22,8 @@ public partial class UnitSection : PanelContainer
 	private Button selectButton;
 	private Button stopButton;
 	private Label batteryLabel;
+	private BuildingComponent buildingComponent;
+	private Panel panel;
 
 	public enum RobotType
 	{
@@ -37,6 +40,7 @@ public partial class UnitSection : PanelContainer
 		batteryBar = GetNode<ProgressBar>("%BatteryBar");
 		anomalyLabel = GetNode<Label>("%AnomalyLabel");
 		batteryLabel = GetNode<Label>("%BatteryLabel");
+		panel = GetNode<Panel>("%Panel");
 
 		AudioHelpers.RegisterButtons(new Button[] { selectButton, stopButton });
 		selectButton.Pressed += () => EmitSignal(SignalName.SelectButtonPressed);
@@ -44,9 +48,10 @@ public partial class UnitSection : PanelContainer
 
 	}
 
-	public void SetRobotType(BuildingResource resource, RobotType robotType)
+	public void SetRobotType(BuildingComponent buildingComponent, BuildingResource resource, RobotType robotType)
 	{
 		buildingResource = resource;
+		this.buildingComponent = buildingComponent;
 		switch (robotType)
 		{
 			case UnitSection.RobotType.GroundRobot:
@@ -104,6 +109,23 @@ public partial class UnitSection : PanelContainer
 	{
 		batteryLabel.Text = "Battery";
 		statusLabel.AddThemeColorOverride("font_color", new Color(1, 1, 1)); // Reset to default color
+	}
+
+	public void OnNewRobotSelected(BuildingComponent buildingComponent)
+	{
+		if (this.buildingComponent == buildingComponent)
+		{
+			panel.Visible = true; // Show the panel when this robot is selected
+		}
+		else
+		{
+			panel.Visible = false; // Hide the panel when another robot is selected
+		}
+	}
+
+	public void OnNoMoreRobotSelected()
+	{
+		panel.Visible = false; // Hide the panel when no robot is selected
 	}
 
 }
