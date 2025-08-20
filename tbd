@@ -1,7 +1,3 @@
-Il faut installer un panel UI sur la droite pendant le jeu "Current situation" qui relate le nombre de robot déployé, leur état (ex: ugv bloqué)
-
-Il faut augmenter la trace que peuvent dévoiler les robots 2 unités pour l'UGV, 4 pour l'UAV
-
 Il faut pouvoir envoyer un robot à un autre robot soit depuis le panneau de droite soit depuis le panneau de contrôle du robot en bas
 
 Il faut créer deux autres maps (on peut envisager un nombre de robot différent par map)

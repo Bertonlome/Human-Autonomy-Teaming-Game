@@ -372,6 +372,14 @@ public partial class BuildingComponent : Node2D
 		foreach((var tile, _) in moveHistory)
 		{
 			tileDiscovered.Add(tile);
+			var tilesInRadius = GetTilesWithinDistance(tile, BuildingResource.AnomalySensorRadius);
+			foreach (var tileInRadius in tilesInRadius)
+			{
+				if (!tileDiscovered.Contains(tileInRadius))
+				{
+					tileDiscovered.Add(tileInRadius);
+				}
+			}
 		}
 		return tileDiscovered;
 	}
