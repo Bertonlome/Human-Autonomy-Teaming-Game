@@ -20,6 +20,7 @@ public partial class UnitSection : PanelContainer
 	private ProgressBar batteryBar;
 	private Button selectButton;
 	private Button stopButton;
+	private Label batteryLabel;
 
 	public enum RobotType
 	{
@@ -35,6 +36,7 @@ public partial class UnitSection : PanelContainer
 		stopButton = GetNode<Button>("%StopButton");
 		batteryBar = GetNode<ProgressBar>("%BatteryBar");
 		anomalyLabel = GetNode<Label>("%AnomalyLabel");
+		batteryLabel = GetNode<Label>("%BatteryLabel");
 
 		AudioHelpers.RegisterButtons(new Button[] { selectButton, stopButton });
 		selectButton.Pressed += () => EmitSignal(SignalName.SelectButtonPressed);
@@ -75,6 +77,7 @@ public partial class UnitSection : PanelContainer
 			"GradientSearch" => "Gradient Search",
 			"RewindMoves" => "Rewind Moves",
 			"ReturnToBase" => "Returning to Base",
+			"MoveToPos" => "Moving to Position",
 			_ => "Idle"
 		};
 	}
@@ -88,6 +91,18 @@ public partial class UnitSection : PanelContainer
 	public void OnRobotUnStuck()
 	{
 		statusLabel.Text = "Idle";
+		statusLabel.AddThemeColorOverride("font_color", new Color(1, 1, 1)); // Reset to default color
+	}
+
+	public void OnStartCharging()
+	{
+		batteryLabel.Text = "Charging";
+		batteryLabel.AddThemeColorOverride("font_color", new Color(0, 1, 0)); // Green color for charging status
+	}
+
+	public void OnStopCharging()
+	{
+		batteryLabel.Text = "Battery";
 		statusLabel.AddThemeColorOverride("font_color", new Color(1, 1, 1)); // Reset to default color
 	}
 

@@ -165,6 +165,8 @@ public partial class GameUI : CanvasLayer
 		buildingComponent.ModeChanged += unitSection.OnModeChanged;
 		buildingComponent.robotStuck += unitSection.OnRobotStuck;
 		buildingComponent.robotUnStuck += unitSection.OnRobotUnStuck;
+		buildingComponent.StartCharging += unitSection.OnStartCharging;
+		buildingComponent.StopCharging += unitSection.OnStopCharging;
 	}
 
 	private void OnStopRobotButtonPressed()

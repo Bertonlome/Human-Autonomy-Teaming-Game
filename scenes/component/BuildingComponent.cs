@@ -23,6 +23,10 @@ public partial class BuildingComponent : Node2D
 	public delegate void robotStuckEventHandler();
 	[Signal]
 	public delegate void robotUnStuckEventHandler();
+	[Signal]
+	public delegate void StartChargingEventHandler();
+	[Signal]
+	public delegate void StopChargingEventHandler();
 	
 
 
@@ -62,6 +66,7 @@ public partial class BuildingComponent : Node2D
 		GradientSearch,
 		RewindMoves,
 		ReturnToBase,
+		MoveToPos,
 		None
 	}
 
@@ -426,16 +431,58 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
+	public bool cancelMoveRequested = false;
+	public async void MoveAlongPath(List<string> moves)
+	{
+		// Cancel any previous movement
+		cancelMoveRequested = true;
+		await ToSignal(GetTree().CreateTimer(0.01f), "timeout"); // Give time for previous to exit
+
+		cancelMoveRequested = false; // Reset for this movement
+
+		if (currentExplorMode != ExplorMode.None)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Already moving!", this);
+			return;
+		}
+		if (Battery < moves.Count)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to move automatically", this);
+			return;
+		}
+		if (IsStuck)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot move while stuck", this);
+			return;
+		}
+		currentExplorMode = ExplorMode.MoveToPos;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+
+		foreach (var direction in moves)
+		{
+			if (cancelMoveRequested)
+			{
+				currentExplorMode = ExplorMode.None;
+				EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+				return; // Stop movement
+			}
+			buildingManager.MoveInDirectionAutomated(this, direction);
+			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+		}
+		currentExplorMode = ExplorMode.None;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+	}
+
 	public async void RewindMoves()
 	{
-		if(Battery < moveHistory.Count)
+		if (Battery < moveHistory.Count)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to go back to base automatically", this);
 		}
 		if (!IsStuck && Battery > moveHistory.Count)
 		{
 			var reversedHistoryMove = GenerateHistoryMoveList();
-			foreach(StringName direction in reversedHistoryMove)
+			foreach (StringName direction in reversedHistoryMove)
 			{
 				buildingManager.MoveInDirectionAutomated(this, direction);
 
@@ -509,60 +556,66 @@ public partial class BuildingComponent : Node2D
 
 		return moves;
 	}
+	
+	public void SetRecharging(bool recharging)
+	{
+		IsRecharging = recharging;
+		EmitSignal(recharging ? SignalName.StartCharging : SignalName.StopCharging);
+	}
 
 
 
 
 public async void GradientSearch()
-{
-    if (currentExplorMode == ExplorMode.GradientSearch && !IsStuck)
-    {
-		bool reachedMaxima = false;
-        var currentPosition = GetGridCellPosition();
-        var candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
-
-        Vector2I highestTile = currentPosition; // Default to current position
-        float highestAnomaly = float.MinValue; // Start with a very low value
-
-		while(currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima)
+	{
+		if (currentExplorMode == ExplorMode.GradientSearch && !IsStuck)
 		{
-			highestAnomaly = float.MinValue;
-			foreach (var tile in candidateTiles)
-			{
-				// Get anomaly value
-				var anomaly = gravitationalAnomalyMap.GetAnomalyAt(tile.X, tile.Y);
-				//GD.Print($"Adjacent pos: ({tile.X}, {tile.Y}) anomaly = {anomaly}");
+			bool reachedMaxima = false;
+			var currentPosition = GetGridCellPosition();
+			var candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
 
-				// Update the highest anomaly tile if a higher value is found
-				if (anomaly > highestAnomaly)
+			Vector2I highestTile = currentPosition; // Default to current position
+			float highestAnomaly = float.MinValue; // Start with a very low value
+
+			while (currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima)
+			{
+				highestAnomaly = float.MinValue;
+				foreach (var tile in candidateTiles)
 				{
-					highestAnomaly = anomaly;
-					highestTile = tile;
+					// Get anomaly value
+					var anomaly = gravitationalAnomalyMap.GetAnomalyAt(tile.X, tile.Y);
+					//GD.Print($"Adjacent pos: ({tile.X}, {tile.Y}) anomaly = {anomaly}");
+
+					// Update the highest anomaly tile if a higher value is found
+					if (anomaly > highestAnomaly)
+					{
+						highestAnomaly = anomaly;
+						highestTile = tile;
+					}
+
+					// Add delay
 				}
 
-				// Add delay
-			}
+				// Calculate the relative direction
+				string relativeDirection = GetDirectionFromDelta(currentPosition, highestTile);
 
-			// Calculate the relative direction
-			string relativeDirection = GetDirectionFromDelta(currentPosition, highestTile);
-
-			//GD.Print($"Tile with the highest anomaly is at {highestTile}, direction: {relativeDirection}");
-			if(relativeDirection != "CURRENT")
-			{
-			buildingManager.MoveInDirectionAutomated(this, relativeDirection);
+				//GD.Print($"Tile with the highest anomaly is at {highestTile}, direction: {relativeDirection}");
+				if (relativeDirection != "CURRENT")
+				{
+					buildingManager.MoveInDirectionAutomated(this, relativeDirection);
+				}
+				else
+				{
+					reachedMaxima = true;
+				}
+				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+				currentPosition = GetGridCellPosition();
+				candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
 			}
-			else
-			{
-				reachedMaxima = true;
-			}
-			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
-			currentPosition = GetGridCellPosition();
-			candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
 		}
-    }
-    currentExplorMode = ExplorMode.None;
-	EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-}
+		currentExplorMode = ExplorMode.None;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+	}
 
 private string GetDirectionFromDelta(Vector2I current, Vector2I target)
 {

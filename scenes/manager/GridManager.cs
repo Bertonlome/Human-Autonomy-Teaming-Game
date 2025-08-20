@@ -629,9 +629,9 @@ public partial class GridManager : Node
 		{
 			if(baseProximityTiles.Contains(position))
 			{
-				buildingComponent.IsRecharging = true;
+				buildingComponent.SetRecharging(true);
 			}
-			else buildingComponent.IsRecharging = false;
+			else buildingComponent.SetRecharging(false);
 		}
 	}
 

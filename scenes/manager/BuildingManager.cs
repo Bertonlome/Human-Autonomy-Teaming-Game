@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Game.Autoload;
 using Game.Building;
 using Game.Component;
@@ -52,7 +53,7 @@ public partial class BuildingManager : Node
 	private BuildingResource toPlaceBuildingResource;
 	public Rect2I hoveredGridArea = new(Vector2I.Zero, Vector2I.One);
 	private BuildingGhost buildingGhost;
-	private Vector2 buildingGhostDimensions;
+	private Vector2I buildingGhostDimensions;
 	private State currentState;
 	private int startingResourceCount;
 	public static BuildingComponent selectedBuildingComponent {get; private set;} = null;
@@ -77,13 +78,21 @@ public partial class BuildingManager : Node
 			case State.Normal:
 				if (evt.IsActionPressed(ACTION_RIGHT_CLICK))
 				{
-					//DestroyBuildingAtHoveredCellPosition();
-					if(selectedBuildingComponent!= null)
+					if (selectedBuildingComponent != null)
 					{
-						UnHighlightSelectedBuilding(selectedBuildingComponent);
-						selectedBuildingComponent = null;
+						Vector2I targetGridCell = gridManager.GetMouseGridCellPosition();
+						Vector2I currentPos = selectedBuildingComponent.GetGridCellPosition();
+						var moves = selectedBuildingComponent.GetMovesToReachTile(currentPos, targetGridCell);
+						selectedBuildingComponent.MoveAlongPath(moves);
+						GetViewport().SetInputAsHandled();
 					}
-					gridManager.ClearHighlightedTiles();
+					//DestroyBuildingAtHoveredCellPosition();
+					//if(selectedBuildingComponent!= null)
+					//{
+						//UnHighlightSelectedBuilding(selectedBuildingComponent);
+						//selectedBuildingComponent = null;
+					//}
+					//gridManager.ClearHighlightedTiles();
 					GetViewport().SetInputAsHandled();
 				}
 				if(evt.IsActionPressed(ACTION_LEFT_CLICK))
@@ -97,9 +106,10 @@ public partial class BuildingManager : Node
 					}
 					else if (SelectBuildingAtHoveredCellPosition() == selectedBuildingComponent) //Clicked on the same robot
 					{
-						UnHighlightSelectedBuilding(selectedBuildingComponent);
-						selectedBuildingComponent = null;
+						//UnHighlightSelectedBuilding(selectedBuildingComponent);
+						//selectedBuildingComponent = null;
 						GetViewport().SetInputAsHandled();
+						return;
 					}
 					else if(selectedBuildingComponent != null //Switch to another robot
 							&& SelectBuildingAtHoveredCellPosition() != selectedBuildingComponent
@@ -110,6 +120,12 @@ public partial class BuildingManager : Node
 						selectedBuildingComponent = null;
 						selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
 						HighlightSelectedBuilding(selectedBuildingComponent);
+						GetViewport().SetInputAsHandled();
+					}
+					else if (SelectBuildingAtHoveredCellPosition() == null) //Clicked on empty space
+					{
+						UnHighlightSelectedBuilding(selectedBuildingComponent);
+						selectedBuildingComponent = null;
 						GetViewport().SetInputAsHandled();
 					}
 				}
