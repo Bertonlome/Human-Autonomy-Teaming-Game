@@ -32,7 +32,7 @@ public partial class LevelSelectSection : PanelContainer
 
 	public void SetLevelDefinition(LevelDefinitionResource levelDefinitionResource)
 	{
-		resourceCountLabel.Text = levelDefinitionResource.StartingResourceCount.ToString();
+		resourceCountLabel.Text = levelDefinitionResource.StartingMaterialCount.ToString();
 		timeLabel.Text = TimeSpan.FromSeconds(levelDefinitionResource.LevelDuration).ToString(@"mm\:ss");
 		completedIndicator.Visible = SaveManager.IsLevelCompleted(levelDefinitionResource.Id);
 	}

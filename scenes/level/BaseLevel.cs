@@ -43,7 +43,8 @@ public partial class BaseLevel : Node
 		gameUI = GetNode<GameUI>("GameUI");
 		buildingManager = GetNode<BuildingManager>("BuildingManager");
 
-		buildingManager.SetStartingResourceCount(levelDefinitionResource.StartingResourceCount);
+		buildingManager.SetStartingResourceCount(levelDefinitionResource.StartingWoodCount);
+		buildingManager.SetStartingMaterialCount(levelDefinitionResource.StartingMaterialCount);
 		gameUI.SetTimeToCompleteLevel(levelDefinitionResource.LevelDuration);
 		gameUI.TimeIsUp += ShowLevelFailed;
 		buildingManager.BasePlaced += OnBasePlaced;

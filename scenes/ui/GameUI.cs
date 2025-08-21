@@ -24,6 +24,7 @@ public partial class GameUI : CanvasLayer
 	private VBoxContainer buildingSectionContainer;
 	private VBoxContainer unitsSectionContainer;
 	private Label resourceLabel;
+	private Label materialLabel;
 	private Label timeLeftLabel;
 	private Button stopRobotButton;
 	private Button displayAnomalyMapButton;
@@ -47,6 +48,7 @@ public partial class GameUI : CanvasLayer
 		buildingSectionContainer = GetNode<VBoxContainer>("%BuildingSectionContainer");
 		unitsSectionContainer = GetNode<VBoxContainer>("%UnitsContainer");
 		resourceLabel = GetNode<Label>("%ResourceLabel");
+		materialLabel = GetNode<Label>("%MaterialLabel");
 		timeLeftLabel = GetNode<Label>("%TimeLeftLabel");
 		stopRobotButton = GetNode<Button>("%StopRobotButton");
 		displayAnomalyMapButton = GetNode<Button>("%DisplayAnomalyMapButton");
@@ -56,6 +58,7 @@ public partial class GameUI : CanvasLayer
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
 		displayAnomalyMapButton.Pressed += OnDisplayAnomalyMapButtonPressed;
 		buildingManager.AvailableResourceCountChanged += OnAvailableResourceCountChanged;
+		buildingManager.AvailableMaterialCountChanged += OnAvailableMaterialCountChanged;
 		buildingManager.ClockIsTicking += OnClockIsTicking;
 		displayTraceButton.Toggled += OnDisplayTraceToggled;
 
@@ -233,6 +236,11 @@ public partial class GameUI : CanvasLayer
 	private void OnAvailableResourceCountChanged(int availableResourceCount)
 	{
 		resourceLabel.Text = availableResourceCount.ToString();
+	}
+
+	private void OnAvailableMaterialCountChanged(int availableMaterialCount)
+	{
+		materialLabel.Text = availableMaterialCount.ToString();
 	}
 
 

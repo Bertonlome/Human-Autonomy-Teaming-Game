@@ -92,6 +92,7 @@ horizontal_alignment = 1
 [node name="ExplorModeOptionsButton" type="OptionButton" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+selected = 1
 item_count = 4
 popup/item_0/text = "Random exploration"
 popup/item_1/text = "Search high anomaly"

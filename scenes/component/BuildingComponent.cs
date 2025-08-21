@@ -173,11 +173,23 @@ public partial class BuildingComponent : Node2D
 		{
 			timerRecharge += (float)delta;
 
-			if(timerRecharge >= RECHARGE_INTERVAL && Battery <= this.BuildingResource.BatteryMax - 5)
+			// Only recharge if wood is available
+			if (buildingManager.AvailableWoodCount > 0)
 			{
-				Battery += 10;
-				EmitSignal(SignalName.BatteryChange, Battery);
-				timerRecharge = 0.0f;
+				if (timerRecharge >= RECHARGE_INTERVAL && Battery <= this.BuildingResource.BatteryMax - 5)
+				{
+					Battery += 30;
+					EmitSignal(SignalName.BatteryChange, Battery);
+					timerRecharge = 0.0f;
+
+					// Consume wood at specified rate (e.g., 1 per recharge)
+					buildingManager.ConsumeWoodForCharging(1);
+				}
+			}
+			else
+			{
+				// Stop charging if no wood left
+				SetRecharging(false);
 			}
 		}
 	}
@@ -561,9 +573,20 @@ public partial class BuildingComponent : Node2D
 	
 	public void SetRecharging(bool recharging)
 	{
-		IsRecharging = recharging;
-		EmitSignal(recharging ? SignalName.StartCharging : SignalName.StopCharging);
-	}
+    // Only allow charging if near base AND wood is available
+    bool canCharge = buildingManager.gridManager.IsInBaseProximity(GetGridCellPosition()) && buildingManager.AvailableWoodCount > 0;
+
+    if (recharging && canCharge)
+    {
+        IsRecharging = true;
+        EmitSignal(SignalName.StartCharging);
+    }
+    else
+    {
+        IsRecharging = false;
+        EmitSignal(SignalName.StopCharging);
+    }
+}
 
 	public void CollectResource(int amount)
 	{
@@ -636,6 +659,7 @@ public async void GradientSearch()
 				else
 				{
 					reachedMaxima = true;
+					EmitSignal(SignalName.ModeChanged, "Reached Maxima");
 				}
 				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 				currentPosition = GetGridCellPosition();
@@ -643,7 +667,7 @@ public async void GradientSearch()
 			}
 		}
 		currentExplorMode = ExplorMode.None;
-		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+		EmitSignal(SignalName.ModeChanged, "Reached Maxima"); 
 		CanMove = true; // Reset at the end, in case it wasn't already
 	}
 

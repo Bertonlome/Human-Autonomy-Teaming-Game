@@ -83,7 +83,8 @@ public partial class UnitSection : PanelContainer
 			"RewindMoves" => "Rewind Moves",
 			"ReturnToBase" => "Returning to Base",
 			"MoveToPos" => "Moving to Position",
-			_ => "Idle"
+			"None" => "Idle",
+			_ => !string.IsNullOrEmpty(mode) ? mode : "Idle"
 		};
 	}
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://dqoljijx36x6a"]
+[gd_scene load_steps=9 format=3 uid="uid://dqoljijx36x6a"]
 
 [ext_resource type="Script" path="res://scenes/ui/GameUI.cs" id="1_ig7ao"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="2_2jsg4"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://dldi351241g0a" path="res://scenes/ui/BuildingSection.tscn" id="4_bv77p"]
 [ext_resource type="PackedScene" uid="uid://c7a3firs1qi24" path="res://scenes/ui/UnitSection.tscn" id="5_ds8w2"]
 [ext_resource type="Theme" uid="uid://lrxwuh3o4l5k" path="res://resources/sci-fi-theme.tres" id="5_to3pn"]
+[ext_resource type="Texture2D" uid="uid://bhebwhpdwalvc" path="res://assets/ui/wood_icon_cropped.png" id="7_yyrf8"]
+[ext_resource type="Texture2D" uid="uid://lcjpfgcwel8q" path="res://assets/ui/material_icon.png" id="8_783ri"]
 
 [node name="GameUI" type="CanvasLayer"]
 script = ExtResource("1_ig7ao")
@@ -46,7 +48,8 @@ theme_override_constants/separation = 10
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 4
+alignment = 1
 
 [node name="Label" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
@@ -61,6 +64,36 @@ theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 48
 text = "4"
+
+[node name="WoodIcon" type="TextureRect" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+texture = ExtResource("7_yyrf8")
+expand_mode = 1
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Label" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer4"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Material"
+
+[node name="MaterialLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer4"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0.619608, 0.529412, 0.462745, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 48
+text = "4"
+
+[node name="MaterialIcon" type="TextureRect" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer4"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+texture = ExtResource("8_783ri")
 
 [node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2

@@ -5,5 +5,7 @@
 [resource]
 script = ExtResource("1_aq4nx")
 Id = "pull_off_your_skin"
-StartingResourceCount = 108
+StartingWoodCount = 6
+StartingMaterialCount = 14
 LevelScenePath = "res://scenes/level/Level5.tscn"
+LevelDuration = 300
