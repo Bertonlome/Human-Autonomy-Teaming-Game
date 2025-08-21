@@ -37,8 +37,8 @@ public partial class GravitationalAnomalyMap : Node
         (int xMin, int yMin, int xRange, int yRange) = AnalyzeVector2IList(sortedList);
 
         // Generate anomaly map
-        anomalyMap = GenerateGravitationalAnomalyMap(xMin, yMin, xRange, yRange);
-        AddMonolithToAnomalyMap(gridManager.monolithPosition, anomalyMap);
+        anomalyMap = GenerateGravitationalAnomalyMapPerlinNoise(xMin, yMin, xRange, yRange);
+        //AddMonolithToAnomalyMap(gridManager.monolithPosition, anomalyMap);
     }
 
     private (int, int, int, int) AnalyzeVector2IList(List<Vector2I> vectorList)
@@ -62,27 +62,67 @@ public partial class GravitationalAnomalyMap : Node
         return (xMin, yMin, xRange, yRange);
     }
 
-    private Dictionary<Vector2I, float> GenerateGravitationalAnomalyMap(int xMin, int yMin, int width, int height)
+    private Dictionary<Vector2I, float> GenerateGravitationalAnomalyMapPerlinNoise(int xMin, int yMin, int width, int height)
     {
+        var noiseScale = 0.1f;
         Dictionary<Vector2I, float> map = new Dictionary<Vector2I, float>();
-        noise.Seed = (int)GD.Randi(); // Randomize the noise seed
+        noise.Seed = (int)GD.Randi();
+
+        // Get monolith position and set gradient parameters
+        Vector2I monolithPos = gridManager.monolithPosition;
+        int maxDistance = 20; // Smoother gradient across the map
 
         for (int y = yMin; y < yMin + height; y++)
         {
             for (int x = xMin; x < xMin + width; x++)
             {
-                // Generate noise value
-                float rawNoise = noise.GetNoise2D(x, y);
+                // Gradient based on distance to monolith
+                int distance = Mathf.Abs(monolithPos.X - x) + Mathf.Abs(monolithPos.Y - y); // Manhattan distance
+                float normalizedDistance = Mathf.Clamp((float)distance / maxDistance, 0f, 1f);
+                float gradientValue = Mathf.Lerp(MaxAnomaly, MinAnomaly, normalizedDistance);
 
-                // Normalize and scale the anomaly value
-                float scaledAnomaly = Mathf.Lerp(MinAnomaly - 500, MaxAnomaly + 500, (rawNoise + 1f) / 2f);
-                scaledAnomaly = Mathf.Clamp(scaledAnomaly, 0, 200);
+                // Perlin noise (scaled to [0, 1])
+                float rawNoise = noise.GetNoise2D(x * noiseScale, y * noiseScale);
+                float noiseValue = (rawNoise + 1f) / 2f; // [0,1]
 
-                // Add to the dictionary
-                map[new Vector2I(x, y)] = scaledAnomaly;
+                // Combine: mostly gradient, little noise
+                float anomalyValue = gradientValue * 0.0f + noiseValue * MaxAnomaly * 0.85f;
+
+                anomalyValue = Mathf.Clamp(anomalyValue, MinAnomaly, MaxAnomaly);
+                map[new Vector2I(x, y)] = anomalyValue;
             }
         }
+        return map;
+    }
 
+    private Dictionary<Vector2I, float> GenerateGravitationalAnomalyMap(int xMin, int yMin, int width, int height)
+    {
+        Dictionary<Vector2I, float> map = new Dictionary<Vector2I, float>();
+        Vector2I monolithPos = gridManager.monolithPosition;
+        int maxDistance = 50; // or calculate based on map size
+        float maxValue = 255f;
+        float minValue = 0f;
+        var rng = new RandomNumberGenerator();
+
+        for (int y = yMin; y < yMin + height; y++)
+        {
+            for (int x = xMin; x < xMin + width; x++)
+            {
+                Vector2I cell = new Vector2I(x, y);
+                int distance = Mathf.Abs(monolithPos.X - x) + Mathf.Abs(monolithPos.Y - y); // Manhattan distance
+                float normalizedDistance = Mathf.Clamp((float)distance / maxDistance, 0f, 1f);
+
+                // Main gradient
+                float anomalyValue = Mathf.Lerp(maxValue, minValue, normalizedDistance);
+
+                // Optional: add subtle noise
+                anomalyValue += rng.RandfRange(-20f, 20f);
+
+                anomalyValue = Mathf.Clamp(anomalyValue, minValue, maxValue);
+
+                map[cell] = anomalyValue;
+            }
+        }
         return map;
     }
 
@@ -169,7 +209,7 @@ public partial class GravitationalAnomalyMap : Node
             return anomaly;
         }
 
-        GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
+        //GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
         return 0f;
     }
 
@@ -181,8 +221,8 @@ public partial class GravitationalAnomalyMap : Node
 		// Sort the list by x, then by y
 		List<Vector2I> sortedList = allTilesBaseLayer.OrderBy(v => v.X).ThenBy(v => v.Y).ToList();	
 
-		int maxDistance = 50; // Maximum distance to affect tiles, adjust as needed
-		int maxValue = 500; // Highest value near the monolith
+		int maxDistance = 100; // Maximum distance to affect tiles, adjust as needed
+		int maxValue = 255; // Highest value near the monolith
 		int minValue = 0; // Lowest value farthest from the monolith
         var randomAnomaly = new RandomNumberGenerator();
 
@@ -204,7 +244,7 @@ public partial class GravitationalAnomalyMap : Node
                     {
                         anomalyMap[new Vector2I(x,y)] = randomAnomaly.RandfRange(0,30);
                     }
-                    else GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
+                    //else GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
                 }
 				// If the tile is within the maxDistance
 				else if (manhattanDistance <= maxDistance)
@@ -219,7 +259,7 @@ public partial class GravitationalAnomalyMap : Node
                         var currentAnomaly = GetAnomalyAt(x,y);
                         anomalyMap[new Vector2I(x,y)] = Mathf.Clamp(currentAnomaly + anomalyValue, 0, maxValue);
                     }
-                    else GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
+                    //else GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
 				}
 			}
 		}

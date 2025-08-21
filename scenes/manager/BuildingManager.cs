@@ -457,7 +457,8 @@ public partial class BuildingManager : Node
 
 		if(!gridManager.CanMoveBuilding(buildingComponent, destinationArea))
 		{
-            //FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", buildingComponent);
+			buildingComponent.CanMove = false;
+            FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", buildingComponent);
 			return;
 		}
 

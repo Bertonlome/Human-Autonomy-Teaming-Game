@@ -36,6 +36,7 @@ public partial class BuildingComponent : Node2D
 	private BuildingAnimatorComponent buildingAnimatorComponent;
 
 	public BuildingResource BuildingResource { get; private set; }
+	public bool CanMove { get; set; } = true;
 	public BuildingManager buildingManager;
 	public GravitationalAnomalyMap gravitationalAnomalyMap;
 	public bool IsDestroying { get; private set; }
@@ -590,6 +591,12 @@ public partial class BuildingComponent : Node2D
 
 public async void GradientSearch()
 	{
+		// Cancel any previous gradient search
+		cancelMoveRequested = true;
+		await ToSignal(GetTree().CreateTimer(0.01f), "timeout"); // Give time for previous to exit
+
+		cancelMoveRequested = false; // Reset for this search
+
 		if (currentExplorMode == ExplorMode.GradientSearch && !IsStuck)
 		{
 			bool reachedMaxima = false;
@@ -601,27 +608,27 @@ public async void GradientSearch()
 
 			while (currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima)
 			{
+				if (cancelMoveRequested || IsStuck || !CanMove)
+				{
+					currentExplorMode = ExplorMode.None;
+					EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+					CanMove = true; // Reset so the robot can move next time
+					return; // Stop search
+				}
+
 				highestAnomaly = float.MinValue;
 				foreach (var tile in candidateTiles)
 				{
-					// Get anomaly value
 					var anomaly = gravitationalAnomalyMap.GetAnomalyAt(tile.X, tile.Y);
-					//GD.Print($"Adjacent pos: ({tile.X}, {tile.Y}) anomaly = {anomaly}");
-
-					// Update the highest anomaly tile if a higher value is found
 					if (anomaly > highestAnomaly)
 					{
 						highestAnomaly = anomaly;
 						highestTile = tile;
 					}
-
-					// Add delay
 				}
 
-				// Calculate the relative direction
 				string relativeDirection = GetDirectionFromDelta(currentPosition, highestTile);
 
-				//GD.Print($"Tile with the highest anomaly is at {highestTile}, direction: {relativeDirection}");
 				if (relativeDirection != "CURRENT")
 				{
 					buildingManager.MoveInDirectionAutomated(this, relativeDirection);
@@ -637,6 +644,7 @@ public async void GradientSearch()
 		}
 		currentExplorMode = ExplorMode.None;
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+		CanMove = true; // Reset at the end, in case it wasn't already
 	}
 
 private string GetDirectionFromDelta(Vector2I current, Vector2I target)
