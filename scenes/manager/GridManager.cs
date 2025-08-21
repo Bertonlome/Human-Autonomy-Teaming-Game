@@ -612,13 +612,18 @@ public partial class GridManager : Node
 		var tileArea = buildingComponent.GetTileArea();
 		var resourceTiles = GetResourceTilesInRadius(tileArea, buildingComponent.BuildingResource.ResourceRadius);
 
-		var oldResourceTileCount = collectedResourceTiles.Count;
-		collectedResourceTiles.UnionWith(resourceTiles);
-
-		if (oldResourceTileCount != collectedResourceTiles.Count)
+		// Only collect new resource tiles if robot has capacity
+		foreach (var tile in resourceTiles)
 		{
-			EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
+			if (!collectedResourceTiles.Contains(tile) &&
+				buildingComponent.resourceCollected < buildingComponent.BuildingResource.ResourceCapacity)
+			{
+				collectedResourceTiles.Add(tile);
+				buildingComponent.CollectResource(1);
+			}
 		}
+
+		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
 		EmitSignal(SignalName.GridStateUpdated);
 	}
 
@@ -670,7 +675,7 @@ public partial class GridManager : Node
 		validBuildableTiles.Clear();
 		validBuildableAttackTiles.Clear();
 		allTilesInBuildingRadius.Clear();
-		collectedResourceTiles.Clear();
+		//collectedResourceTiles.Clear();
 		dangerOccupiedTiles.Clear();
 		attackTiles.Clear();
 		buildingToBuildableTiles.Clear();

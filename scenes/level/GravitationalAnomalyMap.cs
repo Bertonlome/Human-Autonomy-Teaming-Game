@@ -123,36 +123,41 @@ public partial class GravitationalAnomalyMap : Node
 
     public void DisplayTrace(HashSet<Vector2I> tileDiscovered)
     {
-       if (traceDisplayed == true)
+        // Always clear previous trace
+        foreach(Node child in GetChildren())
         {
-            foreach(Node child in GetChildren())
-            {
-                child.QueueFree();
-            }
-            traceDisplayed = false;
+            child.QueueFree();
         }
-        else
-            {
-            Vector2 size = new Vector2(64, 64);
 
-            foreach (var tile in tileDiscovered)
-            {
-                float scaledAnomaly = anomalyMap[tile];
-                ColorRect colorRect = new ColorRect();
-                colorRect.SetSize(size);
+        Vector2 size = new Vector2(64, 64);
 
-                // Position it in world space
-                colorRect.GlobalPosition = new Vector2(tile.X * 64, tile.Y * 64);
+        foreach (var tile in tileDiscovered)
+        {
+            if (!anomalyMap.ContainsKey(tile)) continue; // Safety check
+            float scaledAnomaly = anomalyMap[tile];
+            ColorRect colorRect = new ColorRect();
+            colorRect.SetSize(size);
 
-                // Set its color with opacity based on the anomaly value
-                Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
-                colorRect.Color = squareColor;
+            // Position it in world space
+            colorRect.GlobalPosition = new Vector2(tile.X * 64, tile.Y * 64);
 
-                // Add it to the scene tree
-                AddChild(colorRect);
-            }
-            traceDisplayed = true;
+            // Set its color with opacity based on the anomaly value
+            Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
+            colorRect.Color = squareColor;
+
+            // Add it to the scene tree
+            AddChild(colorRect);
         }
+        traceDisplayed = true; // Optional, but not needed for toggling anymore
+    }
+
+    public void HideTrace()
+    {
+        foreach (Node child in GetChildren())
+        {
+            child.QueueFree();
+        }
+        traceDisplayed = false;
     }
 
     public float GetAnomalyAt(int x, int y)
@@ -168,16 +173,13 @@ public partial class GravitationalAnomalyMap : Node
         return 0f;
     }
 
-    	public void AddMonolithToAnomalyMap(Vector2I monolithPosition, Dictionary<Vector2I,float> anomalyMap)
+    public void AddMonolithToAnomalyMap(Vector2I monolithPosition, Dictionary<Vector2I,float> anomalyMap)
 	{
 		// Check for duplicates		
-		bool hasDuplicates = allTilesBaseLayer.GroupBy(v => v)		
-		                               .Any(g => g.Count() > 1);		
+		bool hasDuplicates = allTilesBaseLayer.GroupBy(v => v).Any(g => g.Count() > 1);
 
 		// Sort the list by x, then by y
-		List<Vector2I> sortedList = allTilesBaseLayer.OrderBy(v => v.X)
-		                                      .ThenBy(v => v.Y)
-		                                      .ToList();	
+		List<Vector2I> sortedList = allTilesBaseLayer.OrderBy(v => v.X).ThenBy(v => v.Y).ToList();	
 
 		int maxDistance = 50; // Maximum distance to affect tiles, adjust as needed
 		int maxValue = 500; // Highest value near the monolith

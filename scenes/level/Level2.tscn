@@ -51,11 +51,5 @@ y_sort_enabled = true
 tile_map_data = PackedByteArray("AAACAAMAAQAAAAAAAAALAAEAAQAAAAAAAAAMAAEAAQAAAAAAAAAKAAIAAQAAAAAAAAALAAIAAQAAAAAAAAAJAAEAAQAAAAAAAAAIAAIAAQAAAAAAAAAKAAMAAQAAAAAAAAANAAgAAQAAAAAAAAAPAAcAAQAAAAAAAAAOAAcAAQAAAAAAAAALAAgAAQAAAAAAAAAUAAAAAQAAAAAAAAAOAP7/AQAAAAAAAAARAP7/AQAAAAAAAAATAAEAAQAAAAAAAAADAAQAAQAAAAAAAAA=")
 tile_set = ExtResource("2_05fa2")
 
-[node name="Base" parent="YSortRoot" index="1"]
-position = Vector2(0, 640)
-
-[node name="GoldMine" parent="YSortRoot" index="2"]
-position = Vector2(1088, 0)
-
 [editable path="YSortRoot/BaseTerrainTileMapLayer/ElevationLayer"]
 [editable path="YSortRoot/BaseTerrainTileMapLayer/ElevationLayer2"]

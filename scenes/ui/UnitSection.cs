@@ -127,5 +127,4 @@ public partial class UnitSection : PanelContainer
 	{
 		panel.Visible = false; // Hide the panel when no robot is selected
 	}
-
 }

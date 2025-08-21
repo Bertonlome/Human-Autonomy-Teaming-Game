@@ -37,7 +37,7 @@ public partial class BuildingManager : Node
 	private double clockTickTimer = 0.0;
 
 	[Export]
-	private GridManager gridManager;
+	public GridManager gridManager;
 	[Export]
 	private GameUI gameUI;
 	[Export]
@@ -243,6 +243,12 @@ public partial class BuildingManager : Node
 		startingResourceCount = count;
 	}
 
+	public void DropResourcesAtBase(int resourceCount)
+	{
+		currentResourceCount += resourceCount;
+		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+	}
+
 	private void UpdateGridDisplay()
 	{
 		gridManager.ClearHighlightedTiles();
@@ -258,9 +264,9 @@ public partial class BuildingManager : Node
 			gridManager.HighlightDangerOccupiedTiles();
 		}
 
-		if(toPlaceBuildingResource.IsBase)
+		if (toPlaceBuildingResource.IsBase)
 		{
-			if(IsBasePlaceableAtArea(hoveredGridArea))
+			if (IsBasePlaceableAtArea(hoveredGridArea))
 			{
 				gridManager.HighlightExpandedBuildableTiles(hoveredGridArea, toPlaceBuildingResource.BuildableRadius);
 				buildingGhost.SetValid();
@@ -272,7 +278,7 @@ public partial class BuildingManager : Node
 		}
 		else if (!toPlaceBuildingResource.IsAerial)
 		{
-			if(!gridManager.IsInBaseProximity(hoveredGridArea.Position))
+			if (!gridManager.IsInBaseProximity(hoveredGridArea.Position))
 			{
 				buildingGhost.SetInvalid();
 			}
@@ -404,8 +410,8 @@ public partial class BuildingManager : Node
 
 		buildingNode.Position +=  directionVector * 64;
 		selectedBuildingComponent.Moved((Vector2I)originPos, destinationPosition);
-
-		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+		selectedBuildingComponent.TryDropResourcesAtBase();
+		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 
 		var test = gridManager.CanMoveBuilding(selectedBuildingComponent);
 		if (!test)
@@ -480,8 +486,9 @@ public partial class BuildingManager : Node
 
 		buildingNode.Position +=  directionVector * 64;
         buildingComponent.Moved((Vector2I)originPos, destinationPosition);
+		buildingComponent.TryDropResourcesAtBase();
 
-		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 
 		var test = gridManager.CanMoveBuilding(buildingComponent);
 		if (!test)
@@ -518,7 +525,7 @@ public partial class BuildingManager : Node
 		currentlyUsedResourceCount -= buildingComponent.BuildingResource.ResourceCost;
 		buildingComponent.Destroy();
         BuildingManager.selectedBuildingComponent = null;
-		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
 	private BuildingComponent SelectBuildingAtHoveredCellPosition()
@@ -676,7 +683,7 @@ public partial class BuildingManager : Node
 	private void OnResourceTilesUpdated(int resourceCount)
 	{
 		currentResourceCount = resourceCount;
-		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
 	private void OnBuildingResourceSelected(BuildingResource buildingResource)

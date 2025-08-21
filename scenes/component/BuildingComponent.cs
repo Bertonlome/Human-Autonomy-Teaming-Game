@@ -43,8 +43,9 @@ public partial class BuildingComponent : Node2D
 	public bool IsStuck {get; private set;} = false; 
 	public bool IsRecharging {get; set;} = false;
 	public int Battery {get; set;} = 100;
+	public int resourceCollected = 0;
 	
-	private List<(Vector2I,StringName)> moveHistory = new();
+	private List<(Vector2I, StringName)> moveHistory = new();
 
 	private HashSet<Vector2I> occupiedTiles = new();
 
@@ -561,6 +562,27 @@ public partial class BuildingComponent : Node2D
 	{
 		IsRecharging = recharging;
 		EmitSignal(recharging ? SignalName.StartCharging : SignalName.StopCharging);
+	}
+
+	public void CollectResource(int amount)
+	{
+		resourceCollected += amount;
+		if (resourceCollected > BuildingResource.ResourceCapacity)
+		{
+			resourceCollected = BuildingResource.ResourceCapacity;
+		}
+		GameEvents.EmitCarriedResourceCountChanged(resourceCollected);
+	}
+
+	public void TryDropResourcesAtBase()
+	{
+		if (buildingManager.gridManager.IsInBaseProximity(GetGridCellPosition()) && resourceCollected > 0)
+		{
+			buildingManager.DropResourcesAtBase(this.resourceCollected);
+			resourceCollected = 0;
+			GameEvents.EmitCarriedResourceCountChanged(resourceCollected);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Resources dropped at base", this);
+		}
 	}
 
 

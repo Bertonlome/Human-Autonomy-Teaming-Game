@@ -30,6 +30,8 @@ public partial class BuildingResource : Resource
 	[Export]
 	public int ResourceRadius { get; private set; }
 	[Export]
+	public int ResourceCapacity { get; private set; }
+	[Export]
 	public int VisionRadius {get; private set;}
 	[Export]
 	public int AnomalySensorRadius {get; private set;}

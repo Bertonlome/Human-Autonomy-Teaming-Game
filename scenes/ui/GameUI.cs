@@ -27,7 +27,8 @@ public partial class GameUI : CanvasLayer
 	private Label timeLeftLabel;
 	private Button stopRobotButton;
 	private Button displayAnomalyMapButton;
-	private Button displayTraceButton;
+	private CheckButton displayTraceButton;
+	private bool isTraceActive = false;
 	private readonly StringName ACTION_SPACEBAR = "spacebar";
 
 	[Export]
@@ -49,17 +50,35 @@ public partial class GameUI : CanvasLayer
 		timeLeftLabel = GetNode<Label>("%TimeLeftLabel");
 		stopRobotButton = GetNode<Button>("%StopRobotButton");
 		displayAnomalyMapButton = GetNode<Button>("%DisplayAnomalyMapButton");
-		displayTraceButton = GetNode<Button>("%DisplayTraceButton");
+		displayTraceButton = GetNode<CheckButton>("%DisplayTraceButton");
 		CreateBuildingSections();
 
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
 		displayAnomalyMapButton.Pressed += OnDisplayAnomalyMapButtonPressed;
 		buildingManager.AvailableResourceCountChanged += OnAvailableResourceCountChanged;
 		buildingManager.ClockIsTicking += OnClockIsTicking;
-		displayTraceButton.Pressed += OnDisplayTraceButtonPressed;
+		displayTraceButton.Toggled += OnDisplayTraceToggled;
 
 		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
+		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnRobotMoved));
+	}
 
+	public void OnRobotMoved(BuildingComponent buildingComponent)
+	{
+		if (isTraceActive)
+		{
+			var allRobots = BuildingComponent.GetValidBuildingComponents(this);
+			HashSet<Vector2I> tileDiscoveredByAllRobots = new();
+			foreach (var robot in allRobots)
+			{
+				var tileDiscovered = robot.GetTileDiscovered();
+				foreach (var tile in tileDiscovered)
+				{
+					tileDiscoveredByAllRobots.Add(tile);
+				}
+			}
+			gravitationalAnomalyMap.DisplayTrace(tileDiscoveredByAllRobots);
+		}
 	}
 	
 	public void SetTimeToCompleteLevel(int timeResource)
@@ -181,19 +200,29 @@ public partial class GameUI : CanvasLayer
 		GameEvents.EmitAllRobotStop();
 	}
 
-	private void OnDisplayTraceButtonPressed()
+	private void OnDisplayTraceToggled(bool buttonPressed)
 	{
-		var allRobots = BuildingComponent.GetValidBuildingComponents(this);
-		HashSet<Vector2I> tileDiscoveredByAllRobots = new();
-		foreach (var robot in allRobots)
+		if (!buttonPressed)
 		{
-			var tileDiscovered = robot.GetTileDiscovered();
-			foreach (var tile in tileDiscovered)
-			{
-				tileDiscoveredByAllRobots.Add(tile);
-			}
+			gravitationalAnomalyMap.HideTrace();
+			isTraceActive = false;
+			return;
 		}
-		gravitationalAnomalyMap.DisplayTrace(tileDiscoveredByAllRobots);
+		else
+		{
+			var allRobots = BuildingComponent.GetValidBuildingComponents(this);
+			HashSet<Vector2I> tileDiscoveredByAllRobots = new();
+			foreach (var robot in allRobots)
+			{
+				var tileDiscovered = robot.GetTileDiscovered();
+				foreach (var tile in tileDiscovered)
+				{
+					tileDiscoveredByAllRobots.Add(tile);
+				}
+			}
+			gravitationalAnomalyMap.DisplayTrace(tileDiscoveredByAllRobots);
+		}
+		isTraceActive = buttonPressed;
 	}
 
 	private void OnDisplayAnomalyMapButtonPressed()

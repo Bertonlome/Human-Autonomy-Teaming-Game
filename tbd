@@ -8,4 +8,10 @@ Le robot en mode gradient descent pourrait envoyer une notification sur le panne
 
 Il faut que les robots puissent partir en exploration hors zone couverte lorsqu'ils sont en mode autonome.
 
+Display trace mode on or off
+
 Il faudrait réfléchir à un objectif annexe (peut être collecter des ressources ?) pour que le jeux soit plus intéressant.
+3 points pour l'objectif annexe : 
+    - Le joueur peut collecter du bois pour alimenter une centrale électrique qui permet de recharger les robots.
+    - Le joueur peut collecter des minerais pour créer des nouveaux robots.
+    - Le joueur peut analyser des échantillons de minerais comme objectif annexe.

@@ -34,7 +34,7 @@ layout_mode = 2
 
 [node name="RobotIcon" type="TextureRect" parent="MarginContainer/VBoxContainer/VBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 70)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 texture = ExtResource("2_fjk8r")
 expand_mode = 1

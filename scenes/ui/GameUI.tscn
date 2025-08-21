@@ -83,7 +83,7 @@ text = "4"
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="DisplayTraceButton" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="DisplayTraceButton" type="CheckButton" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0

@@ -21,6 +21,7 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Label gravAnomValueLabel;
 	private Label statusLabel;
 	private Label batteryLabel;
+	private Label resourceLabel;
 	public BuildingComponent selectedBuildingComponent;
 
 	public enum ExplorMode
@@ -41,10 +42,12 @@ public partial class SelectedRobotUI : CanvasLayer
 
 		CallDeferred("SetAnomalySignal");
 		CallDeferred("SetBatterySignal");
+		CallDeferred("SetResourceSignal");
 		GameEvents.Instance.Connect(GameEvents.SignalName.NoMoreRobotSelected, Callable.From<BuildingComponent>(OnNoMoreRobotSelected));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingUnStuck, Callable.From<BuildingComponent>(OnBuildingUnStuck));
 		GameEvents.Instance.Connect(GameEvents.SignalName.AllRobotStopped, Callable.From(OnAllRobotsStopped));
+		GameEvents.Instance.Connect(GameEvents.SignalName.CarriedResourceCountChanged, Callable.From<int>(OnResourceCarriedCountChanged));
 	}
 
 	private void InitializeUI()
@@ -60,6 +63,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		gravAnomValueLabel = GetNode<Label>("%GravAnomValueLabel");
 		statusLabel = GetNode<Label>("%StatusLabel");
 		batteryLabel = GetNode<Label>("%BatteryLabel");
+		resourceLabel = GetNode<Label>("%ResourceLabel");
 
 
 		randomExplorButton.Pressed += OnRandomExplorButtonPressed;
@@ -181,6 +185,11 @@ public partial class SelectedRobotUI : CanvasLayer
 		batteryLabel.Text = selectedBuildingComponent.Battery + " move left";
 	}
 
+	private void SetResourceSignal()
+	{
+		resourceLabel.Text = selectedBuildingComponent.resourceCollected.ToString() + " / " + selectedBuildingComponent.BuildingResource.ResourceCapacity.ToString();
+	}
+
 	public void OnBatteryChange(int value)
 	{
 		if (IsInstanceValid(batteryLabel))
@@ -202,17 +211,25 @@ public partial class SelectedRobotUI : CanvasLayer
 		}
 	}
 
-	private void DisconnectSignals()
-    {
-        // Safely disconnect signals before the object is freed
-        randomExplorButton.Pressed -= OnRandomExplorButtonPressed;
-        stopExplorbutton.Pressed -= OnStopExplorButtonPressed;
-        trackRobotButton.Pressed -= OnTrackRobotButtonPressed;
+	public void OnResourceCarriedCountChanged(int carriedResourceCount)
+	{
+		if (IsInstanceValid(resourceLabel))
+		{
+			resourceLabel.Text = carriedResourceCount.ToString() + " / " + selectedBuildingComponent.BuildingResource.ResourceCapacity.ToString();
+		}
+	}
 
-        if (selectedBuildingComponent != null)
-        {
-            selectedBuildingComponent.NewAnomalyReading -= OnNewAnomalyReading;
-        }
-    }
+	private void DisconnectSignals()
+	{
+		// Safely disconnect signals before the object is freed
+		randomExplorButton.Pressed -= OnRandomExplorButtonPressed;
+		stopExplorbutton.Pressed -= OnStopExplorButtonPressed;
+		trackRobotButton.Pressed -= OnTrackRobotButtonPressed;
+
+		if (selectedBuildingComponent != null)
+		{
+			selectedBuildingComponent.NewAnomalyReading -= OnNewAnomalyReading;
+		}
+	}
 
 }

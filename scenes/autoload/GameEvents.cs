@@ -27,6 +27,8 @@ public partial class GameEvents : Node
 	public delegate void NoMoreRobotSelectedEventHandler(BuildingComponent buildingComponent);
 	[Signal]
 	public delegate void AllRobotStoppedEventHandler();
+	[Signal]
+	public delegate void CarriedResourceCountChangedEventHandler(int carriedResourceCount);
 
 	public override void _Notification(int what)
 	{
@@ -45,7 +47,7 @@ public partial class GameEvents : Node
 	{
 		Instance.EmitSignal(SignalName.BuildingMoved, buildingComponent);
 	}
-	
+
 	public static void EmitRobotSelected(BuildingComponent buildingComponent)
 	{
 		Instance.EmitSignal(SignalName.RobotSelected, buildingComponent);
@@ -75,7 +77,7 @@ public partial class GameEvents : Node
 	{
 		Instance.EmitSignal(SignalName.BuildingStuck, buildingComponent);
 	}
-	
+
 	public static void EmitBuildingUnStuck(BuildingComponent buildingComponent)
 	{
 		Instance.EmitSignal(SignalName.BuildingUnStuck, buildingComponent);
@@ -84,5 +86,10 @@ public partial class GameEvents : Node
 	public static void EmitAllRobotStop()
 	{
 		Instance.EmitSignal(SignalName.AllRobotStopped);
+	}
+
+	public static void EmitCarriedResourceCountChanged(int carriedResourceCount)
+	{
+		Instance.EmitSignal(SignalName.CarriedResourceCountChanged, carriedResourceCount);
 	}
 }
