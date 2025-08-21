@@ -86,7 +86,7 @@ public partial class GravitationalAnomalyMap : Node
                 float noiseValue = (rawNoise + 1f) / 2f; // [0,1]
 
                 // Combine: mostly gradient, little noise
-                float anomalyValue = gradientValue * 0.0f + noiseValue * MaxAnomaly * 0.85f;
+                float anomalyValue = gradientValue * 0.0f + noiseValue * MaxAnomaly * 0.100f;
 
                 anomalyValue = Mathf.Clamp(anomalyValue, MinAnomaly, MaxAnomaly);
                 map[new Vector2I(x, y)] = anomalyValue;
