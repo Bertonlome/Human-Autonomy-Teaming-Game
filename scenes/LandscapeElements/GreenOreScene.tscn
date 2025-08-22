@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://cx8br5unsto1x"]
+
+[ext_resource type="Texture2D" uid="uid://h05bn8w8fjap" path="res://assets/tiles/greenOre.png" id="1_31q86"]
+
+[node name="GreenOreScene" type="Sprite2D"]
+position = Vector2(32, 32)
+texture = ExtResource("1_31q86")
+offset = Vector2(0, -10)

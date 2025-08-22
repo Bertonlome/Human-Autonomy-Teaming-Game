@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://bllsmwyng6v5f"]
+[gd_scene load_steps=15 format=3 uid="uid://bllsmwyng6v5f"]
 
 [ext_resource type="Script" path="res://scenes/manager/DiscoveredElementsManager.cs" id="1_svhsh"]
 [ext_resource type="PackedScene" uid="uid://bl8iq7elbw4og" path="res://scenes/LandscapeElements/DiscoveredElements.tscn" id="2_cjj8q"]
@@ -11,6 +11,9 @@
 [ext_resource type="PackedScene" uid="uid://cq4eyveg6twgu" path="res://scenes/LandscapeElements/SmallRockScene.tscn" id="9_qr80j"]
 [ext_resource type="PackedScene" uid="uid://sy2fwminlpam" path="res://scenes/LandscapeElements/MediumRockScene.tscn" id="10_cm4gl"]
 [ext_resource type="PackedScene" uid="uid://qes078q2x7ks" path="res://scenes/LandscapeElements/BigRockScene.tscn" id="11_q0kr6"]
+[ext_resource type="PackedScene" uid="uid://ctkj7x7qqbjk1" path="res://scenes/LandscapeElements/RedOreScene.tscn" id="12_smkg4"]
+[ext_resource type="PackedScene" uid="uid://kkn3b22q1ucy" path="res://scenes/LandscapeElements/BlueOreScene.tscn" id="13_s0k2f"]
+[ext_resource type="PackedScene" uid="uid://cx8br5unsto1x" path="res://scenes/LandscapeElements/GreenOreScene.tscn" id="14_lqtf2"]
 
 [node name="DiscoveredElementsManager" type="Node"]
 script = ExtResource("1_svhsh")
@@ -24,3 +27,6 @@ smallBushScene = ExtResource("8_syxph")
 smallRockScene = ExtResource("9_qr80j")
 mediumRockScene = ExtResource("10_cm4gl")
 bigRockScene = ExtResource("11_q0kr6")
+redOreScene = ExtResource("12_smkg4")
+blueOreScene = ExtResource("13_s0k2f")
+greenOreScene = ExtResource("14_lqtf2")

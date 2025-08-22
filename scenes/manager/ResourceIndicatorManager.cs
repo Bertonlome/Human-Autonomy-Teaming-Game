@@ -12,7 +12,10 @@ public partial class ResourceIndicatorManager : Node
 	private GridManager gridManager;
 	[Export]
 	private PackedScene resourceIndicatorScene;
+	[Export]
+	private PackedScene mineralIndicatorScene;
 	private Dictionary<Vector2I, Resourceindicator> tileToresourceIndicator = new();
+	private Dictionary<Vector2I, MineralIndicator> tileTomineraIndicator = new();
 
 	private HashSet<Vector2I> indicatedTiles = new();
 
@@ -23,27 +26,44 @@ public partial class ResourceIndicatorManager : Node
 	{
 		audioStreamPlayer = GetNode<AudioStreamPlayer>("AudioStreamPlayer");
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
+		gridManager.MineralTilesUpdated += OnResourceTilesUpdated;
 	}
 
-	private void UpdateIndicators(IEnumerable<Vector2I> newIndicatedTiles, IEnumerable<Vector2I> toRemoveTiles)
+	private void UpdateIndicators(IEnumerable<Vector2I> newIndicatedTiles, IEnumerable<Vector2I> toRemoveTiles, string resourceType)
 	{
 
-		if(newIndicatedTiles.Any())
+		if (newIndicatedTiles.Any())
 		{
 			audioStreamPlayer.Play();
 		}
 		foreach (var newTile in newIndicatedTiles)
 		{
-			var indicator = resourceIndicatorScene.Instantiate<Resourceindicator>();
-			AddChild(indicator);
-			indicator.GlobalPosition = newTile * 64;
-			tileToresourceIndicator[newTile] = indicator;
+			MineralIndicator indicator;
+			Resourceindicator resourceIndicator;
+			if (resourceType == "red_ore" || resourceType == "green_ore" || resourceType == "blue_ore")
+			{
+				// Instantiate as MineralIndicator
+				var mineralIndicator = mineralIndicatorScene.Instantiate<MineralIndicator>();
+				mineralIndicator.SetOreType(resourceType);
+				indicator = mineralIndicator;
+				AddChild(indicator);
+				indicator.GlobalPosition = newTile * 64;
+				tileTomineraIndicator[newTile] = indicator;
+			}
+			else if (resourceType == "wood")
+			{
+				resourceIndicator = resourceIndicatorScene.Instantiate<Resourceindicator>();
+				AddChild(resourceIndicator);
+				resourceIndicator.GlobalPosition = newTile * 64;
+				tileToresourceIndicator[newTile] = resourceIndicator;
+			}
+
 		}
 
-		foreach(var removeTile in toRemoveTiles)
+		foreach (var removeTile in toRemoveTiles)
 		{
 			tileToresourceIndicator.TryGetValue(removeTile, out var indicator);
-			if(IsInstanceValid(indicator))
+			if (IsInstanceValid(indicator))
 			{
 				indicator.Destroy();
 			}
@@ -51,18 +71,18 @@ public partial class ResourceIndicatorManager : Node
 		}
 	}
 
-	private void HandleResourceTilesUpdated()
+	private void HandleResourceTilesUpdated(string resourceType)
 	{
 		var currentResourceTiles = gridManager.GetCollectedResourcetiles();
 		var newlyIndicatedTiles = currentResourceTiles.Except(indicatedTiles);
 		var toRemoveTiles = indicatedTiles.Except(currentResourceTiles);
 		indicatedTiles = currentResourceTiles;
-		UpdateIndicators(newlyIndicatedTiles, toRemoveTiles);
+		UpdateIndicators(newlyIndicatedTiles, toRemoveTiles, resourceType);
 	}
 
-	private void OnResourceTilesUpdated(int _)
+	private void OnResourceTilesUpdated(int _, string resourceType)
 	{
-		Callable.From(HandleResourceTilesUpdated).CallDeferred();
+		Callable.From(() => HandleResourceTilesUpdated(resourceType)).CallDeferred();
 	}
 
 }

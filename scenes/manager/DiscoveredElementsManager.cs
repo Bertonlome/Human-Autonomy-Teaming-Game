@@ -30,7 +30,12 @@ public partial class DiscoveredElementsManager : Node
 	private PackedScene mediumRockScene;
 	[Export]
 	private PackedScene bigRockScene;
-	
+	[Export]
+	private PackedScene redOreScene;
+	[Export]
+	private PackedScene blueOreScene;
+	[Export]
+	private PackedScene greenOreScene;
 	private Dictionary<Vector2I, Node2D> tileToDiscoveredElements = new();
 	private Dictionary<Vector2I, DiscoveredElements> tiletoDarkenedElements = new();
 	private Dictionary<Vector2I, string> tiletoTypeElementsString = new();
@@ -96,6 +101,18 @@ public partial class DiscoveredElementsManager : Node
 				break;
 			case "tree":
 				elementScene = treeScene.Instantiate<AnimatedSprite2D>();
+				elementHolder.AddChild(elementScene);
+				break;
+			case "red_ore":
+				elementScene = redOreScene.Instantiate<Sprite2D>();
+				elementHolder.AddChild(elementScene);
+				break;
+			case "blue_ore":
+				elementScene = blueOreScene.Instantiate<Sprite2D>();
+				elementHolder.AddChild(elementScene);
+				break;
+			case "green_ore":
+				elementScene = greenOreScene.Instantiate<Sprite2D>();
 				elementHolder.AddChild(elementScene);
 				break;
 		}

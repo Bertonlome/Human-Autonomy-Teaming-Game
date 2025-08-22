@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Game.Autoload;
@@ -44,8 +45,8 @@ public partial class BuildingComponent : Node2D
 	public bool IsStuck {get; private set;} = false; 
 	public bool IsRecharging {get; set;} = false;
 	public int Battery {get; set;} = 100;
-	public int resourceCollected = 0;
-	
+	public List<string> resourceCollected = new();
+
 	private List<(Vector2I, StringName)> moveHistory = new();
 
 	private HashSet<Vector2I> occupiedTiles = new();
@@ -588,26 +589,25 @@ public partial class BuildingComponent : Node2D
     }
 }
 
-	public void CollectResource(int amount)
+	public void CollectResource(string resourceType)
 	{
-		resourceCollected += amount;
-		if (resourceCollected > BuildingResource.ResourceCapacity)
+		if (resourceCollected.Count < BuildingResource.ResourceCapacity)
 		{
-			resourceCollected = BuildingResource.ResourceCapacity;
+			resourceCollected.Add(resourceType);
+			GameEvents.EmitCarriedResourceCountChanged(resourceCollected.Count);
 		}
-		GameEvents.EmitCarriedResourceCountChanged(resourceCollected);
 	}
 
 	public void TryDropResourcesAtBase()
 	{
-		if (buildingManager.gridManager.IsInBaseProximity(GetGridCellPosition()) && resourceCollected > 0)
-		{
-			buildingManager.DropResourcesAtBase(this.resourceCollected);
-			resourceCollected = 0;
-			GameEvents.EmitCarriedResourceCountChanged(resourceCollected);
-			FloatingTextManager.ShowMessageAtBuildingPosition("Resources dropped at base", this);
-		}
-	}
+    if (buildingManager.gridManager.IsInBaseProximity(GetGridCellPosition()) && resourceCollected.Count > 0)
+    {
+        buildingManager.DropResourcesAtBase(resourceCollected);
+        resourceCollected.Clear();
+        GameEvents.EmitCarriedResourceCountChanged(resourceCollected.Count);
+        FloatingTextManager.ShowMessageAtBuildingPosition("Resources dropped at base", this);
+    }
+}
 
 
 

@@ -1,9 +1,12 @@
-[gd_scene load_steps=5 format=4 uid="uid://cetqpln25j2ou"]
+[gd_scene load_steps=8 format=4 uid="uid://cetqpln25j2ou"]
 
 [ext_resource type="PackedScene" uid="uid://bipxsk1snp5nq" path="res://scenes/level/BaseLevel.tscn" id="1_2opka"]
 [ext_resource type="Resource" uid="uid://dd0a247267xtx" path="res://resources/level/level_05.tres" id="2_3v4c0"]
 [ext_resource type="TileSet" uid="uid://dvqwr0ci0x55u" path="res://resources/tiles.tres" id="3_ffsl0"]
 [ext_resource type="PackedScene" uid="uid://iv4rk5h4ybki" path="res://scenes/level/util/ElevationLayer.tscn" id="4_vjf2s"]
+[ext_resource type="PackedScene" uid="uid://ctkj7x7qqbjk1" path="res://scenes/LandscapeElements/RedOreScene.tscn" id="5_gg3l2"]
+[ext_resource type="PackedScene" uid="uid://kkn3b22q1ucy" path="res://scenes/LandscapeElements/BlueOreScene.tscn" id="6_5p0w2"]
+[ext_resource type="PackedScene" uid="uid://cx8br5unsto1x" path="res://scenes/LandscapeElements/GreenOreScene.tscn" id="7_de6xe"]
 
 [node name="Level5" instance=ExtResource("1_2opka")]
 levelDefinitionResource = ExtResource("2_3v4c0")
@@ -48,5 +51,10 @@ tile_set = ExtResource("3_ffsl0")
 
 [node name="Monolith" parent="YSortRoot" index="1"]
 position = Vector2(5824, -2176)
+
+[node name="DiscoveredElementsManager" parent="YSortRoot" index="2"]
+redOreScene = ExtResource("5_gg3l2")
+blueOreScene = ExtResource("6_5p0w2")
+greenOreScene = ExtResource("7_de6xe")
 
 [editable path="YSortRoot/BaseTerrainTileMapLayer/ElevationLayer"]

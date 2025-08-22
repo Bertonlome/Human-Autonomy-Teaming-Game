@@ -11,13 +11,24 @@ namespace Game.Manager;
 
 public partial class GridManager : Node
 {
+	public enum ResourceType
+	{
+		Wood,
+		RedMineral,
+		GreenMineral,
+		BlueMineral,
+		None
+	}
 	private const string IS_BUILDABLE = "is_buildable";
 	private const string IS_WOOD = "is_wood";
+	private const string IS_MINERAL = "Is_mineral";
 	private const string IS_IGNORED = "is_ignored";
 	private const string IS_ROUGH_TERRAIN = "is_rough_terrain";
 
 	[Signal]
-	public delegate void ResourceTilesUpdatedEventHandler(int collectedTiles);
+	public delegate void ResourceTilesUpdatedEventHandler(int collectedTiles, string resourceType);
+	[Signal]
+	public delegate void MineralTilesUpdatedEventHandler(int collectedTiles, string mineralType);
 	[Signal]
 	public delegate void DiscoveredTileUpdatedEventHandler(Vector2I tile, string type);
 	[Signal]
@@ -32,6 +43,7 @@ public partial class GridManager : Node
 	private HashSet<Vector2I> validBuildableAttackTiles = new();
 	private HashSet<Vector2I> allTilesInBuildingRadius = new();
 	private HashSet<Vector2I> collectedResourceTiles = new();
+	private HashSet<Vector2I> collectedMineralTiles = new();
 	private HashSet<Vector2I> discoveredElementsTiles = new();
 	private HashSet<Vector2I> occupiedTiles = new();
 	private HashSet<Vector2I> dangerOccupiedTiles = new();
@@ -258,7 +270,7 @@ public partial class GridManager : Node
 
 	public void HighlightResourceTiles(Rect2I tileArea, int radius)
 	{
-		var resourceTiles = GetResourceTilesInRadius(tileArea, radius);
+		var resourceTiles = GetWoodTilesInRadius(tileArea, radius);
 		var atlasCoords = new Vector2I(1, 0);
 		foreach (var tilePosition in resourceTiles)
 		{
@@ -361,7 +373,7 @@ public partial class GridManager : Node
 
 	public HashSet<Vector2I> GetCollectedResourcetiles()
 	{
-		return collectedResourceTiles.ToHashSet();
+		return collectedResourceTiles.Union(collectedMineralTiles).ToHashSet();
 	}
 
 	public HashSet<Vector2I> GetDiscoveredResourceTiles()
@@ -607,32 +619,53 @@ public partial class GridManager : Node
 		}
 	}
 
-	private void UpdateCollectedResourceTiles(BuildingComponent buildingComponent)
+	private void UpdateCollectedWoodTiles(BuildingComponent buildingComponent)
 	{
 		var tileArea = buildingComponent.GetTileArea();
-		var resourceTiles = GetResourceTilesInRadius(tileArea, buildingComponent.BuildingResource.ResourceRadius);
+		var resourceTiles = GetWoodTilesInRadius(tileArea, buildingComponent.BuildingResource.ResourceRadius);
 
 		// Only collect new resource tiles if robot has capacity
 		foreach (var tile in resourceTiles)
 		{
 			if (!collectedResourceTiles.Contains(tile) &&
-				buildingComponent.resourceCollected < buildingComponent.BuildingResource.ResourceCapacity)
+				buildingComponent.resourceCollected.Count < buildingComponent.BuildingResource.ResourceCapacity)
 			{
 				collectedResourceTiles.Add(tile);
-				buildingComponent.CollectResource(1);
+				buildingComponent.CollectResource("wood");
+				EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count, "wood");
 			}
 		}
 
-		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
+		EmitSignal(SignalName.GridStateUpdated);
+	}
+
+	private void UpdateCollectedMineralTiles(BuildingComponent buildingComponent)
+	{
+		var tileArea = buildingComponent.GetTileArea();
+		var mineralTilesWithType = GetMineralTilesInRadiusWithType(tileArea, buildingComponent.BuildingResource.ResourceRadius);
+
+		// Only collect new mineral tiles if robot has capacity
+		foreach (var (tile, mineralType) in mineralTilesWithType)
+		{
+			if (!collectedMineralTiles.Contains(tile) &&
+				buildingComponent.resourceCollected.Count < buildingComponent.BuildingResource.ResourceCapacity)
+			{
+				collectedMineralTiles.Add(tile);
+				buildingComponent.CollectResource(mineralType.ToString());
+
+				// Emit the signal with tile count and mineral type as string
+				EmitSignal(SignalName.MineralTilesUpdated, collectedMineralTiles.Count, mineralType.ToString());
+			}
+		}
 		EmitSignal(SignalName.GridStateUpdated);
 	}
 
 	private void UpdateRechargeBattery(BuildingComponent buildingComponent)
 	{
 		var occupiedCellPositions = buildingComponent.GetOccupiedCellPositions();
-		foreach(var position in occupiedCellPositions)
+		foreach (var position in occupiedCellPositions)
 		{
-			if(baseProximityTiles.Contains(position))
+			if (baseProximityTiles.Contains(position))
 			{
 				buildingComponent.SetRecharging(true);
 			}
@@ -824,12 +857,38 @@ public partial class GridManager : Node
 		});
 	}
 
-	private List<Vector2I> GetResourceTilesInRadius(Rect2I tileArea, int radius)
+	private List<Vector2I> GetWoodTilesInRadius(Rect2I tileArea, int radius)
 	{
 		return GetTilesInRadiusFiltered(tileArea, radius, (tilePosition) =>
 		{
-			return GetTileCustomData(tilePosition, IS_WOOD).Item2;
+			var isWood = GetTileCustomData(tilePosition, IS_WOOD).Item2;
+			return isWood;
 		});
+	}
+
+	private List<Vector2I> GetMineralTilesInRadius(Rect2I tileArea, int radius)
+	{
+		return GetTilesInRadiusFiltered(tileArea, radius, (tilePosition) =>
+		{
+			var isMineral = GetTileCustomData(tilePosition, IS_MINERAL).Item2;
+			return isMineral;
+		});
+	}
+
+	private List<(Vector2I tile, string mineralType)> GetMineralTilesInRadiusWithType(Rect2I tileArea, int radius)
+	{
+		var result = new List<(Vector2I, string)>();
+		var tiles = GetTilesInRadiusFiltered(tileArea, radius, (tilePosition) =>
+		{
+			return GetTileCustomData(tilePosition, IS_MINERAL).Item2;
+		});
+
+		foreach (var tile in tiles)
+		{
+			var mineralTypeString = GetTileDiscoveredElements(tile);
+			result.Add((tile, mineralTypeString));
+		}
+		return result;
 	}
 
 	private Dictionary<Vector2I, string> GetDiscoveredTilesInRadius(Rect2I tileArea, int radius)
@@ -854,7 +913,8 @@ public partial class GridManager : Node
 		UpdateDangerOccupiedTiles(buildingComponent);
 		UpdateValidBuildableTiles(buildingComponent);
 		UpdateRechargeBattery(buildingComponent);
-		UpdateCollectedResourceTiles(buildingComponent);
+		UpdateCollectedWoodTiles(buildingComponent);
+		UpdateCollectedMineralTiles(buildingComponent);
 		UpdateAttackTiles(buildingComponent);
 	}
 

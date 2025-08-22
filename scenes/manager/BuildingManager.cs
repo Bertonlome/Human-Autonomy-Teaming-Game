@@ -24,6 +24,8 @@ public partial class BuildingManager : Node
 	[Signal]
 	public delegate void AvailableResourceCountChangedEventHandler(int availableResourceCount);
 	[Signal]
+	public delegate void NewMineralAnalyzedEventHandler(int mineralAnalyzedCount);
+	[Signal]
 	public delegate void AvailableMaterialCountChangedEventHandler(int availableMaterialCount);
 	[Signal]
 	public delegate void BuildingPlacedEventHandler(BuildingComponent buildingComponent, BuildingResource resource);
@@ -36,6 +38,7 @@ public partial class BuildingManager : Node
 	[Signal]
 	public delegate void NoMoreRobotSelectedEventHandler();
 	public List<Node2D> AliveRobots { get; private set; } = new();
+	private HashSet<string> analyzedMineralTypes = new();
 	private double clockTickTimer = 0.0;
 
 	[Export]
@@ -62,7 +65,8 @@ public partial class BuildingManager : Node
 	private Vector2I buildingGhostDimensions;
 	private State currentState;
 	private int startingWoodCount;
-	private int currentMaterialCount; 
+	private int currentMaterialCount;
+	private int mineralAnalyzedCount;
 	private int currentlyUsedMaterialCount;
 	private int startingMaterialCount;
 	public static BuildingComponent selectedBuildingComponent { get; private set; } = null;
@@ -256,10 +260,26 @@ public partial class BuildingManager : Node
 		EmitSignal(SignalName.AvailableMaterialCountChanged, AvailableMaterialCount);
 	}
 
-	public void DropResourcesAtBase(int resourceCount)
+	public void DropResourcesAtBase(List<string> resourceList)
 	{
-		currentWoodCount += resourceCount;
+		foreach (var resource in resourceList)
+		{
+			if (resource == "wood")
+			{
+				currentWoodCount++;
+			}
+			else if (resource == "red_ore" || resource == "green_ore" || resource == "blue_ore")
+			{
+				// Only count if this ore type hasn't been analyzed yet
+				if (!analyzedMineralTypes.Contains(resource))
+				{
+					analyzedMineralTypes.Add(resource);
+					mineralAnalyzedCount++;
+				}
+			}
+		}
 		EmitSignal(SignalName.AvailableResourceCountChanged, AvailableWoodCount);
+		EmitSignal(SignalName.NewMineralAnalyzed, mineralAnalyzedCount);
 	}
 
 	private void UpdateGridDisplay()
@@ -694,7 +714,7 @@ public partial class BuildingManager : Node
 		}
 	}
 
-	private void OnResourceTilesUpdated(int resourceCount)
+	private void OnResourceTilesUpdated(int resourceCount, string resourceType)
 	{
 		//currentResourceCount = resourceCount;
 		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
