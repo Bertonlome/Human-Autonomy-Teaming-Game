@@ -3,10 +3,9 @@ Il faut pouvoir envoyer un robot à un autre robot soit depuis le panneau de dro
 Il faut créer deux autres maps (on peut envisager un nombre de robot différent par map)
 
 Il faut que l'exploration random soit plus intelligente et puissent être assigné à plusieurs robot en même temps qui ne font pas le même chemin (checker les algos de d'exploration)
+Améliorer les déplacements actuellement quand une liste de mouvement est lancé si le robot rencontre un obstacle il va quand même tenter de passer tous les mouvements ce qui casse la trajectoire.
 
-Le robot en mode gradient descent pourrait envoyer une notification sur le panneau de droite pour dire qu'il a trouver un maximum local.
 
 Il faudrait réfléchir à un objectif annexe (peut être collecter des ressources ?) pour que le jeux soit plus intéressant.
 3 points pour l'objectif annexe : 
     - Le joueur peut collecter des minerais pour créer des nouveaux robots.
-    - Le joueur peut analyser des échantillons de minerais comme objectif annexe.

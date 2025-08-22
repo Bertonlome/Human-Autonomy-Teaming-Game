@@ -187,7 +187,7 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	private void SetResourceSignal()
 	{
-		resourceLabel.Text = selectedBuildingComponent.resourceCollected.ToString() + " / " + selectedBuildingComponent.BuildingResource.ResourceCapacity.ToString();
+		resourceLabel.Text = selectedBuildingComponent.resourceCollected.Count.ToString() + " / " + selectedBuildingComponent.BuildingResource.ResourceCapacity.ToString();
 	}
 
 	public void OnBatteryChange(int value)

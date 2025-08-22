@@ -53,41 +53,39 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"rulesText"
-text = "You play as the supervisor of an exploration mission on an unknown exoplanet, leading a swarm of robots deployed from a landing module. The objective is to strategize the best way to use the robots to complete the mission.
+text = "You play as the supervisor of an exploration mission on an unknown exoplanet, leading a swarm of robots deployed from a landing module. The objective is to control the semi-autonomous robots to complete the mission.
 
 WHY?: To familiarize with the concept of HAT (Human-Autonomy Teaming)"
 autowrap_mode = 3
 
-[node name="SCOPE" type="PanelContainer" parent="Panel/TabContainer"]
+[node name="GOAL" type="PanelContainer" parent="Panel/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/SCOPE"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/GOAL"]
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/SCOPE/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/GOAL/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Title" type="Label" parent="Panel/TabContainer/SCOPE/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="Panel/TabContainer/GOAL/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"Title"
-text = "SCOPE OF THE GAME"
+text = "GOAL OF THE GAME"
 uppercase = true
 
-[node name="Label" type="Label" parent="Panel/TabContainer/SCOPE/MarginContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="Panel/TabContainer/GOAL/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"rulesText"
-text = "GOAL: To locate and analyze a mysterious monolith hidden somewhere on the map.
+text = "The goal is to locate and analyze a mysterious monolith hidden somewhere on the map, to analyze as many unknown minerals as possible before the time runs out.
 
-HOW: Map the terrain, clear the Fog of War and collect resources.
-
-Who: You will coordinate the team, consisting of up to 4 robots and a landing base."
+HOW: Map the terrain and collect resources using the two types of robots. The monolith is known to generate a strong gravitational field around its location"
 autowrap_mode = 3
 
 [node name="BASE" type="PanelContainer" parent="Panel/TabContainer"]
@@ -128,9 +126,8 @@ layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"rulesText"
 text = "The game begins with the landing of a central module, which deploys a relay antenna to enable communication with the robots.  
-ANTENNA: To be operative all robots must be in range of antennas. Robots act as repeaters for telecomunications. Ranges:
-
-• 10 units around the base.
+ANTENNA: To be operative all robots must be in range of antennas. Robots act as repeaters for telecomunications. 
+Ranges: • 10 units around the base.
 • 6 units around each flying drone (UAV).
 • 4 units around each ground drone (UGV)."
 autowrap_mode = 3
@@ -167,14 +164,13 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"rulesText"
-text = "GOOD: 
-• It can analyze the monolith (To win the game you must reach the Monolith with the UGV)
+text = "CAPACITY: 
+• Can analyze the monolith (To win the game you must reach the Monolith with the UGV)
 • Can collect resources 
-• Battery capacity: 500 moves before charging
-
-BAD: 
+• Battery: 250 moves before charging
+LIMITATIONS: 
 • Can randomly get stuck in the terrain (must be unstuck by UAV by bringing it closer)
-• slower, can’t go through rough terrain, climb or swim"
+• Slow, can’t go through rough terrain, climb or swim"
 autowrap_mode = 3
 
 [node name="UAV" type="PanelContainer" parent="Panel/TabContainer"]
@@ -209,51 +205,51 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"rulesText"
-text = "GOOD: 
-• Can unstuck the ground robot (must be brought close to it)
-• Faster than UGV 
+text = "CAPACITY: 
+• Can unstuck the ground robot when close to it
+• Fast movement
 • Can hover over rough terrain and water
-• Good camera range (10 units)
+• 10 units vision sensor range
 
-BAD: 
-• Lower battery capacity: 400 moves before charging
-• Can’t win the game with the UAV!!"
+LIMITATIONS:
+• Cannot collect resources
+• Cannot analyze the monolith!"
 autowrap_mode = 3
 
-[node name="MODES" type="PanelContainer" parent="Panel/TabContainer"]
+[node name="AUTONOMY" type="PanelContainer" parent="Panel/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 5
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/MODES"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/TabContainer/AUTONOMY"]
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/MODES/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/TabContainer/AUTONOMY/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Title" type="Label" parent="Panel/TabContainer/MODES/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="Panel/TabContainer/AUTONOMY/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"Title"
-text = "MODES"
+text = "AUTONOMOUS MODE:"
 uppercase = true
 
-[node name="Label" type="Label" parent="Panel/TabContainer/MODES/MarginContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="Panel/TabContainer/AUTONOMY/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"rulesText"
 text = "Each robot can be moved by the player or autonomously accordingly to 4 modes:
 
-Random exploration: Good luck!
+Directly to a destination defined by the player
 
-SEARCH HIGH ANOMALY: The robot follows a gradient descent following high anomaly values (The higher the closer to the monolith).
+RANDOM: Explore the map in random directions
 
-REWIND MOVES: let me go back...
+SEARCH HIGH ANOMALY: The robot follows high gravitational anomaly values.
 
-Back To base: Need to refuel!
+BACK TO BASE: Useful for charging the battery!
 "
 autowrap_mode = 3
 
@@ -282,13 +278,12 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"rulesText"
-text = "When a robot is selected, you can manually move it using W,A,S,D keys
-
-The camera can be centered around the mouse using space
-
-The camera can be panned using the arrow keys
-
-The camera be zoomed in / zoomed using the mousewheel"
+text = "-Select a robot from the UI or left-click it.
+-When a robot is selected, you can manually move it using W,A,S,D keys, right click to send it to a location
+-The camera can be centered around the mouse using space
+-The camera can be panned using the arrow keys
+-The camera be zoomed in / zoomed using the mousewheel
+-Esc for menu"
 autowrap_mode = 3
 
 [node name="DoneButton" type="Button" parent="Panel"]
