@@ -3,13 +3,15 @@ using System.Collections;
 using System.Diagnostics.Tracing;
 using Game.Autoload;
 using Game.Component;
+using Game.Resources.Building;
 using Godot;
 
 namespace Game.UI;
 
 public partial class SelectedRobotUI : CanvasLayer
 {
-
+	[Export]
+	BuildingResource bridgeBuildingResource;
 	private Button randomExplorButton;
 	private Button stopExplorbutton;
 	private Button trackRobotButton;
@@ -22,6 +24,7 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Label statusLabel;
 	private Label batteryLabel;
 	private Label resourceLabel;
+	private Button placeBridgeButton;
 	public BuildingComponent selectedBuildingComponent;
 
 	public enum ExplorMode
@@ -33,7 +36,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		None
 	}
 
-	private ExplorMode currentexplorMode =  ExplorMode.None;
+	private ExplorMode currentexplorMode = ExplorMode.None;
 
 	public override void _Ready()
 	{
@@ -55,11 +58,12 @@ public partial class SelectedRobotUI : CanvasLayer
 		explorModeOptionsButton = GetNode<OptionButton>("%ExplorModeOptionsButton");
 		randomExplorButton = GetNode<Button>("%RandomExplorButton");
 		gradientSearchButton = GetNode<Button>("%GradientSearchButton");
-		returnToBaseButton= GetNode<Button>("%ReturnToBaseButton");
+		returnToBaseButton = GetNode<Button>("%ReturnToBaseButton");
 		rewindMovesButton = GetNode<Button>("%RewindMovesButton");
 		stopExplorbutton = GetNode<Button>("%StopExplorButton");
 		trackRobotButton = GetNode<Button>("%TrackRobotButton");
 		startExplorButton = GetNode<Button>("%StartExplorButton");
+		placeBridgeButton = GetNode<Button>("%PlaceBridgeButton");
 		gravAnomValueLabel = GetNode<Label>("%GravAnomValueLabel");
 		statusLabel = GetNode<Label>("%StatusLabel");
 		batteryLabel = GetNode<Label>("%BatteryLabel");
@@ -74,13 +78,14 @@ public partial class SelectedRobotUI : CanvasLayer
 		trackRobotButton.Pressed += OnTrackRobotButtonPressed;
 		explorModeOptionsButton.ItemSelected += OnOptionsButtonItemSelected;
 		startExplorButton.Pressed += OnStartExplorButtonSelected;
+		placeBridgeButton.Pressed += OnPlaceBridgeButtonPressed;
 	}
 
-    private void OnNoMoreRobotSelected(BuildingComponent component)
-    {
+	private void OnNoMoreRobotSelected(BuildingComponent component)
+	{
 		DisconnectSignals();
-        QueueFree();
-    }
+		QueueFree();
+	}
 
 	private void OnBuildingStuck(BuildingComponent component)
 	{
@@ -97,7 +102,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		statusLabel.Text = "Available";
 	}
 
-    private void OnRandomExplorButtonPressed()
+	private void OnRandomExplorButtonPressed()
 	{
 		selectedBuildingComponent.EnableRandomMode();
 		statusLabel.Text = "Exploring randomly";
@@ -123,19 +128,19 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	private void OnOptionsButtonItemSelected(long index)
 	{
-		if(index == 0)
+		if (index == 0)
 		{
 			currentexplorMode = ExplorMode.Random;
 		}
-		else if(index == 1)
+		else if (index == 1)
 		{
 			currentexplorMode = ExplorMode.Gradient;
 		}
-		else if(index == 2)
+		else if (index == 2)
 		{
 			currentexplorMode = ExplorMode.Rewind;
 		}
-		else if(index == 3)
+		else if (index == 3)
 		{
 			currentexplorMode = ExplorMode.ReturnToBase;
 		}
@@ -143,10 +148,10 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	private void OnStartExplorButtonSelected()
 	{
-		if(currentexplorMode == ExplorMode.Random || explorModeOptionsButton.Selected == 0) OnRandomExplorButtonPressed();
-		else if(currentexplorMode == ExplorMode.Gradient || explorModeOptionsButton.Selected == 1) OnGradientSearchButtonPressed();
-		else if(currentexplorMode == ExplorMode.Rewind || explorModeOptionsButton.Selected == 2) OnRewindMovesButtonPressed();
-		else if(currentexplorMode == ExplorMode.ReturnToBase || explorModeOptionsButton.Selected == 3) OnReturnToBaseButtonPressed();
+		if (currentexplorMode == ExplorMode.Random || explorModeOptionsButton.Selected == 0) OnRandomExplorButtonPressed();
+		else if (currentexplorMode == ExplorMode.Gradient || explorModeOptionsButton.Selected == 1) OnGradientSearchButtonPressed();
+		else if (currentexplorMode == ExplorMode.Rewind || explorModeOptionsButton.Selected == 2) OnRewindMovesButtonPressed();
+		else if (currentexplorMode == ExplorMode.ReturnToBase || explorModeOptionsButton.Selected == 3) OnReturnToBaseButtonPressed();
 	}
 
 	private void OnStopExplorButtonPressed()
@@ -158,24 +163,24 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	private void OnTrackRobotButtonPressed()
 	{
-		if(trackRobotButton.Text == "Stop tracking")
+		if (trackRobotButton.Text == "Stop tracking")
 		{
 			SettingManager.EmitStopTrackingRobot();
 			trackRobotButton.Text = "Track Robot";
 		}
 		else
 		{
-		SettingManager.EmitTrackingRobot(selectedBuildingComponent);
-		trackRobotButton.Text = "Stop tracking";
+			SettingManager.EmitTrackingRobot(selectedBuildingComponent);
+			trackRobotButton.Text = "Stop tracking";
 		}
 	}
 
 	private void SetAnomalySignal()
 	{
 		selectedBuildingComponent.NewAnomalyReading += OnNewAnomalyReading;
-		gravAnomValueLabel.Text = "Value: " + selectedBuildingComponent.GetAnomalyReadingAtCurrentPos(); 
-		if (selectedBuildingComponent.IsStuck){statusLabel.Text = "Stuck";}
-		else if(selectedBuildingComponent.currentExplorMode != BuildingComponent.ExplorMode.None) statusLabel.Text = "Busy";
+		gravAnomValueLabel.Text = "Value: " + selectedBuildingComponent.GetAnomalyReadingAtCurrentPos();
+		if (selectedBuildingComponent.IsStuck) { statusLabel.Text = "Stuck"; }
+		else if (selectedBuildingComponent.currentExplorMode != BuildingComponent.ExplorMode.None) statusLabel.Text = "Busy";
 		else statusLabel.Text = "Available";
 	}
 
@@ -225,11 +230,17 @@ public partial class SelectedRobotUI : CanvasLayer
 		randomExplorButton.Pressed -= OnRandomExplorButtonPressed;
 		stopExplorbutton.Pressed -= OnStopExplorButtonPressed;
 		trackRobotButton.Pressed -= OnTrackRobotButtonPressed;
+		placeBridgeButton.Pressed -= OnPlaceBridgeButtonPressed;
 
 		if (selectedBuildingComponent != null)
 		{
 			selectedBuildingComponent.NewAnomalyReading -= OnNewAnomalyReading;
 		}
+	}
+
+	private void OnPlaceBridgeButtonPressed()
+	{
+		GameEvents.EmitPlaceBridgeButtonPressed(selectedBuildingComponent, bridgeBuildingResource);
 	}
 
 }

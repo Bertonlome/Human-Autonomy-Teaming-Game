@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingResource" load_steps=3 format=3 uid="uid://cymfmf2wd1p7x"]
+
+[ext_resource type="PackedScene" uid="uid://bjojaai5gng06" path="res://scenes/building/sprite/BridgeSprite2D.tscn" id="1_7fuh7"]
+[ext_resource type="Script" path="res://resources/building/BuildingResource.cs" id="1_cj4qr"]
+
+[resource]
+script = ExtResource("1_cj4qr")
+DisplayName = "bridge"
+Description = "Allow ground robot to move over water"
+IsBase = false
+IsDeletable = true
+IsAerial = false
+Dimensions = Vector2i(1, 1)
+StuckChancePerMove = 0.0
+moveInterval = 0.0
+BatteryMax = 0
+ResourceCost = 1
+BuildableRadius = 0
+ResourceRadius = 0
+ResourceCapacity = 0
+VisionRadius = 0
+AnomalySensorRadius = 0
+DangerRadius = 0
+AttackRadius = 0
+SpriteScene = ExtResource("1_7fuh7")

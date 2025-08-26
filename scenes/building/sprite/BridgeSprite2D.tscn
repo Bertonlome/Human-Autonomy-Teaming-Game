@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://bjojaai5gng06"]
+
+[ext_resource type="Texture2D" uid="uid://dcshv2axrbkfn" path="res://assets/buildings/Bridge_sprite.png" id="1_qw3bt"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_fjqm7"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_qw3bt")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="BridgeSprite2d" type="AnimatedSprite2D"]
+position = Vector2(32, 32)
+sprite_frames = SubResource("SpriteFrames_fjqm7")

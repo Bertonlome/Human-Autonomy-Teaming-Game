@@ -1,4 +1,5 @@
 using Game.Component;
+using Game.Resources.Building;
 using Godot;
 
 namespace Game.Autoload;
@@ -25,6 +26,8 @@ public partial class GameEvents : Node
 	public delegate void RobotSelectedEventHandler(BuildingComponent buildingComponent);
 	[Signal]
 	public delegate void NoMoreRobotSelectedEventHandler(BuildingComponent buildingComponent);
+	[Signal]
+	public delegate void PlaceBridgeButtonPressedEventHandler(BuildingComponent buildingComponent, BuildingResource buildingResource);
 	[Signal]
 	public delegate void AllRobotStoppedEventHandler();
 	[Signal]
@@ -91,5 +94,10 @@ public partial class GameEvents : Node
 	public static void EmitCarriedResourceCountChanged(int carriedResourceCount)
 	{
 		Instance.EmitSignal(SignalName.CarriedResourceCountChanged, carriedResourceCount);
+	}
+
+	public static void EmitPlaceBridgeButtonPressed(BuildingComponent buildingComponent, BuildingResource buildingResource)
+	{
+		Instance.EmitSignal(SignalName.PlaceBridgeButtonPressed, buildingComponent, buildingResource);
 	}
 }

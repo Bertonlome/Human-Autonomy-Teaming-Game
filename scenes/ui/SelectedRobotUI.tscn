@@ -1,9 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://q6gmpdlekvro"]
+[gd_scene load_steps=3 format=3 uid="uid://q6gmpdlekvro"]
 
 [ext_resource type="Script" path="res://scenes/ui/SelectedRobotUI.cs" id="1_5d81u"]
+[ext_resource type="Resource" uid="uid://cymfmf2wd1p7x" path="res://resources/building/bridge.tres" id="2_0i1xl"]
 
 [node name="SelectedRobotUI" type="CanvasLayer"]
 script = ExtResource("1_5d81u")
+bridgeBuildingResource = ExtResource("2_0i1xl")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchors_preset = 2
@@ -120,6 +122,12 @@ text = "Stop Exploration"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Track"
+
+[node name="PlaceBridgeButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Place
+Bridge"
 
 [node name="RobotInfoContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer"]
 unique_name_in_owner = true

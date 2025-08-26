@@ -109,17 +109,17 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Options"
 
-[node name="QuitButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Quit"
-
 [node name="RulesButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Rules"
+
+[node name="QuitButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Quit"
 
 [node name="PanelContainer2" type="PanelContainer" parent="CanvasLayer/MainMenuContainer"]
 layout_mode = 2

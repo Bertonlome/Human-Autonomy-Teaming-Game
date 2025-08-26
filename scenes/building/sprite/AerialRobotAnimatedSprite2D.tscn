@@ -1,37 +1,37 @@
 [gd_scene load_steps=11 format=3 uid="uid://dj3uo7meto58s"]
 
-[ext_resource type="Texture2D" uid="uid://csifi0fgq36j3" path="res://assets/buildings/robots.png" id="1_nl6ep"]
+[ext_resource type="Texture2D" uid="uid://csifi0fgq36j3" path="res://assets/buildings/robots.png" id="1_mya44"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_u8t3f"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(0, 0, 96, 96)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_uo06r"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(96, 0, 96, 96)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_4ypho"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(192, 0, 96, 96)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qda1c"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(288, 0, 96, 96)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_m31v8"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(0, 96, 96, 96)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_4kqc8"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(96, 96, 96, 96)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ioeed"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(192, 96, 96, 96)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_p2u18"]
-atlas = ExtResource("1_nl6ep")
+atlas = ExtResource("1_mya44")
 region = Rect2(288, 96, 96, 96)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_8hk6q"]

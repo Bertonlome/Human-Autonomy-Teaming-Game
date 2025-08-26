@@ -20,6 +20,7 @@ public partial class BuildingManager : Node
 	private readonly StringName MOVE_DOWN = "move_down";
 	private readonly StringName MOVE_LEFT = "move_left";
 	private readonly StringName MOVE_RIGHT = "move_right";
+	private readonly StringName WOOD = "wood";
 
 	[Signal]
 	public delegate void AvailableResourceCountChangedEventHandler(int availableResourceCount);
@@ -54,7 +55,8 @@ public partial class BuildingManager : Node
 	{
 		Normal,
 		PlacingBuilding,
-		RobotSelected
+		RobotSelected,
+		PlacingBridge
 	}
 
 	private int currentWoodCount;
@@ -79,6 +81,7 @@ public partial class BuildingManager : Node
 	{
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
 		gameUI.BuildingResourceSelected += OnBuildingResourceSelected;
+		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceBridgeButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceBridgeButtonPressed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
 
 
@@ -192,6 +195,18 @@ public partial class BuildingManager : Node
 					GetViewport().SetInputAsHandled();
 				}
 				break;
+			case State.PlacingBridge:
+				if (evt.IsActionPressed(ACTION_CANCEL))
+				{
+					ChangeState(State.Normal);
+					GetViewport().SetInputAsHandled();
+				}
+				else if (toPlaceBuildingResource != null && evt.IsActionPressed(ACTION_LEFT_CLICK))
+				{
+					PlaceBuildingAtHoveredCellPosition(toPlaceBuildingResource);
+					GetViewport().SetInputAsHandled();
+				}
+				break;
 			default:
 				break;
 		}
@@ -234,6 +249,10 @@ public partial class BuildingManager : Node
 				mouseGridPosition = gridManager.GetMouseGridCellPosition();
 				break;
 			case State.PlacingBuilding:
+				mouseGridPosition = gridManager.GetMouseGridCellPositionWithDimensionOffset(buildingGhostDimensions);
+				buildingGhost.GlobalPosition = mouseGridPosition * 64;
+				break;
+			case State.PlacingBridge:
 				mouseGridPosition = gridManager.GetMouseGridCellPositionWithDimensionOffset(buildingGhostDimensions);
 				buildingGhost.GlobalPosition = mouseGridPosition * 64;
 				break;
@@ -699,6 +718,10 @@ public partial class BuildingManager : Node
 				ClearBuildingGhost();
 				toPlaceBuildingResource = null;
 				break;
+			case State.PlacingBridge:
+				ClearBuildingGhost();
+				toPlaceBuildingResource = null;
+				break;
 		}
 
 		currentState = toState;
@@ -708,6 +731,10 @@ public partial class BuildingManager : Node
 			case State.Normal:
 				break;
 			case State.PlacingBuilding:
+				buildingGhost = buildingGhostScene.Instantiate<BuildingGhost>();
+				ySortRoot.AddChild(buildingGhost);
+				break;
+			case State.PlacingBridge:
 				buildingGhost = buildingGhostScene.Instantiate<BuildingGhost>();
 				ySortRoot.AddChild(buildingGhost);
 				break;
@@ -739,6 +766,34 @@ public partial class BuildingManager : Node
 			UnHighlightSelectedBuilding(buildingComponent);
 			HighlightStuckBuilding(buildingComponent);
 		}
+	}
+
+	private void OnPlaceBridgeButtonPressed(BuildingComponent buildingComponent, BuildingResource buildingResource)
+	{
+		if (buildingComponent == null) return;
+		if (buildingComponent.IsStuck)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot place bridge while stuck", buildingComponent);
+			return;
+		}
+		if (buildingComponent.Battery <= 0)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", buildingComponent);
+			return;
+		}
+		if (!buildingComponent.resourceCollected.Contains(WOOD))
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough wood to place bridge", buildingComponent);
+			return;
+		}
+		ChangeState(State.PlacingBridge);
+		hoveredGridArea.Size = new Vector2I(2, 1);
+		var buildingSprite = buildingResource.SpriteScene.Instantiate<AnimatedSprite2D>();
+		buildingGhost.AddSpriteNode(buildingSprite);
+		buildingGhost.SetDimensions(buildingResource.Dimensions);
+		buildingGhostDimensions = buildingResource.Dimensions;
+		toPlaceBuildingResource = buildingResource;
+		UpdateGridDisplay();
 	}
 
 	public void ConsumeWoodForCharging(int amount)

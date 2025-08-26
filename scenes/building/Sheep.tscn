@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://ce2hqhobmdg47" path="res://scenes/component/BuildingComponent.tscn" id="1_qesfq"]
 [ext_resource type="PackedScene" uid="uid://dtadqyklji2e7" path="res://scenes/component/BuildingAnimatorComponent.tscn" id="2_qjht6"]
-[ext_resource type="PackedScene" uid="uid://dj3uo7meto58s" path="res://scenes/autoload/AerialRobotAnimatedSprite2D.tscn" id="3_wxqus"]
+[ext_resource type="PackedScene" uid="uid://dj3uo7meto58s" path="res://scenes/building/sprite/AerialRobotAnimatedSprite2D.tscn" id="3_wxqus"]
 
 [node name="AerialRobot" type="Node2D"]
 y_sort_enabled = true

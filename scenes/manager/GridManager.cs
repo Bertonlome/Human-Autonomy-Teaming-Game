@@ -24,6 +24,7 @@ public partial class GridManager : Node
 	private const string IS_MINERAL = "Is_mineral";
 	private const string IS_IGNORED = "is_ignored";
 	private const string IS_ROUGH_TERRAIN = "is_rough_terrain";
+	private const string WOOD = "wood";
 
 	[Signal]
 	public delegate void ResourceTilesUpdatedEventHandler(int collectedTiles, string resourceType);
@@ -125,7 +126,7 @@ public partial class GridManager : Node
 		return allTilesInBuildingRadius.Contains(tilePosition);
 	}
 
-	public bool IsTileAreaBuildable(Rect2I tileArea, bool isAttackTiles = false, bool isBase = false)
+	public bool IsTileAreaBuildable(Rect2I tileArea, bool isAttackTiles = false, bool isBase = false, bool isBridge = false)
 	{
 		IEnumerable<Vector2I> tileSetToCheck;
 		var tiles = tileArea.ToTiles();
@@ -631,8 +632,8 @@ public partial class GridManager : Node
 				buildingComponent.resourceCollected.Count < buildingComponent.BuildingResource.ResourceCapacity)
 			{
 				collectedResourceTiles.Add(tile);
-				buildingComponent.CollectResource("wood");
-				EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count, "wood");
+				buildingComponent.CollectResource(WOOD);
+				EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count, WOOD);
 			}
 		}
 
