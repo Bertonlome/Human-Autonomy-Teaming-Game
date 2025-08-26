@@ -6,7 +6,7 @@ public class SaveData
 {
     public Dictionary<string, LevelCompletionData> LevelCompletionStatus {get; private set; } = new();
 
-    public void SavelevelCompletion(string id, bool completed)
+    public void SavelevelCompletion(string id, bool completed, int timeCompletedInSeconds, int mineralsAnalyzed)
     {
         if(!LevelCompletionStatus.ContainsKey(id))
         {
@@ -14,5 +14,7 @@ public class SaveData
 
         }
         LevelCompletionStatus[id].IsCompleted = completed;
+        LevelCompletionStatus[id].TimeCompletedInSeconds = timeCompletedInSeconds;
+        LevelCompletionStatus[id].MineralsAnalyzed = mineralsAnalyzed;
     }
 }

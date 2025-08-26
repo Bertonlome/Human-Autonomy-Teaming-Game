@@ -107,17 +107,17 @@ public partial class GameUI : CanvasLayer
 		{
 			// If parsing fails, reset to 00:00 and end the level
 			timeLeftLabel.Text = "00:00";
-			isTimeIsUp = true;
-			EmitSignal(SignalName.TimeIsUp);
+			//isTimeIsUp = true;
+			//EmitSignal(SignalName.TimeIsUp);
 			GetViewport().SetInputAsHandled();
 			return;
 		}
 		timeLeft = timeLeft.Subtract(TimeSpan.FromSeconds(1));
 		if (timeLeft.TotalSeconds <= 0)
 		{
-			isTimeIsUp = true;
+			//isTimeIsUp = true;
 			timeLeftLabel.Text = "00:00";
-			EmitSignal(SignalName.TimeIsUp);
+			//EmitSignal(SignalName.TimeIsUp);
 			GetViewport().SetInputAsHandled();
 			return;
 		}

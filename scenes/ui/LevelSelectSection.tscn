@@ -22,11 +22,21 @@ theme_override_constants/separation = 16
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="LevelNumberLabel" type="Label" parent="MarginContainer/VBoxContainer/VBoxContainer"]
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="LevelNumberLabel" type="Label" parent="MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer3"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 48
 text = "Level 1"
+
+[node name="CompletedIndicator" type="TextureRect" parent="MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer3"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+texture = ExtResource("3_4gafv")
+stretch_mode = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -41,12 +51,6 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "4"
-
-[node name="CompletedIndicator" type="TextureRect" parent="MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-texture = ExtResource("3_4gafv")
-stretch_mode = 2
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -66,3 +70,15 @@ text = "4"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Select"
+
+[node name="TimeCompletionLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Completed in : "
+
+[node name="MineralsAnalyzedLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Minerals analyzed : "

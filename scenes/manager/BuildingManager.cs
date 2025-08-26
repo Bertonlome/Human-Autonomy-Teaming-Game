@@ -66,7 +66,7 @@ public partial class BuildingManager : Node
 	private State currentState;
 	private int startingWoodCount;
 	private int currentMaterialCount;
-	private int mineralAnalyzedCount;
+	public int mineralAnalyzedCount;
 	private int currentlyUsedMaterialCount;
 	private int startingMaterialCount;
 	public static BuildingComponent selectedBuildingComponent { get; private set; } = null;

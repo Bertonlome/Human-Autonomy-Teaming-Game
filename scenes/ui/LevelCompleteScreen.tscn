@@ -22,6 +22,10 @@ size_flags_vertical = 4
 theme_override_constants/margin_left = 46
 theme_override_constants/margin_right = 46
 
+[node name="Panel" type="Panel" parent="MarginContainer/MarginContainer"]
+visible = false
+layout_mode = 2
+
 [node name="ScrollContainer" type="PanelContainer" parent="MarginContainer/MarginContainer"]
 custom_minimum_size = Vector2(300, 20)
 layout_mode = 2
@@ -29,31 +33,36 @@ layout_mode = 2
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/MarginContainer/ScrollContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 56
+theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="NextLevelButton" type="Button" parent="MarginContainer/MarginContainer/ScrollContainer/MarginContainer"]
-unique_name_in_owner = true
-z_index = 2
-layout_mode = 2
-text = "Back To Menu"
-
-[node name="Panel" type="Panel" parent="MarginContainer/MarginContainer/ScrollContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer/ScrollContainer/MarginContainer"]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
-theme_override_constants/separation = -81
-
-[node name="RibbonContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(100, 70)
-layout_mode = 2
-
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/RibbonContainer"]
+[node name="Label" type="Label" parent="MarginContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "LEVEL COMPLETE!"
 horizontal_alignment = 1
+
+[node name="TimeCompleteLabel" type="Label" parent="MarginContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Completed in : "
+
+[node name="MineralsAnalyzedLabel" type="Label" parent="MarginContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Minerals analyzed : /3
+"
+
+[node name="NextLevelButton" type="Button" parent="MarginContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+z_index = 2
+layout_mode = 2
+text = "Next Level"
+
+[node name="Label2" type="Label" parent="MarginContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Press esc to quit to menu"

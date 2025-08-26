@@ -28,9 +28,25 @@ public partial class SaveManager : Node
 		return data?.IsCompleted == true;
 	}
 
-	public static void SavelevelCompletion(LevelDefinitionResource levelDefinitionResource)
+	public static TimeSpan GetBestTimeForLevel(string levelId)
 	{
-		saveData.SavelevelCompletion(levelDefinitionResource.Id, true);
+		saveData.LevelCompletionStatus.TryGetValue(levelId, out var data);
+		if(data == null || data.TimeCompletedInSeconds <= 0)
+		{
+			return TimeSpan.Zero;
+		}
+		return TimeSpan.FromSeconds(data.TimeCompletedInSeconds);
+	}
+
+	public static int GetMineralsAnalyzedForLevel(string levelId)
+	{
+		saveData.LevelCompletionStatus.TryGetValue(levelId, out var data);
+		return data?.MineralsAnalyzed ?? 0;
+	}
+
+	public static void SavelevelCompletion(LevelDefinitionResource levelDefinitionResource, int timeCompletedInSeconds, int mineralsAnalyzed)
+	{
+		saveData.SavelevelCompletion(levelDefinitionResource.Id, true, timeCompletedInSeconds, mineralsAnalyzed);
 		WriteSaveData();
 	}
 

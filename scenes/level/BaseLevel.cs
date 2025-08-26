@@ -32,10 +32,14 @@ public partial class BaseLevel : Node
 	private GameUI gameUI;
 	private BuildingManager buildingManager;
 	private bool isComplete;
+	private bool isFailed;
+	private int currentTimeElapsed = 0;
 	SelectedRobotUI selectedRobotUI;
 
 	public override void _Ready()
 	{
+		isComplete = false;
+		isFailed = false;
 		gridManager = GetNode<GridManager>("GridManager");
 		monolith = GetNode<Monolith>("%Monolith");
 		gameCamera = GetNode<GameCamera>("GameCamera");
@@ -46,8 +50,9 @@ public partial class BaseLevel : Node
 		buildingManager.SetStartingResourceCount(levelDefinitionResource.StartingWoodCount);
 		buildingManager.SetStartingMaterialCount(levelDefinitionResource.StartingMaterialCount);
 		gameUI.SetTimeToCompleteLevel(levelDefinitionResource.LevelDuration);
-		gameUI.TimeIsUp += ShowLevelFailed;
+		//gameUI.TimeIsUp += ShowLevelFailed;
 		buildingManager.BasePlaced += OnBasePlaced;
+		buildingManager.ClockIsTicking += OnClockisTicking;
 
 		gameCamera.SetBoundingRect(baseTerrainTilemapLayer.GetUsedRect());
 		gameCamera.Zoom = new Vector2((float)0.2, (float)0.2);
@@ -65,38 +70,47 @@ public partial class BaseLevel : Node
 			.First((buildingComponent) => buildingComponent.BuildingResource.IsBase);
 	}
 
-    public override void _UnhandledInput(InputEvent evt)
-    {
-        if(evt.IsActionPressed(ESCAPE_ACTION))
+	public override void _UnhandledInput(InputEvent evt)
+	{
+		if (evt.IsActionPressed(ESCAPE_ACTION))
 		{
 			var escapeMenu = escapeMenuScene.Instantiate<EscapeMenu>();
 			AddChild(escapeMenu);
 			GetViewport().SetInputAsHandled();
 		}
-    }
+	}
 
-    private void ShowLevelComplete()
+	private void ShowLevelComplete()
 	{
-		isComplete = true;
-		SaveManager.SavelevelCompletion(levelDefinitionResource);
-		var levelCompleteScreen = levelCompleteScreenScene.Instantiate<LevelCompleteScreen>();
-		AddChild(levelCompleteScreen);
-		monolith.SetActive();
-		gameUI.HideUI();
-		selectedRobotUI.HideUI();
+		if (!isComplete)
+		{
+			isComplete = true;
+			SaveManager.SavelevelCompletion(levelDefinitionResource, currentTimeElapsed, buildingManager.mineralAnalyzedCount);
+			var levelCompleteScreen = levelCompleteScreenScene.Instantiate<LevelCompleteScreen>();
+			AddChild(levelCompleteScreen);
+			levelCompleteScreen.SetTimeElapsed(currentTimeElapsed);
+			monolith.SetActive();
+			gameUI.HideUI();
+			selectedRobotUI.HideUI();
+		}
 	}
 
 	public void ShowLevelFailed()
 	{
-		var levelFailedScreen = levelFailedScreenScene.Instantiate<LevelFailedScreen>();
-		AddChild(levelFailedScreen);
-		gameUI.HideUI();
-		if (selectedRobotUI != null)
+		if (!isFailed && !isComplete)
 		{
-			selectedRobotUI.HideUI();
+			isFailed = true;
+			var levelFailedScreen = levelFailedScreenScene.Instantiate<LevelFailedScreen>();
+			AddChild(levelFailedScreen);
+
+			gameUI.HideUI();
+			if (selectedRobotUI != null)
+			{
+				selectedRobotUI.HideUI();
+			}
 		}
 	}
-	
+
 	private void OnCameraZoom()
 	{
 		if (baseBuilding != null)
@@ -121,5 +135,14 @@ public partial class BaseLevel : Node
 		selectedRobotUI = selectedRobotUIScene.Instantiate<SelectedRobotUI>();
 		AddChild(selectedRobotUI);
 		selectedRobotUI.selectedBuildingComponent = buildingComponent;
+	}
+
+	private void OnClockisTicking()
+	{
+		currentTimeElapsed++;
+		if (currentTimeElapsed >= levelDefinitionResource.LevelDuration)
+		{
+			ShowLevelFailed();
+		}
 	}
 }
