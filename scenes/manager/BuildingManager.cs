@@ -203,7 +203,7 @@ public partial class BuildingManager : Node
 				}
 				else if (toPlaceBuildingResource != null && evt.IsActionPressed(ACTION_LEFT_CLICK))
 				{
-					PlaceBuildingAtHoveredCellPosition(toPlaceBuildingResource);
+					PlaceBridgeAtHoveredCellPosition(toPlaceBuildingResource);
 					GetViewport().SetInputAsHandled();
 				}
 				break;
@@ -312,8 +312,8 @@ public partial class BuildingManager : Node
 		}
 		else
 		{
-			gridManager.HighlightBuildableTiles();
-			gridManager.HighlightDangerOccupiedTiles();
+			//gridManager.HighlightBuildableTiles();
+			//gridManager.HighlightDangerOccupiedTiles();
 		}
 
 		if (toPlaceBuildingResource.IsBase)
@@ -408,6 +408,33 @@ public partial class BuildingManager : Node
 
 		ChangeState(State.Normal);
 		EmitSignal(SignalName.AvailableMaterialCountChanged, AvailableMaterialCount);
+	}
+
+	private void PlaceBridgeAtHoveredCellPosition(BuildingResource buildingResource)
+	{
+		if (!CanAffordBridge())
+		{
+			FloatingTextManager.ShowMessageAtMousePosition("Need wood!");
+			return;
+		}
+		if (!IsBridgePlaceableAtArea(hoveredGridArea))
+		{
+			FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
+			return;
+		}
+
+		var robotPosition = selectedBuildingComponent.GetTileArea();
+		if (hoveredGridArea.Position.X == robotPosition.Position.X)
+		{
+			gridManager.PlaceBridgeTile(hoveredGridArea, "vertical");
+		}
+		else if (hoveredGridArea.Position.Y == robotPosition.Position.Y)
+		{
+			gridManager.PlaceBridgeTile(hoveredGridArea, "horizontal");
+		}
+
+		selectedBuildingComponent.RemoveResource("wood");
+		ChangeState(State.Normal);
 	}
 
 	public void MoveInDirection(StringName direction)
@@ -669,6 +696,11 @@ public partial class BuildingManager : Node
 		return AvailableMaterialCount >= toPlaceBuildingResource.ResourceCost;
 	}
 
+	private bool CanAffordBridge()
+	{
+		return selectedBuildingComponent.resourceCollected.Contains("wood");
+	}
+
 	private bool IsBuildingResourcePlaceableAtArea(Rect2I tileArea)
 	{
 		var isAttackTiles = toPlaceBuildingResource.IsAttackBuilding();
@@ -681,6 +713,19 @@ public partial class BuildingManager : Node
 		var isBase = true;
 		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, false, isBase);
 		return allTilesBuildable;
+	}
+
+	private bool IsBridgePlaceableAtArea(Rect2I tileArea)
+	{
+		var robotTileAndAdjacent = selectedBuildingComponent.GetTileAndAdjacent();
+		if (robotTileAndAdjacent.Contains(tileArea.Position))
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	private bool IsBuildingComponentPlaceableAtArea(Rect2I tileArea)
@@ -735,6 +780,8 @@ public partial class BuildingManager : Node
 				ySortRoot.AddChild(buildingGhost);
 				break;
 			case State.PlacingBridge:
+				gridManager.ClearHighlightedTiles();
+				gridManager.HighlightBridgePlaceableTiles(selectedBuildingComponent.GetTileArea());
 				buildingGhost = buildingGhostScene.Instantiate<BuildingGhost>();
 				ySortRoot.AddChild(buildingGhost);
 				break;
@@ -787,13 +834,13 @@ public partial class BuildingManager : Node
 			return;
 		}
 		ChangeState(State.PlacingBridge);
-		hoveredGridArea.Size = new Vector2I(2, 1);
+		hoveredGridArea.Size = new Vector2I(1, 1);
 		var buildingSprite = buildingResource.SpriteScene.Instantiate<AnimatedSprite2D>();
 		buildingGhost.AddSpriteNode(buildingSprite);
 		buildingGhost.SetDimensions(buildingResource.Dimensions);
 		buildingGhostDimensions = buildingResource.Dimensions;
 		toPlaceBuildingResource = buildingResource;
-		UpdateGridDisplay();
+		//UpdateGridDisplay();
 	}
 
 	public void ConsumeWoodForCharging(int amount)

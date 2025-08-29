@@ -598,16 +598,25 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
+	public void RemoveResource(string resourceType)
+	{
+		if (resourceCollected.Contains(resourceType))
+		{
+			resourceCollected.Remove(resourceType);
+			GameEvents.EmitCarriedResourceCountChanged(resourceCollected.Count);
+		}
+	}
+
 	public void TryDropResourcesAtBase()
 	{
-    if (buildingManager.gridManager.IsInBaseProximity(GetGridCellPosition()) && resourceCollected.Count > 0)
-    {
-        buildingManager.DropResourcesAtBase(resourceCollected);
-        resourceCollected.Clear();
-        GameEvents.EmitCarriedResourceCountChanged(resourceCollected.Count);
-        FloatingTextManager.ShowMessageAtBuildingPosition("Resources dropped at base", this);
-    }
-}
+		if (buildingManager.gridManager.IsInBaseProximity(GetGridCellPosition()) && resourceCollected.Count > 0)
+		{
+			buildingManager.DropResourcesAtBase(resourceCollected);
+			resourceCollected.Clear();
+			GameEvents.EmitCarriedResourceCountChanged(resourceCollected.Count);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Resources dropped at base", this);
+		}
+	}
 
 
 

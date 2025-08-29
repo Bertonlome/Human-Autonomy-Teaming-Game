@@ -63,6 +63,8 @@ public partial class GridManager : Node
 	[Export]
 	private TileMapLayer baseTerrainTilemapLayer;
 	[Export]
+	private TileMapLayer bridgeTileMapLayer;
+	[Export]
 	private GravitationalAnomalyMap gravitationalAnomalyMap;
 
 	private List<TileMapLayer> allTilemapLayers = new();
@@ -110,6 +112,23 @@ public partial class GridManager : Node
 		return (null, false);
 	}
 
+	public void PlaceBridgeTile(Rect2I bridgeArea, string orientation)
+	{
+		if (orientation == "horizontal")
+		{
+			var position = bridgeArea.Position;
+			bridgeTileMapLayer.SetCell(position, 14, new Vector2I(1, 0)); // Assuming 14 is the bridge tile ID
+		}
+		else if (orientation == "vertical")
+		{
+			var position = bridgeArea.Position;
+			bridgeTileMapLayer.SetCell(position, 14, new Vector2I(0, 2)); // Assuming 14 is the bridge tile ID
+		}
+
+		//var cellsList = bridgeTileMapLayer.GetUsedCells();
+		//bridgeTileMapLayer.SetCellsTerrainConnect(cellsList, 0, 5); // Assuming 14 is the bridge tile ID
+	}
+
 	public string GetTileDiscoveredElements(Vector2I tilePosition)
 	{
 		foreach (var layer in allTilemapLayers)
@@ -135,13 +154,17 @@ public partial class GridManager : Node
 		(TileMapLayer firstTileMapLayer, _) = GetTileCustomData(tiles[0], IS_BUILDABLE);
 		var targetElevationLayer = firstTileMapLayer != null ? tileMapLayerToElevationLayer[firstTileMapLayer] : null;
 
-		if(BuildingManager.selectedBuildingComponent != null)
+		if (BuildingManager.selectedBuildingComponent != null)
 		{
 			tileSetToCheck = GetBuildableTileSet(isAttackTiles).Except(BuildingManager.selectedBuildingComponent.GetOccupiedCellPositions());
 		}
 		else if (isBase)
 		{
 			tileSetToCheck = allTilesBuildableOnTheMap;
+		}
+		else if (isBridge)
+		{
+			return true;
 		}
 		else
 		{
@@ -242,6 +265,14 @@ public partial class GridManager : Node
 		{
 			highlightTilemapLayer.SetCell(tilePosition, 0, Vector2I.Zero);
 		}
+	}
+
+	public void HighlightBridgePlaceableTiles(Rect2I robotPosition)
+	{
+		highlightTilemapLayer.SetCell(new Vector2I(robotPosition.Position.X -1, robotPosition.Position.Y), 0, new Vector2I(1, 0));
+		highlightTilemapLayer.SetCell(new Vector2I(robotPosition.Position.X + 1, robotPosition.Position.Y), 0, new Vector2I(1, 0));
+		highlightTilemapLayer.SetCell(new Vector2I(robotPosition.Position.X, robotPosition.Position.Y -1), 0, new Vector2I(1, 0));
+		highlightTilemapLayer.SetCell(new Vector2I(robotPosition.Position.X, robotPosition.Position.Y + 1), 0, new Vector2I(1, 0));
 	}
 
 	public void HighlightExpandedBuildableTiles(Rect2I tileArea, int radius)
