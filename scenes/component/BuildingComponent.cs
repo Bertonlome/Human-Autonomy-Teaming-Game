@@ -44,6 +44,7 @@ public partial class BuildingComponent : Node2D
 	public bool IsDisabled { get; private set; }
 	public bool IsStuck {get; private set;} = false; 
 	public bool IsRecharging {get; set;} = false;
+	private bool HasMoved = false;
 	public int Battery {get; set;} = 100;
 	public List<string> resourceCollected = new();
 
@@ -475,16 +476,19 @@ public partial class BuildingComponent : Node2D
 
 		foreach (var direction in moves)
 		{
+			if (!CanMove)
+				break;
 			if (cancelMoveRequested)
-			{
-				currentExplorMode = ExplorMode.None;
-				EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-				return; // Stop movement
-			}
-			buildingManager.MoveInDirectionAutomated(this, direction);
+				{
+					currentExplorMode = ExplorMode.None;
+					EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+					return; // Stop movement
+				}
+			CanMove = buildingManager.MoveInDirectionAutomated(this, direction);
 			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 		}
 		currentExplorMode = ExplorMode.None;
+		CanMove = true; // Reset in case it wasn't already
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
@@ -520,12 +524,15 @@ public partial class BuildingComponent : Node2D
 		{
 			foreach(StringName direction in movesToReachBase)
 			{
-				buildingManager.MoveInDirectionAutomated(this, direction);
+				if (!CanMove)
+					break;
+				CanMove = buildingManager.MoveInDirectionAutomated(this, direction);
 
 				await ToSignal(GetTree().CreateTimer(this.BuildingResource.moveInterval), "timeout");
 			}
 		}
 		currentExplorMode = ExplorMode.None;
+		CanMove = true; // Reset in case it wasn't already
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
@@ -663,7 +670,7 @@ public async void GradientSearch()
 
 				if (relativeDirection != "CURRENT")
 				{
-					buildingManager.MoveInDirectionAutomated(this, relativeDirection);
+					CanMove = buildingManager.MoveInDirectionAutomated(this, relativeDirection);
 				}
 				else
 				{

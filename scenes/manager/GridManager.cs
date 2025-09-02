@@ -755,8 +755,11 @@ public partial class GridManager : Node
 			UpdateDiscoveredTiles(buildingComponent);
 			CheckGroundRobotTouchingMonolith(buildingComponent);
 			CheckAerialRobotVisualMonolith(buildingComponent);
+			if (buildingComponent.BuildingResource.IsAerial)
+			{
+				CheckStuckRobotNearby(buildingComponent);
+			}
 		}
-		CheckStuckRobotNearby();
 		CheckDangerBuildingDestruction();
 
 		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
@@ -791,9 +794,9 @@ public partial class GridManager : Node
 		}
 	}
 
-	private void CheckStuckRobotNearby()
+	private void CheckStuckRobotNearby(BuildingComponent buildingComponent)
 	{
-		var occupiedTilesExceptStuck = new HashSet<Vector2I>(occupiedTiles);
+		var occupiedTilesExceptStuck = new HashSet<Vector2I>(buildingComponent.GetOccupiedCellPositions());
 		bool isNear = false;
 		foreach(var robot in buildingStuckToTiles.Keys)
 		{
@@ -976,7 +979,7 @@ public partial class GridManager : Node
 
 	private void OnBuildingUnStuck(BuildingComponent buildingComponent)
 	{
-		buildingStuckToTiles.Clear();
+		buildingStuckToTiles.Remove(buildingComponent);
 	}
 
 	private void OnBuildingDestroyed(BuildingComponent buildingComponent)

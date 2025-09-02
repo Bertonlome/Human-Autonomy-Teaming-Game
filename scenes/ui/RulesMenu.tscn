@@ -152,12 +152,14 @@ layout_mode = 2
 layout_mode = 2
 theme = ExtResource("2_ac37y")
 theme_type_variation = &"Title"
-text = "UGV : Unmanned Ground Vehicle"
+text = "Unmanned Ground Vehicle    "
 uppercase = true
 
 [node name="TextureRect" type="TextureRect" parent="Panel/TabContainer/UGV/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 texture = ExtResource("4_4tsq1")
+expand_mode = 1
+stretch_mode = 3
 
 [node name="Label" type="Label" parent="Panel/TabContainer/UGV/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(150, 0)
@@ -167,6 +169,7 @@ theme_type_variation = &"rulesText"
 text = "CAPACITY: 
 • Can analyze the monolith (To win the game you must reach the Monolith with the UGV)
 • Can collect resources 
+• Can build bridges with wood
 • Battery: 250 moves before charging
 LIMITATIONS: 
 • Can randomly get stuck in the terrain (must be unstuck by UAV by bringing it closer)

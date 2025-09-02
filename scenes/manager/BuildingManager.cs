@@ -504,18 +504,18 @@ public partial class BuildingManager : Node
 	}
 
 
-	public void MoveInDirectionAutomated(BuildingComponent buildingComponent, StringName direction)
+	public bool MoveInDirectionAutomated(BuildingComponent buildingComponent, StringName direction)
 	{
 		if (buildingComponent.IsStuck)
 		{
 			buildingComponent.currentExplorMode = BuildingComponent.ExplorMode.None;
-			return;
+			return false;
 		}
 		if (buildingComponent.Battery <= 0)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", selectedBuildingComponent);
 			buildingComponent.currentExplorMode = BuildingComponent.ExplorMode.None;
-			return;
+			return false;
 		}
 
 
@@ -524,7 +524,7 @@ public partial class BuildingManager : Node
 		else if (direction == MOVE_DOWN) directionVector = new Vector2I(0, 1);
 		else if (direction == MOVE_LEFT) directionVector = new Vector2I(-1, 0);
 		else if (direction == MOVE_RIGHT) directionVector = new Vector2I(1, 0);
-		else return;
+		else return false;
 
 		Node2D buildingNode = (Node2D)buildingComponent.GetParent();
 		var originPos = buildingComponent.GetGridCellPosition();
@@ -538,13 +538,13 @@ public partial class BuildingManager : Node
 		{
 			buildingComponent.CanMove = false;
 			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", buildingComponent);
-			return;
+			return false;
 		}
 
 		if (!IsMoveableAtArea(buildingComponent, originArea, destinationArea))
 		{
 			//FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", buildingComponent);
-			return;
+			return false;
 		}
 
 		double chance = random.NextDouble();
@@ -553,7 +553,7 @@ public partial class BuildingManager : Node
 			MoveInDirectionAutomated(buildingComponent, GetRandomDirection());
 			//FloatingTextManager.ShowMessageAtBuildingPosition("The robot got stuck while attempting to move", buildingComponent);
 			buildingComponent.SetToStuck();
-			return;
+			return false;
 		}
 
 		if (buildingComponent.currentExplorMode != BuildingComponent.ExplorMode.ReturnToBase)
@@ -579,6 +579,7 @@ public partial class BuildingManager : Node
 			else if (direction == MOVE_RIGHT) MoveInDirectionAutomated(buildingComponent, MOVE_LEFT);
 			else if (direction == MOVE_UP) MoveInDirectionAutomated(buildingComponent, MOVE_DOWN);
 		}
+		return true;
 	}
 
 
