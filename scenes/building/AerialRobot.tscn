@@ -14,6 +14,9 @@ buildingAnimatorComponent = NodePath("../BuildingAnimatorComponent")
 [node name="BuildingAnimatorComponent" parent="." instance=ExtResource("2_p2omv")]
 
 [node name="AerialRobotSprite2D" parent="BuildingAnimatorComponent" instance=ExtResource("3_w3lpa")]
+autoplay = "default"
+frame = 5
+frame_progress = 0.600749
 
 [node name="Node2D" type="Node2D" parent="BuildingAnimatorComponent"]
 position = Vector2(-35, -53)

@@ -134,7 +134,8 @@ public partial class BaseLevel : Node
 	{
 		selectedRobotUI = selectedRobotUIScene.Instantiate<SelectedRobotUI>();
 		AddChild(selectedRobotUI);
-		selectedRobotUI.selectedBuildingComponent = buildingComponent;
+		//selectedRobotUI.selectedBuildingComponent = buildingComponent;
+		selectedRobotUI.SetupUI(buildingComponent); // Call setup after adding to tree
 	}
 
 	private void OnClockisTicking()

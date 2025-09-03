@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net;
 using Game.Autoload;
 using Game.Manager;
 using Game.Resources.Building;
@@ -45,7 +47,10 @@ public partial class BuildingComponent : Node2D
 	public bool IsStuck {get; private set;} = false; 
 	public bool IsRecharging {get; set;} = false;
 	private bool HasMoved = false;
-	public int Battery {get; set;} = 100;
+
+	public bool IsLifting;
+	public bool IsLifted;
+	public int Battery { get; set; } = 100;
 	public List<string> resourceCollected = new();
 
 	private List<(Vector2I, StringName)> moveHistory = new();
@@ -58,8 +63,10 @@ public partial class BuildingComponent : Node2D
 	private readonly StringName MOVE_RIGHT = "move_right";
 	private string previousDir = "";
 
+	private BuildingComponent AttachedRobot;
+
 	// Timer variables
-    private float timerMove = 0.0f; // Tracks time since last move
+	private float timerMove = 0.0f; // Tracks time since last move
 	private float timerRecharge = 0.0f; // Tracks time since last move
 	public const float RECHARGE_INTERVAL = 3.0f;
 
@@ -196,11 +203,34 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
+	public void AttachToRobot(BuildingComponent robot)
+	{
+		AttachedRobot = robot;
+		if (BuildingResource.IsAerial)
+		{
+			IsLifting = true;
+			EmitSignal(SignalName.ModeChanged, "Lifting");
+		}
+		else
+		{
+			IsLifted = true;
+			EmitSignal(SignalName.ModeChanged, "Lifted");
+		}
+	}
+
+	public void DetachRobot()
+	{
+		AttachedRobot = null;
+		IsLifted = false;
+		IsLifting = false;
+		EmitSignal(SignalName.ModeChanged, "Idle");
+	}
+
 	private List<StringName> GenerateHistoryMoveList()
 	{
 		var reversedMoveHistory = moveHistory.AsEnumerable().Reverse();
 		List<StringName> reversedDirections = new();
-		foreach((Vector2I position, StringName direction) in reversedMoveHistory)
+		foreach ((Vector2I position, StringName direction) in reversedMoveHistory)
 		{
 			reversedDirections.Add(GetOppositeDirection(direction));
 		}
@@ -375,7 +405,11 @@ public partial class BuildingComponent : Node2D
 		GameEvents.EmitBuildingMoved(this);
 		buildingAnimatorComponent?.PlayMoveAnimation(originPos, destinationPos);
 		Initialize();
-		if (Battery >= 0) Battery -= 1;
+		if (IsLifting)
+		{
+			if (Battery >= 0) Battery -= 4;
+		}
+		else if (!IsLifted && Battery >= 0) Battery -= 1;
 		EmitSignal(SignalName.BatteryChange, Battery);
 		//GD.Print("Battery left in robot : " + Battery);
 		var anomalyValue = gravitationalAnomalyMap.GetAnomalyAt(destinationPos.X, destinationPos.Y);
@@ -447,9 +481,33 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
+	public void Move(string direction)
+	{
+		if (BuildingResource.IsAerial && AttachedRobot is not null && Battery >= 0)
+		{
+			MoveLifted(direction);
+			AttachedRobot.MoveLifted(direction);
+		}
+		else
+		{
+			if (AttachedRobot is not null)
+			{
+				AttachedRobot.DetachRobot();
+				DetachRobot();
+			}
+			buildingManager.MoveInDirection(this, direction);
+		}
+	}
+
+	public void MoveLifted(string direction)
+	{
+		buildingManager.LiftInDirection(this, direction);
+	}
+
 	public bool cancelMoveRequested = false;
 	public async void MoveAlongPath(List<string> moves)
 	{
+		DetachRobot();
 		// Cancel any previous movement
 		cancelMoveRequested = true;
 		await ToSignal(GetTree().CreateTimer(0.01f), "timeout"); // Give time for previous to exit
@@ -494,6 +552,7 @@ public partial class BuildingComponent : Node2D
 
 	public async void RewindMoves()
 	{
+		DetachRobot();
 		if (Battery < moveHistory.Count)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to go back to base automatically", this);
@@ -514,6 +573,7 @@ public partial class BuildingComponent : Node2D
 
 	public async void ReturnToBase()
 	{
+		DetachRobot();
 		var myBase = GetBaseBuilding(this).FirstOrDefault();
 		var movesToReachBase = GetMovesToReachTile(GetGridCellPosition(), myBase.GetGridCellPosition());
 		if(Battery < movesToReachBase.Count)
@@ -598,6 +658,8 @@ public partial class BuildingComponent : Node2D
 
 	public void CollectResource(string resourceType)
 	{
+		if (IsLifted == true) return;
+
 		if (resourceCollected.Count < BuildingResource.ResourceCapacity)
 		{
 			resourceCollected.Add(resourceType);
@@ -630,6 +692,7 @@ public partial class BuildingComponent : Node2D
 
 public async void GradientSearch()
 	{
+		DetachRobot();
 		// Cancel any previous gradient search
 		cancelMoveRequested = true;
 		await ToSignal(GetTree().CreateTimer(0.01f), "timeout"); // Give time for previous to exit
@@ -687,18 +750,18 @@ public async void GradientSearch()
 		CanMove = true; // Reset at the end, in case it wasn't already
 	}
 
-private string GetDirectionFromDelta(Vector2I current, Vector2I target)
-{
-    int dx = target.X - current.X;
-    int dy = target.Y - current.Y;
+	private string GetDirectionFromDelta(Vector2I current, Vector2I target)
+	{
+		int dx = target.X - current.X;
+		int dy = target.Y - current.Y;
 
-    if (dx > 0) return MOVE_RIGHT;
-    if (dx < 0) return MOVE_LEFT;
-    if (dy < 0) return MOVE_UP;
-    if (dy > 0) return MOVE_DOWN;
+		if (dx > 0) return MOVE_RIGHT;
+		if (dx < 0) return MOVE_LEFT;
+		if (dy < 0) return MOVE_UP;
+		if (dy > 0) return MOVE_DOWN;
 
-    return "CURRENT"; // In case the target is the same as the current position
-}
+		return "CURRENT"; // In case the target is the same as the current position
+	}
 
 	
 

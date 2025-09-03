@@ -70,6 +70,7 @@ public partial class GridManager : Node
 	private List<TileMapLayer> allTilemapLayers = new();
 	private Dictionary<TileMapLayer, ElevationLayer> tileMapLayerToElevationLayer = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingToBuildableTiles = new();
+	private Dictionary<Vector2I, BuildingComponent> TileToBuilding = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> dangerBuildingToTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> attackBuildingToTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingStuckToTiles = new();
@@ -653,6 +654,7 @@ public partial class GridManager : Node
 
 	private void UpdateCollectedWoodTiles(BuildingComponent buildingComponent)
 	{
+		if (buildingComponent.IsLifted) return;
 		var tileArea = buildingComponent.GetTileArea();
 		var resourceTiles = GetWoodTilesInRadius(tileArea, buildingComponent.BuildingResource.ResourceRadius);
 
@@ -744,6 +746,7 @@ public partial class GridManager : Node
 		dangerOccupiedTiles.Clear();
 		attackTiles.Clear();
 		buildingToBuildableTiles.Clear();
+		TileToBuilding.Clear();
 		dangerBuildingToTiles.Clear();
 		attackBuildingToTiles.Clear();
 
@@ -753,17 +756,26 @@ public partial class GridManager : Node
 		{
 			UpdateBuildingComponentGridState(buildingComponent);
 			UpdateDiscoveredTiles(buildingComponent);
+			UpdateTilesToBuilding(buildingComponent);
 			CheckGroundRobotTouchingMonolith(buildingComponent);
 			CheckAerialRobotVisualMonolith(buildingComponent);
 			if (buildingComponent.BuildingResource.IsAerial)
 			{
 				CheckStuckRobotNearby(buildingComponent);
+				CheckGroundRobotBelow(buildingComponent);
 			}
 		}
 		CheckDangerBuildingDestruction();
 
 		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
 		EmitSignal(SignalName.GridStateUpdated);
+	}
+
+	private void UpdateTilesToBuilding(BuildingComponent buildingComponent)
+	{
+		var occupiedTiles = buildingComponent.GetOccupiedCellPositions();
+		foreach( var tile in occupiedTiles)
+		TileToBuilding[tile] = buildingComponent;	
 	}
 
 	private void RecalculateDangerOccupiedTiles()
@@ -810,10 +822,32 @@ public partial class GridManager : Node
 		}
 	}
 
+	private void CheckGroundRobotBelow(BuildingComponent buildingComponent)
+	{
+		bool bingo = false;
+		var uavOccupiedTiles = buildingComponent.GetOccupiedCellPositions();
+
+		foreach (var tile in occupiedTiles)
+		{
+			var aboveTile = tile + Vector2I.Up;
+			if (uavOccupiedTiles.Contains(aboveTile))
+			{
+				var groundRobot = TileToBuilding[tile];
+				GameEvents.EmitGroundRobotBelowUav(groundRobot);
+				bingo = true;
+				return;
+			}
+		}
+		if (!bingo)
+		{
+			GameEvents.EmitNoGroundRobotBelowUav();
+		}
+	}
+
 	private void CheckGroundRobotTouchingMonolith(BuildingComponent buildingComponent)
 	{
-		if(buildingComponent.BuildingResource.IsAerial || buildingComponent.BuildingResource.IsBase) return;
-		foreach(var adjacentTile in buildingComponent.GetTileAndAdjacent())
+		if (buildingComponent.BuildingResource.IsAerial || buildingComponent.BuildingResource.IsBase) return;
+		foreach (var adjacentTile in buildingComponent.GetTileAndAdjacent())
 		{
 			if (monolithTiles.Contains(adjacentTile))
 			{

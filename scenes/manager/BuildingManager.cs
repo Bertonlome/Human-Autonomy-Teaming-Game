@@ -154,7 +154,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveInDirection(MOVE_UP);
+						selectedBuildingComponent.Move(MOVE_UP);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -162,7 +162,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveInDirection(MOVE_DOWN);
+						selectedBuildingComponent.Move(MOVE_DOWN);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -170,7 +170,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveInDirection(MOVE_LEFT);
+						selectedBuildingComponent.Move(MOVE_LEFT);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -178,7 +178,7 @@ public partial class BuildingManager : Node
 				{
 					if (selectedBuildingComponent != null)
 					{
-						MoveInDirection(MOVE_RIGHT);
+						selectedBuildingComponent.Move(MOVE_RIGHT);
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -437,13 +437,63 @@ public partial class BuildingManager : Node
 		ChangeState(State.Normal);
 	}
 
-	public void MoveInDirection(StringName direction)
+	public void LiftInDirection(BuildingComponent liftedRobot, StringName direction)
 	{
-		if (selectedBuildingComponent.IsStuck) return;
-
-		if (selectedBuildingComponent.Battery <= 0)
+		if (liftedRobot.BuildingResource.IsAerial && liftedRobot.Battery <= 0)
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", selectedBuildingComponent);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", liftedRobot);
+			return;
+		}
+
+		Vector2I directionVector;
+		if (direction == MOVE_UP) directionVector = new Vector2I(0, -1);
+		else if (direction == MOVE_DOWN) directionVector = new Vector2I(0, 1);
+		else if (direction == MOVE_LEFT) directionVector = new Vector2I(-1, 0);
+		else if (direction == MOVE_RIGHT) directionVector = new Vector2I(1, 0);
+		else return;
+
+		Node2D buildingNode = (Node2D)liftedRobot.GetParent();
+		var originPos = liftedRobot.GetGridCellPosition();
+		var originArea = liftedRobot.GetAreaOccupied(originPos);
+		//originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
+		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64)) / 64), (int)((buildingNode.Position.Y + (directionVector.Y * 64)) / 64));
+		Rect2I destinationArea = liftedRobot.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
+
+		if (!gridManager.CanMoveBuilding(liftedRobot, destinationArea))
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("liftedRobot out of antenna coverage", liftedRobot);
+			return;
+		}
+
+		liftedRobot.UpdateMoveHistory(originPos, direction);
+
+		liftedRobot.FreeOccupiedCellPosition();
+		gridManager.UpdateBuildingComponentGridState(liftedRobot);
+
+		buildingNode.Position += directionVector * 64;
+		liftedRobot.Moved((Vector2I)originPos, destinationPosition);
+		liftedRobot.TryDropResourcesAtBase();
+		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+
+		var test = gridManager.CanMoveBuilding(liftedRobot);
+		if (!test)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("liftedRobot out of antenna coverage", liftedRobot);
+			if (direction == MOVE_DOWN) MoveInDirection(liftedRobot, MOVE_UP);
+			else if (direction == MOVE_LEFT) MoveInDirection(liftedRobot, MOVE_RIGHT);
+			else if (direction == MOVE_RIGHT) MoveInDirection(liftedRobot, MOVE_LEFT);
+			else if (direction == MOVE_UP) MoveInDirection(liftedRobot, MOVE_DOWN);
+		}
+
+	}
+
+	public void MoveInDirection(BuildingComponent robot, StringName direction)
+	{
+		if (robot.IsStuck) return;
+
+		if (robot.Battery <= 0)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", robot);
 			return;
 		}
 
@@ -455,51 +505,51 @@ public partial class BuildingManager : Node
 		else if (direction == MOVE_RIGHT) directionVector = new Vector2I(1, 0);
 		else return;
 
-		Node2D buildingNode = (Node2D)selectedBuildingComponent.GetParent();
-		var originPos = selectedBuildingComponent.GetGridCellPosition();
-		var originArea = selectedBuildingComponent.GetAreaOccupied(originPos);
+		Node2D buildingNode = (Node2D)robot.GetParent();
+		var originPos = robot.GetGridCellPosition();
+		var originArea = robot.GetAreaOccupied(originPos);
 		//originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
 		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64)) / 64), (int)((buildingNode.Position.Y + (directionVector.Y * 64)) / 64));
-		Rect2I destinationArea = selectedBuildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
+		Rect2I destinationArea = robot.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
 
-		if (!gridManager.CanMoveBuilding(selectedBuildingComponent, destinationArea))
+		if (!gridManager.CanMoveBuilding(robot, destinationArea))
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", selectedBuildingComponent);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", robot);
 			return;
 		}
 
-		if (!IsMoveableAtArea(selectedBuildingComponent, originArea, destinationArea))
+		if (!IsMoveableAtArea(robot, originArea, destinationArea))
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", selectedBuildingComponent);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", robot);
 			return;
 		}
 
 		double chance = random.NextDouble();
-		if (chance <= selectedBuildingComponent.BuildingResource.StuckChancePerMove)
+		if (chance <= robot.BuildingResource.StuckChancePerMove)
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("The robot got stuck while attempting to move", selectedBuildingComponent);
-			selectedBuildingComponent.SetToStuck();
+			FloatingTextManager.ShowMessageAtBuildingPosition("The robot got stuck while attempting to move", robot);
+			robot.SetToStuck();
 			return;
 		}
 
-		selectedBuildingComponent.UpdateMoveHistory(originPos, direction);
+		robot.UpdateMoveHistory(originPos, direction);
 
-		selectedBuildingComponent.FreeOccupiedCellPosition();
-		gridManager.UpdateBuildingComponentGridState(selectedBuildingComponent);
+		robot.FreeOccupiedCellPosition();
+		gridManager.UpdateBuildingComponentGridState(robot);
 
 		buildingNode.Position += directionVector * 64;
-		selectedBuildingComponent.Moved((Vector2I)originPos, destinationPosition);
-		selectedBuildingComponent.TryDropResourcesAtBase();
+		robot.Moved((Vector2I)originPos, destinationPosition);
+		robot.TryDropResourcesAtBase();
 		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 
-		var test = gridManager.CanMoveBuilding(selectedBuildingComponent);
+		var test = gridManager.CanMoveBuilding(robot);
 		if (!test)
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", selectedBuildingComponent);
-			if (direction == MOVE_DOWN) MoveInDirection(MOVE_UP);
-			else if (direction == MOVE_LEFT) MoveInDirection(MOVE_RIGHT);
-			else if (direction == MOVE_RIGHT) MoveInDirection(MOVE_LEFT);
-			else if (direction == MOVE_UP) MoveInDirection(MOVE_DOWN);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", robot);
+			if (direction == MOVE_DOWN) MoveInDirection(robot, MOVE_UP);
+			else if (direction == MOVE_LEFT) MoveInDirection(robot, MOVE_RIGHT);
+			else if (direction == MOVE_RIGHT) MoveInDirection(robot, MOVE_LEFT);
+			else if (direction == MOVE_UP) MoveInDirection(robot, MOVE_DOWN);
 		}
 	}
 
@@ -513,7 +563,7 @@ public partial class BuildingManager : Node
 		}
 		if (buildingComponent.Battery <= 0)
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", selectedBuildingComponent);
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", buildingComponent);
 			buildingComponent.currentExplorMode = BuildingComponent.ExplorMode.None;
 			return false;
 		}

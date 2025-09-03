@@ -24,8 +24,18 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Label statusLabel;
 	private Label batteryLabel;
 	private Label resourceLabel;
-	private Button placeBridgeButton;
+	private Button multiPurposeButton;
+
+	private MultiPurposeButtonState currentButtonState;
 	public BuildingComponent selectedBuildingComponent;
+	public BuildingComponent groundRobotBelowUav;
+
+	public enum MultiPurposeButtonState
+	{
+		Placebridge,
+		LiftRobot,
+		DropRobot
+	}
 
 	public enum ExplorMode
 	{
@@ -40,7 +50,7 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	public override void _Ready()
 	{
-		InitializeUI();
+		//InitializeUI();
 
 
 		CallDeferred("SetAnomalySignal");
@@ -51,6 +61,14 @@ public partial class SelectedRobotUI : CanvasLayer
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingUnStuck, Callable.From<BuildingComponent>(OnBuildingUnStuck));
 		GameEvents.Instance.Connect(GameEvents.SignalName.AllRobotStopped, Callable.From(OnAllRobotsStopped));
 		GameEvents.Instance.Connect(GameEvents.SignalName.CarriedResourceCountChanged, Callable.From<int>(OnResourceCarriedCountChanged));
+		GameEvents.Instance.Connect(GameEvents.SignalName.GroundRobotBelowUav, Callable.From<BuildingComponent>(OnGroundRobotBelowUav));
+		GameEvents.Instance.Connect(GameEvents.SignalName.NoGroundRobotBelowUav, Callable.From(OnNoGroundRobotBelowUav));
+	}
+
+	public void SetupUI(BuildingComponent component)
+	{
+		selectedBuildingComponent = component;
+		InitializeUI();
 	}
 
 	private void InitializeUI()
@@ -63,7 +81,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		stopExplorbutton = GetNode<Button>("%StopExplorButton");
 		trackRobotButton = GetNode<Button>("%TrackRobotButton");
 		startExplorButton = GetNode<Button>("%StartExplorButton");
-		placeBridgeButton = GetNode<Button>("%PlaceBridgeButton");
+		multiPurposeButton = GetNode<Button>("%PlaceBridgeButton");
 		gravAnomValueLabel = GetNode<Label>("%GravAnomValueLabel");
 		statusLabel = GetNode<Label>("%StatusLabel");
 		batteryLabel = GetNode<Label>("%BatteryLabel");
@@ -78,7 +96,29 @@ public partial class SelectedRobotUI : CanvasLayer
 		trackRobotButton.Pressed += OnTrackRobotButtonPressed;
 		explorModeOptionsButton.ItemSelected += OnOptionsButtonItemSelected;
 		startExplorButton.Pressed += OnStartExplorButtonSelected;
-		placeBridgeButton.Pressed += OnPlaceBridgeButtonPressed;
+
+		if (selectedBuildingComponent.BuildingResource.IsAerial)
+		{
+			ChangeStateMultiPurposeButton(MultiPurposeButtonState.LiftRobot);
+		}
+		else multiPurposeButton.Pressed += OnPlaceBridgeButtonPressed;
+	}
+
+	private void OnGroundRobotBelowUav(BuildingComponent groundRobot)
+	{
+		if (selectedBuildingComponent.BuildingResource.IsAerial)
+		{
+			multiPurposeButton.Disabled = false;
+			groundRobotBelowUav = groundRobot;
+		}
+	}
+
+	private void OnNoGroundRobotBelowUav()
+	{
+		if (selectedBuildingComponent.BuildingResource.IsAerial)
+		{
+			multiPurposeButton.Disabled = true;
+		}
 	}
 
 	private void OnNoMoreRobotSelected(BuildingComponent component)
@@ -230,7 +270,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		randomExplorButton.Pressed -= OnRandomExplorButtonPressed;
 		stopExplorbutton.Pressed -= OnStopExplorButtonPressed;
 		trackRobotButton.Pressed -= OnTrackRobotButtonPressed;
-		placeBridgeButton.Pressed -= OnPlaceBridgeButtonPressed;
+		multiPurposeButton.Pressed -= OnPlaceBridgeButtonPressed;
 
 		if (selectedBuildingComponent != null)
 		{
@@ -241,6 +281,44 @@ public partial class SelectedRobotUI : CanvasLayer
 	private void OnPlaceBridgeButtonPressed()
 	{
 		GameEvents.EmitPlaceBridgeButtonPressed(selectedBuildingComponent, bridgeBuildingResource);
+	}
+
+	private void OnLiftRobotButtonPressed()
+	{
+		selectedBuildingComponent.AttachToRobot(groundRobotBelowUav);
+		groundRobotBelowUav.AttachToRobot(selectedBuildingComponent);
+		GameEvents.EmitLiftRobotButtonPressed(selectedBuildingComponent, groundRobotBelowUav);
+		ChangeStateMultiPurposeButton(MultiPurposeButtonState.DropRobot);
+	}
+
+	private void OnDropRobotButtonPressed()
+	{
+		selectedBuildingComponent.DetachRobot();
+		groundRobotBelowUav.DetachRobot();
+		ChangeStateMultiPurposeButton(MultiPurposeButtonState.LiftRobot);
+	}
+
+	private void ChangeStateMultiPurposeButton(MultiPurposeButtonState state)
+	{
+		currentButtonState = state;
+		switch (state)
+		{
+			case MultiPurposeButtonState.Placebridge:
+				multiPurposeButton.Text = "Place Bridge";
+
+				break;
+			case MultiPurposeButtonState.LiftRobot:
+				multiPurposeButton.Text = "Lift Robot";
+				multiPurposeButton.Disabled = true;
+				multiPurposeButton.Pressed -= OnDropRobotButtonPressed;
+				multiPurposeButton.Pressed += OnLiftRobotButtonPressed;
+				break;
+			case MultiPurposeButtonState.DropRobot:
+				multiPurposeButton.Text = "Drop Robot";
+				multiPurposeButton.Pressed -= OnLiftRobotButtonPressed;
+				multiPurposeButton.Pressed += OnDropRobotButtonPressed;
+				break;
+		}
 	}
 
 }

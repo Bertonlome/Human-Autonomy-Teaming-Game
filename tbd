@@ -14,4 +14,14 @@ Est-ce que les étudiants doivent déceler des limites sur l'interface du jeu et
 
 Est-ce que les étudiants doivent trouver de nouvelles fonction pour les robots ?
 
-Il faut vérifier qu'il y a bien un intérêt à l'analyse d'interdépendance pour du teaming ENTRE les robots (il faut ajouter la fonction porter un GroundRobot en haut d'une falaise) et avec l'humain. 
+Il faut vérifier qu'il y a bien un intérêt à l'analyse d'interdépendance pour du teaming ENTRE les robots (il faut ajouter la fonction porter un GroundRobot en haut d'une falaise) et avec l'humain.
+
+Utilises-t-on le site internet Dash pour remplir l'analyse d'interdépendance.
+
+Idée : Premièrement, jouez avec les robots, essayez de trouver les tâches et constituer un scénario représentatif (dimenionnant)
+
+Deuxièmement, assess les capacités des robots en jouant ET grâce à la doc (rules of the game)
+
+Troisièmement, trouvez les OPD pour proposer une nouvelle interface
+
+Quatrièmement, faire un sketch de l'interface.
