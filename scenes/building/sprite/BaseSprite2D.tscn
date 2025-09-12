@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://cdwcq1uh666vw"]
+[gd_scene load_steps=5 format=3 uid="uid://cdwcq1uh666vw"]
 
 [ext_resource type="Texture2D" uid="uid://bklfhif1isigv" path="res://assets/buildings/new_tank.png" id="1_gltes"]
+[ext_resource type="Texture2D" uid="uid://sxrhx0ktqe3p" path="res://assets/buildings/base_sprite.png" id="1_n1ntp"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_wqjis"]
 atlas = ExtResource("1_gltes")
@@ -10,6 +11,9 @@ region = Rect2(0, 0, 64, 51)
 animations = [{
 "frames": [{
 "duration": 1.0,
+"texture": ExtResource("1_n1ntp")
+}, {
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_wqjis")
 }],
 "loop": false,
@@ -18,8 +22,8 @@ animations = [{
 }]
 
 [node name="Sprite2D" type="AnimatedSprite2D"]
-position = Vector2(162, 96)
-scale = Vector2(5.21875, 4.45829)
+position = Vector2(10, 7.3125)
+scale = Vector2(0.3125, 0.1875)
 sprite_frames = SubResource("SpriteFrames_b1w7k")
 centered = false
 offset = Vector2(-32, -39)

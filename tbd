@@ -5,6 +5,10 @@ Il faut créer deux autres maps (on peut envisager un nombre de robot différent
 Il faut que l'exploration random soit plus intelligente et puissent être assigné à plusieurs robot en même temps qui ne font pas le même chemin (checker les algos de d'exploration)
 Améliorer les déplacements actuellement quand une liste de mouvement est lancé si le robot rencontre un obstacle il va quand même tenter de passer tous les mouvements ce qui casse la trajectoire.
 
+il faut ajouter un mecanisme de depot d'antenne fonctionnant avec les materiaux pour augmenter la couverture.
+
+Il faut ajouter un trailer/scenario pour expliquer le contexte et les objectifs.
+
 
 Reprendre l'analyse d'interdépendance et rajouter les nouvelles tâches.
 
@@ -14,7 +18,7 @@ Est-ce que les étudiants doivent déceler des limites sur l'interface du jeu et
 
 Est-ce que les étudiants doivent trouver de nouvelles fonction pour les robots ?
 
-Il faut vérifier qu'il y a bien un intérêt à l'analyse d'interdépendance pour du teaming ENTRE les robots (il faut ajouter la fonction porter un GroundRobot en haut d'une falaise) et avec l'humain.
+Il faut vérifier qu'il y a bien un intérêt à l'analyse d'interdépendance pour du teaming ENTRE les robots et avec l'humain.
 
 Utilises-t-on le site internet Dash pour remplir l'analyse d'interdépendance.
 
@@ -25,3 +29,5 @@ Deuxièmement, assess les capacités des robots en jouant ET grâce à la doc (r
 Troisièmement, trouvez les OPD pour proposer une nouvelle interface
 
 Quatrièmement, faire un sketch de l'interface.
+
+Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (ex: le plus safe) pour le tester avec leur camarade.

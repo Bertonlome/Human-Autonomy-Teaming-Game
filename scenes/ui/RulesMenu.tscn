@@ -212,8 +212,8 @@ text = "CAPACITY:
 • Can unstuck the ground robot when close to it
 • Fast movement
 • Can hover over rough terrain and water
+•Can lift the UGV
 • 10 units vision sensor range
-
 LIMITATIONS:
 • Cannot collect resources
 • Cannot analyze the monolith!"

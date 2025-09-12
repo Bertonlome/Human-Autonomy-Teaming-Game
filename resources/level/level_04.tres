@@ -8,4 +8,4 @@ Id = "white_ferrari"
 StartingWoodCount = 6
 StartingMaterialCount = 14
 LevelScenePath = "res://scenes/level/Level4.tscn"
-LevelDuration = 300
+LevelDuration = 10000
