@@ -60,7 +60,6 @@ public partial class BaseLevel : Node
 		gridManager.AerialRobotHasVisionOfMonolith += OnAerialRobotHasVisionOfMonolith;
 		gridManager.GroundRobotTouchingMonolith += OnGroundRobotTouchingMonolith;
 
-
 		GameEvents.Instance.Connect(GameEvents.SignalName.RobotSelected, Callable.From<BuildingComponent>(OnRobotSelected));
 	}
 

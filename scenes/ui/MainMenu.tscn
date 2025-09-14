@@ -5,16 +5,15 @@
 [ext_resource type="PackedScene" uid="uid://cgi3e02262en8" path="res://scenes/ui/OptionsMenu.tscn" id="2_v8d5j"]
 [ext_resource type="PackedScene" uid="uid://cv6tnl0bv6sfg" path="res://scenes/building/Base.tscn" id="3_p8kyu"]
 [ext_resource type="PackedScene" uid="uid://iv4rk5h4ybki" path="res://scenes/level/util/ElevationLayer.tscn" id="3_pnm4a"]
-[ext_resource type="PackedScene" uid="uid://dnchhrrd18axl" path="res://scenes/ui/RulesMenu.tscn" id="3_w2wf4"]
 [ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/Monolith.tscn" id="4_smdta"]
 [ext_resource type="PackedScene" uid="uid://bb2ug053frok2" path="res://scenes/building/GroundRobot.tscn" id="4_tfh3j"]
 [ext_resource type="PackedScene" uid="uid://dr2vs3njjnlm4" path="res://scenes/ui/LevelSelectScreen.tscn" id="7_3j1st"]
+[ext_resource type="PackedScene" uid="uid://bkk040smvshyh" path="res://scenes/building/AerialRobot.tscn" id="8_cel4e"]
 [ext_resource type="Texture2D" uid="uid://dnmtseao4q3vg" path="res://assets/HAT_game_logo_cropped.png" id="9_54ckx"]
 
 [node name="MainMenu" type="Node"]
 script = ExtResource("1_k6ppd")
 optionsMenuScene = ExtResource("2_v8d5j")
-rulesMenuScene = ExtResource("3_w2wf4")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(896, 320)
@@ -61,14 +60,17 @@ tile_set = ExtResource("2_jc5mq")
 
 [node name="Base" parent="YSortRoot" instance=ExtResource("3_p8kyu")]
 unique_name_in_owner = true
-position = Vector2(256, 512)
+position = Vector2(264, 456)
 
 [node name="GoldMine" parent="YSortRoot" instance=ExtResource("4_smdta")]
 unique_name_in_owner = true
 position = Vector2(960, 128)
 
-[node name="Village" parent="YSortRoot" instance=ExtResource("4_tfh3j")]
+[node name="UGV" parent="YSortRoot" instance=ExtResource("4_tfh3j")]
 position = Vector2(817, 295)
+
+[node name="AerialRobot" parent="YSortRoot" instance=ExtResource("8_cel4e")]
+position = Vector2(704, 560)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 

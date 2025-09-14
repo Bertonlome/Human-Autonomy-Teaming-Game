@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingResource" load_steps=4 format=3 uid="uid://iaratkp3mjgi"]
+
+[ext_resource type="PackedScene" uid="uid://bxkqnboal4ycw" path="res://scenes/building/Antenna.tscn" id="1_j35jt"]
+[ext_resource type="PackedScene" uid="uid://dgg68kecfjayo" path="res://scenes/building/sprite/AntennaSprite2D.tscn" id="2_cw5ow"]
+[ext_resource type="Script" path="res://resources/building/BuildingResource.cs" id="3_y1nr2"]
+
+[resource]
+script = ExtResource("3_y1nr2")
+DisplayName = "Antenna"
+Description = "Extend communication range"
+IsBase = false
+IsDeletable = true
+IsAerial = false
+Dimensions = Vector2i(1, 1)
+StuckChancePerMove = 0.0
+moveInterval = 0.0
+BatteryMax = 0
+ResourceCost = 1
+BuildableRadius = 24
+ResourceRadius = 0
+ResourceCapacity = 0
+VisionRadius = 12
+AnomalySensorRadius = 0
+BuildingScene = ExtResource("1_j35jt")
+SpriteScene = ExtResource("2_cw5ow")

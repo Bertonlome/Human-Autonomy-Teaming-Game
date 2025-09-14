@@ -86,7 +86,7 @@ public partial class GameUI : CanvasLayer
 			gravitationalAnomalyMap.DisplayTrace(tileDiscoveredByAllRobots);
 		}
 	}
-	
+
 	public void SetTimeToCompleteLevel(int timeResource)
 	{
 		TimeToCompleteLevel = timeResource;
@@ -95,7 +95,7 @@ public partial class GameUI : CanvasLayer
 		isTimeIsUp = false;
 	}
 
-    private void OnClockIsTicking()
+	private void OnClockIsTicking()
 	{
 		if (isTimeIsUp)
 		{
@@ -128,7 +128,7 @@ public partial class GameUI : CanvasLayer
 
 	}
 
-    public override void _UnhandledInput(InputEvent evt)
+	public override void _UnhandledInput(InputEvent evt)
 	{
 		if (evt.IsActionPressed(ACTION_SPACEBAR))
 		{
@@ -159,7 +159,8 @@ public partial class GameUI : CanvasLayer
 
 	private void OnNewBuildingPlaced(BuildingComponent buildingComponent, BuildingResource buildingResource)
 	{
-		if (buildingResource.DisplayName == "Base") return;
+		if (buildingResource.DisplayName == "Base" || buildingResource.DisplayName == "Bridge" || buildingResource.DisplayName == "Antenna") return;
+
 
 		var unitSection = UnitSectionScene.Instantiate<UnitSection>();
 		unitsSectionContainer.AddChild(unitSection);

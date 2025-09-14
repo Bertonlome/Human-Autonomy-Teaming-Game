@@ -12,6 +12,8 @@ public partial class SelectedRobotUI : CanvasLayer
 {
 	[Export]
 	BuildingResource bridgeBuildingResource;
+	[Export]
+	BuildingResource antennaBuildingResource;
 	private Button randomExplorButton;
 	private Button stopExplorbutton;
 	private Button trackRobotButton;
@@ -25,6 +27,8 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Label batteryLabel;
 	private Label resourceLabel;
 	private Button multiPurposeButton;
+
+	private Button placeAntennaButton;
 
 	private MultiPurposeButtonState currentButtonState;
 	public BuildingComponent selectedBuildingComponent;
@@ -82,6 +86,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		trackRobotButton = GetNode<Button>("%TrackRobotButton");
 		startExplorButton = GetNode<Button>("%StartExplorButton");
 		multiPurposeButton = GetNode<Button>("%PlaceBridgeButton");
+		placeAntennaButton = GetNode<Button>("%PlaceAntennaButton");
 		gravAnomValueLabel = GetNode<Label>("%GravAnomValueLabel");
 		statusLabel = GetNode<Label>("%StatusLabel");
 		batteryLabel = GetNode<Label>("%BatteryLabel");
@@ -97,11 +102,17 @@ public partial class SelectedRobotUI : CanvasLayer
 		explorModeOptionsButton.ItemSelected += OnOptionsButtonItemSelected;
 		startExplorButton.Pressed += OnStartExplorButtonSelected;
 
+
 		if (selectedBuildingComponent.BuildingResource.IsAerial)
 		{
 			ChangeStateMultiPurposeButton(MultiPurposeButtonState.LiftRobot);
+			placeAntennaButton.Hide();
 		}
-		else multiPurposeButton.Pressed += OnPlaceBridgeButtonPressed;
+		else
+		{
+			multiPurposeButton.Pressed += OnPlaceBridgeButtonPressed;
+			placeAntennaButton.Pressed += OnPlaceAntennaButtonPressed;
+		}
 	}
 
 	private void OnGroundRobotBelowUav(BuildingComponent groundRobot)
@@ -215,6 +226,11 @@ public partial class SelectedRobotUI : CanvasLayer
 		}
 	}
 
+	private void OnPlaceAntennaButtonPressed()
+	{
+		GameEvents.EmitPlaceAntennaButtonPressed(selectedBuildingComponent, antennaBuildingResource);
+	}
+
 	private void SetAnomalySignal()
 	{
 		selectedBuildingComponent.NewAnomalyReading += OnNewAnomalyReading;
@@ -270,8 +286,27 @@ public partial class SelectedRobotUI : CanvasLayer
 		randomExplorButton.Pressed -= OnRandomExplorButtonPressed;
 		stopExplorbutton.Pressed -= OnStopExplorButtonPressed;
 		trackRobotButton.Pressed -= OnTrackRobotButtonPressed;
-		multiPurposeButton.Pressed -= OnPlaceBridgeButtonPressed;
-
+		if (multiPurposeButton.IsConnected("pressed", Callable.From(OnPlaceBridgeButtonPressed)))
+		{
+			multiPurposeButton.Pressed -= OnPlaceBridgeButtonPressed;
+		}
+		if (multiPurposeButton.IsConnected("pressed", Callable.From(OnLiftRobotButtonPressed)))
+		{
+			multiPurposeButton.Pressed -= OnLiftRobotButtonPressed;
+		}
+		if (multiPurposeButton.IsConnected("pressed", Callable.From(OnDropRobotButtonPressed)))
+		{
+			multiPurposeButton.Pressed -= OnDropRobotButtonPressed;
+		}
+		gradientSearchButton.Pressed -= OnGradientSearchButtonPressed;
+		returnToBaseButton.Pressed -= OnReturnToBaseButtonPressed;
+		rewindMovesButton.Pressed -= OnRewindMovesButtonPressed;
+		explorModeOptionsButton.ItemSelected -= OnOptionsButtonItemSelected;
+		startExplorButton.Pressed -= OnStartExplorButtonSelected;
+		if(placeAntennaButton.IsConnected("pressed", Callable.From(OnPlaceAntennaButtonPressed)))
+		{
+			placeAntennaButton.Pressed -= OnPlaceAntennaButtonPressed;
+		}
 		if (selectedBuildingComponent != null)
 		{
 			selectedBuildingComponent.NewAnomalyReading -= OnNewAnomalyReading;
@@ -310,12 +345,18 @@ public partial class SelectedRobotUI : CanvasLayer
 			case MultiPurposeButtonState.LiftRobot:
 				multiPurposeButton.Text = "Lift Robot";
 				multiPurposeButton.Disabled = true;
-				multiPurposeButton.Pressed -= OnDropRobotButtonPressed;
+				if (multiPurposeButton.IsConnected("pressed", Callable.From(OnDropRobotButtonPressed)))
+				{
+					multiPurposeButton.Pressed -= OnDropRobotButtonPressed;
+				}
 				multiPurposeButton.Pressed += OnLiftRobotButtonPressed;
 				break;
 			case MultiPurposeButtonState.DropRobot:
 				multiPurposeButton.Text = "Drop Robot";
-				multiPurposeButton.Pressed -= OnLiftRobotButtonPressed;
+				if (multiPurposeButton.IsConnected("pressed", Callable.From(OnLiftRobotButtonPressed)))
+				{
+					multiPurposeButton.Pressed -= OnLiftRobotButtonPressed;
+				}
 				multiPurposeButton.Pressed += OnDropRobotButtonPressed;
 				break;
 		}

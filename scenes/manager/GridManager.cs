@@ -48,7 +48,6 @@ public partial class GridManager : Node
 	private HashSet<Vector2I> discoveredElementsTiles = new();
 	private HashSet<Vector2I> occupiedTiles = new();
 	private HashSet<Vector2I> dangerOccupiedTiles = new();
-	private HashSet<Vector2I> attackTiles = new();
 	private HashSet<Vector2I> baseAntennaCoveredTiles = new();
 	private HashSet<Vector2I> baseProximityTiles = new();
 	private HashSet<Vector2I> monolithTiles = new();
@@ -71,10 +70,7 @@ public partial class GridManager : Node
 	private Dictionary<TileMapLayer, ElevationLayer> tileMapLayerToElevationLayer = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingToBuildableTiles = new();
 	private Dictionary<Vector2I, BuildingComponent> TileToBuilding = new();
-	private Dictionary<BuildingComponent, HashSet<Vector2I>> dangerBuildingToTiles = new();
-	private Dictionary<BuildingComponent, HashSet<Vector2I>> attackBuildingToTiles = new();
 	private Dictionary<BuildingComponent, HashSet<Vector2I>> buildingStuckToTiles = new();
-	private Dictionary<Vector2I, int> positionToGravitationAnomaly = new();
 
 	public override void _Ready()
 	{
@@ -360,48 +356,7 @@ public partial class GridManager : Node
 			return !WillBuildingDestructionCreateOrphanBuildings(toDestroyBuildingComponent) &&
 				IsBuildingNetworkConnected(toDestroyBuildingComponent);
 		}
-		else if (toDestroyBuildingComponent.BuildingResource.IsAttackBuilding())
-		{
-			return CanDestroyBarracks(toDestroyBuildingComponent);
-		}
 		return true;
-	}
-
-	private bool CanDestroyBarracks(BuildingComponent toDestroyBuildingComponent)
-	{
-		var disabledDangerBuildings = BuildingComponent.GetDangerBuildingComponents(this)
-			.Where((buildingComponent) => buildingComponent.GetOccupiedCellPositions().Any((tilePosition) =>
-			{
-				return attackBuildingToTiles[toDestroyBuildingComponent].Contains(tilePosition);
-			}));
-
-		if (!disabledDangerBuildings.Any()) return true;
-
-		var allDangerBuildingsStillDisabled = disabledDangerBuildings.All((dangerBuilding) =>
-		{
-			return dangerBuilding.GetOccupiedCellPositions().Any((tilePosition) =>
-			{
-				return attackBuildingToTiles.Keys.Where((attackBuilding) => attackBuilding != toDestroyBuildingComponent)
-					.Any((attackBuilding) => attackBuildingToTiles[attackBuilding].Contains(tilePosition));
-			});
-		});
-
-		if (allDangerBuildingsStillDisabled) return true;
-
-		var nonDangerBuildings = BuildingComponent.GetNonDangerBuildingComponents(this).Where((nonDangerBuilding) =>
-		{
-			return nonDangerBuilding != toDestroyBuildingComponent;
-		});
-		var anyDangerBuildingContainsPlayerBuilding = disabledDangerBuildings.Any((dangerBuilding) =>
-		{
-			var dangerTiles = dangerBuildingToTiles[dangerBuilding];
-			return nonDangerBuildings.Any((nonDangerBuilding) =>
-			{
-				return nonDangerBuilding.GetOccupiedCellPositions().Any((tilePosition) => dangerTiles.Contains(tilePosition));
-			});
-		});
-
-		return !anyDangerBuildingContainsPlayerBuilding;
 	}
 
 	public HashSet<Vector2I> GetCollectedResourcetiles()
@@ -421,7 +376,7 @@ public partial class GridManager : Node
 
 	private bool WillBuildingDestructionCreateOrphanBuildings(BuildingComponent toDestroyBuildingComponent)
 	{
-		var dependentBuildings = BuildingComponent.GetNonDangerBuildingComponents(this)
+		var dependentBuildings = BuildingComponent.GetValidBuildingComponents(this)
 			.Where((buildingComponent) =>
 			{
 				if (buildingComponent == toDestroyBuildingComponent) return false;
@@ -491,7 +446,7 @@ public partial class GridManager : Node
 
 	private void VisitAllConnectedRobots(BuildingComponent rootBuilding, BuildingComponent toMoveRobot ,List<Vector2I> robotCoverageAtDestination, HashSet<BuildingComponent> visitedBuildings)
 	{
-		var connectedRobots = BuildingComponent.GetNonDangerBuildingComponents(this)
+		var connectedRobots = BuildingComponent.GetValidBuildingComponents(this)
 			.Where((buildingComponent) =>
 			{
 				if (buildingComponent.BuildingResource.BuildableRadius == 0) return false;
@@ -515,7 +470,7 @@ public partial class GridManager : Node
 	private void VisitAllConnectedBuildings(BuildingComponent rootBuilding,	BuildingComponent excludeBuilding, HashSet<BuildingComponent> visitedBuildings
 	)
 	{
-		var dependentBuildings = BuildingComponent.GetNonDangerBuildingComponents(this)
+		var dependentBuildings = BuildingComponent.GetValidBuildingComponents(this)
 			.Where((buildingComponent) =>
 			{
 				if (buildingComponent.BuildingResource.BuildableRadius == 0) return false;
@@ -592,25 +547,6 @@ public partial class GridManager : Node
 			} while (elevationLayer == null && startNode != null);
 
 			tileMapLayerToElevationLayer[layer] = elevationLayer;
-		}
-	}
-
-	private void UpdateDangerOccupiedTiles(BuildingComponent buildingComponent)
-	{
-		occupiedTiles.UnionWith(buildingComponent.GetOccupiedCellPositions());
-
-		if (buildingComponent.BuildingResource.IsDangerBuilding())
-		{
-			var tileArea = buildingComponent.GetTileArea();
-			var tilesInRadius = GetValidTilesInRadius(tileArea, buildingComponent.BuildingResource.DangerRadius).ToHashSet();
-
-			dangerBuildingToTiles[buildingComponent] = tilesInRadius.ToHashSet();
-
-			if (!buildingComponent.IsDisabled)
-			{
-				tilesInRadius.ExceptWith(occupiedTiles);
-				dangerOccupiedTiles.UnionWith(tilesInRadius);
-			}
 		}
 	}
 
@@ -725,17 +661,6 @@ public partial class GridManager : Node
 		EmitSignal(SignalName.GridStateUpdated);
 	}
 
-	private void UpdateAttackTiles(BuildingComponent buildingComponent)
-	{
-		if (!buildingComponent.BuildingResource.IsAttackBuilding()) return;
-
-		var tileArea = buildingComponent.GetTileArea();
-		var newAttackTiles = GetTilesInRadiusFiltered(tileArea, buildingComponent.BuildingResource.AttackRadius, (_) => true)
-			.ToHashSet();
-		attackBuildingToTiles[buildingComponent] = newAttackTiles;
-		attackTiles.UnionWith(newAttackTiles);
-	}
-
 	private void RecalculateGrid()
 	{
 		occupiedTiles.Clear();
@@ -744,11 +669,8 @@ public partial class GridManager : Node
 		allTilesInBuildingRadius.Clear();
 		//collectedResourceTiles.Clear();
 		dangerOccupiedTiles.Clear();
-		attackTiles.Clear();
 		buildingToBuildableTiles.Clear();
 		TileToBuilding.Clear();
-		dangerBuildingToTiles.Clear();
-		attackBuildingToTiles.Clear();
 
 		var buildingComponents = BuildingComponent.GetValidBuildingComponents(this);
 
@@ -765,7 +687,6 @@ public partial class GridManager : Node
 				CheckGroundRobotBelow(buildingComponent);
 			}
 		}
-		CheckDangerBuildingDestruction();
 
 		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
 		EmitSignal(SignalName.GridStateUpdated);
@@ -776,34 +697,6 @@ public partial class GridManager : Node
 		var occupiedTiles = buildingComponent.GetOccupiedCellPositions();
 		foreach( var tile in occupiedTiles)
 		TileToBuilding[tile] = buildingComponent;	
-	}
-
-	private void RecalculateDangerOccupiedTiles()
-	{
-		dangerOccupiedTiles.Clear();
-		var dangerBuildings = BuildingComponent.GetDangerBuildingComponents(this);
-		foreach (var building in dangerBuildings)
-		{
-			UpdateDangerOccupiedTiles(building);
-		}
-	}
-
-	private void CheckDangerBuildingDestruction()
-	{
-		var dangerBuildings = BuildingComponent.GetDangerBuildingComponents(this);
-		foreach (var building in dangerBuildings)
-		{
-			var tileArea = building.GetTileArea();
-			var isInsideAttackTile = tileArea.ToTiles().Any((tilePosition) => attackTiles.Contains(tilePosition));
-			if (isInsideAttackTile)
-			{
-				building.Disable();
-			}
-			else
-			{
-				building.Enable();
-			}
-		}
 	}
 
 	private void CheckStuckRobotNearby(BuildingComponent buildingComponent)
@@ -979,12 +872,10 @@ public partial class GridManager : Node
 	public void UpdateBuildingComponentGridState(BuildingComponent buildingComponent)
 	{
 		var buildingOccupiedTiles = buildingComponent.GetOccupiedCellPositions();
-		UpdateDangerOccupiedTiles(buildingComponent);
 		UpdateValidBuildableTiles(buildingComponent);
 		UpdateRechargeBattery(buildingComponent);
 		UpdateCollectedWoodTiles(buildingComponent);
 		UpdateCollectedMineralTiles(buildingComponent);
-		UpdateAttackTiles(buildingComponent);
 	}
 
 	private void OnBuildingPlaced(BuildingComponent buildingComponent)
@@ -995,7 +886,6 @@ public partial class GridManager : Node
 		{
 			SetBaseAntennaCoverage();
 		}
-		CheckDangerBuildingDestruction();
 	}
 
 	private void OnBuildingMoved(BuildingComponent buildingComponent)

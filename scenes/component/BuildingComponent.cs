@@ -92,18 +92,6 @@ public partial class BuildingComponent : Node2D
 			.Where((buildingComponent) => !buildingComponent.IsDestroying);
 	}
 
-	public static IEnumerable<BuildingComponent> GetDangerBuildingComponents(Node node)
-	{
-		return GetValidBuildingComponents(node)
-			.Where((buildingComponent) => buildingComponent.BuildingResource.IsDangerBuilding());
-	}
-
-	public static IEnumerable<BuildingComponent> GetNonDangerBuildingComponents(Node node)
-	{
-		return GetValidBuildingComponents(node)
-			.Where((buildingComponent) => !buildingComponent.BuildingResource.IsDangerBuilding());
-	}
-
 	public static IEnumerable<BuildingComponent> GetBaseBuilding(Node node)
 	{
 		return node.GetTree()

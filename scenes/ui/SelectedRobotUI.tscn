@@ -1,11 +1,13 @@
-[gd_scene load_steps=3 format=3 uid="uid://q6gmpdlekvro"]
+[gd_scene load_steps=4 format=3 uid="uid://q6gmpdlekvro"]
 
 [ext_resource type="Script" path="res://scenes/ui/SelectedRobotUI.cs" id="1_5d81u"]
 [ext_resource type="Resource" uid="uid://cymfmf2wd1p7x" path="res://resources/building/bridge.tres" id="2_0i1xl"]
+[ext_resource type="Resource" uid="uid://iaratkp3mjgi" path="res://resources/building/antenna.tres" id="3_1v346"]
 
 [node name="SelectedRobotUI" type="CanvasLayer"]
 script = ExtResource("1_5d81u")
 bridgeBuildingResource = ExtResource("2_0i1xl")
+antennaBuildingResource = ExtResource("3_1v346")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchors_preset = 2
@@ -128,6 +130,13 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Place
 Bridge"
+
+[node name="PlaceAntennaButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer4/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Place
+Antenna
+"
 
 [node name="RobotInfoContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ScrollContainer/MarginContainer/HBoxContainer"]
 unique_name_in_owner = true

@@ -82,6 +82,7 @@ public partial class BuildingManager : Node
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
 		gameUI.BuildingResourceSelected += OnBuildingResourceSelected;
 		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceBridgeButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceBridgeButtonPressed));
+		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceAntennaButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceAntennaButtonPressed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
 
 
@@ -117,6 +118,7 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent == null)
 					{
 						selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
+						GameEvents.EmitRobotSelected(selectedBuildingComponent);
 						EmitSignal(SignalName.NewRobotSelected, selectedBuildingComponent);
 						if (selectedBuildingComponent == null) return;
 						HighlightSelectedBuilding(selectedBuildingComponent);
@@ -139,6 +141,7 @@ public partial class BuildingManager : Node
 						EmitSignal(SignalName.NoMoreRobotSelected);
 						selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
 						EmitSignal(SignalName.NewRobotSelected, selectedBuildingComponent);
+						GameEvents.EmitRobotSelected(selectedBuildingComponent);
 						HighlightSelectedBuilding(selectedBuildingComponent);
 						GetViewport().SetInputAsHandled();
 					}
@@ -305,17 +308,6 @@ public partial class BuildingManager : Node
 	{
 		gridManager.ClearHighlightedTiles();
 
-		if (toPlaceBuildingResource.IsAttackBuilding())
-		{
-			gridManager.HighlightDangerOccupiedTiles();
-			gridManager.HighlightBuildableTiles(true);
-		}
-		else
-		{
-			//gridManager.HighlightBuildableTiles();
-			//gridManager.HighlightDangerOccupiedTiles();
-		}
-
 		if (toPlaceBuildingResource.IsBase)
 		{
 			if (IsBasePlaceableAtArea(hoveredGridArea))
@@ -328,29 +320,24 @@ public partial class BuildingManager : Node
 				buildingGhost.SetInvalid();
 			}
 		}
-		else if (!toPlaceBuildingResource.IsAerial)
+		else if (toPlaceBuildingResource.DisplayName == "Antenna")
 		{
-			if (!gridManager.IsInBaseProximity(hoveredGridArea.Position))
-			{
-				buildingGhost.SetInvalid();
-			}
-			else
+			if (selectedBuildingComponent == null) return;
+			if (selectedBuildingComponent.GetTileAndAdjacent().Contains(hoveredGridArea.Position))
 			{
 				buildingGhost.SetValid();
 			}
-		}
-		else if (IsBuildingResourcePlaceableAtArea(hoveredGridArea))
-		{
-			if (toPlaceBuildingResource.IsAttackBuilding())
-			{
-				gridManager.HighlightAttackTiles(hoveredGridArea, toPlaceBuildingResource.AttackRadius);
-			}
 			else
 			{
-				gridManager.HighlightExpandedBuildableTiles(hoveredGridArea, toPlaceBuildingResource.BuildableRadius);
+				buildingGhost.SetInvalid();
 			}
+		}
+		else if (gridManager.IsInBaseProximity(hoveredGridArea.Position) && IsBuildingResourcePlaceableAtArea(hoveredGridArea))
+		{
+			gridManager.HighlightExpandedBuildableTiles(hoveredGridArea, toPlaceBuildingResource.BuildableRadius);
 			gridManager.HighlightResourceTiles(hoveredGridArea, toPlaceBuildingResource.ResourceRadius);
 			buildingGhost.SetValid();
+			
 		}
 		else
 		{
@@ -384,6 +371,13 @@ public partial class BuildingManager : Node
 		{
 			FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
 			return;
+		}
+		else if (buildingResource.DisplayName == "Antenna")
+		{
+			if (!selectedBuildingComponent.GetTileAndAdjacent().Contains(hoveredGridArea.Position))
+			{
+				return;
+			}
 		}
 		else if (!buildingResource.IsBase)
 		{
@@ -665,11 +659,11 @@ public partial class BuildingManager : Node
 		var buildingComponent = BuildingComponent.GetValidBuildingComponents(this)
 			.FirstOrDefault((buildingComponent) =>
 			{
-				return !buildingComponent.BuildingResource.IsBase && buildingComponent.IsTileInBuildingArea(rootCell);
+				return !buildingComponent.BuildingResource.IsBase && buildingComponent.BuildingResource.DisplayName != "Antenna" && buildingComponent.IsTileInBuildingArea(rootCell);
 			});
 		if (buildingComponent == null) return null;
 
-		GameEvents.EmitRobotSelected(buildingComponent);
+		//GameEvents.EmitRobotSelected(buildingComponent);
 		return buildingComponent;
 	}
 
@@ -754,8 +748,7 @@ public partial class BuildingManager : Node
 
 	private bool IsBuildingResourcePlaceableAtArea(Rect2I tileArea)
 	{
-		var isAttackTiles = toPlaceBuildingResource.IsAttackBuilding();
-		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, isAttackTiles);
+		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea);
 		return allTilesBuildable && CanAffordRobot();
 	}
 
@@ -781,8 +774,7 @@ public partial class BuildingManager : Node
 
 	private bool IsBuildingComponentPlaceableAtArea(Rect2I tileArea)
 	{
-		var isAttackTiles = selectedBuildingComponent.BuildingResource.IsAttackBuilding();
-		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea, isAttackTiles);
+		var allTilesBuildable = gridManager.IsTileAreaBuildable(tileArea);
 		return allTilesBuildable;
 	}
 
@@ -892,6 +884,33 @@ public partial class BuildingManager : Node
 		buildingGhostDimensions = buildingResource.Dimensions;
 		toPlaceBuildingResource = buildingResource;
 		//UpdateGridDisplay();
+	}
+
+	private void OnPlaceAntennaButtonPressed(BuildingComponent buildingComponent, BuildingResource buildingResource)
+	{
+		if (buildingComponent == null) return;
+		if (buildingComponent.IsStuck)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot place antenna while stuck", buildingComponent);
+			return;
+		}
+		if (buildingComponent.Battery <= 0)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", buildingComponent);
+			return;
+		}
+		if (AvailableMaterialCount < 1)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough material to place antenna", buildingComponent);
+			return;
+		}
+		ChangeState(State.PlacingBuilding);
+		hoveredGridArea.Size = new Vector2I(1, 1);
+		var buildingSprite = buildingResource.SpriteScene.Instantiate<AnimatedSprite2D>();
+		buildingGhost.AddSpriteNode(buildingSprite);
+		buildingGhost.SetDimensions(buildingResource.Dimensions);
+		buildingGhostDimensions = buildingResource.Dimensions;
+		toPlaceBuildingResource = buildingResource;
 	}
 
 	public void ConsumeWoodForCharging(int amount)

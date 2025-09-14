@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://dgg68kecfjayo"]
+
+[ext_resource type="Texture2D" uid="uid://dd2t2je152mu8" path="res://assets/buildings/antenna.png" id="1_876u2"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_b1w7k"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_876u2")
+}],
+"loop": false,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="Sprite2D" type="AnimatedSprite2D"]
+position = Vector2(32, 32)
+sprite_frames = SubResource("SpriteFrames_b1w7k")
+centered = false
+offset = Vector2(-32, -32)

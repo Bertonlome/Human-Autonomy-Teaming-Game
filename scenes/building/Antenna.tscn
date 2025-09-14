@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://bxkqnboal4ycw"]
+
+[ext_resource type="PackedScene" uid="uid://ce2hqhobmdg47" path="res://scenes/component/BuildingComponent.tscn" id="1_4a2c7"]
+[ext_resource type="PackedScene" uid="uid://dtadqyklji2e7" path="res://scenes/component/BuildingAnimatorComponent.tscn" id="2_jrsms"]
+[ext_resource type="Texture2D" uid="uid://dd2t2je152mu8" path="res://assets/buildings/antenna.png" id="3_tjlyb"]
+
+[node name="Antenna" type="Node2D"]
+y_sort_enabled = true
+
+[node name="BuildingComponent" parent="." node_paths=PackedStringArray("buildingAnimatorComponent") instance=ExtResource("1_4a2c7")]
+buildingResourcePath = "res://resources/building/antenna.tres"
+buildingAnimatorComponent = NodePath("../BuildingAnimatorComponent")
+
+[node name="BuildingAnimatorComponent" parent="." instance=ExtResource("2_jrsms")]
+
+[node name="Sprite2D" type="Sprite2D" parent="BuildingAnimatorComponent"]
+position = Vector2(32, 64)
+texture = ExtResource("3_tjlyb")
+offset = Vector2(0, -32)

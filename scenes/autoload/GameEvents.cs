@@ -29,6 +29,8 @@ public partial class GameEvents : Node
 	[Signal]
 	public delegate void PlaceBridgeButtonPressedEventHandler(BuildingComponent buildingComponent, BuildingResource buildingResource);
 	[Signal]
+	public delegate void PlaceAntennaButtonPressedEventHandler(BuildingComponent buildingComponent, BuildingResource buildingResource);
+	[Signal]
 	public delegate void LiftRobotButtonPressedEventHandler(BuildingComponent buildingComponent, BuildingComponent groundRobot);
 	[Signal]
 	public delegate void GroundRobotBelowUavEventHandler(BuildingComponent groundRobot);
@@ -105,6 +107,11 @@ public partial class GameEvents : Node
 	public static void EmitPlaceBridgeButtonPressed(BuildingComponent buildingComponent, BuildingResource buildingResource)
 	{
 		Instance.EmitSignal(SignalName.PlaceBridgeButtonPressed, buildingComponent, buildingResource);
+	}
+
+	public static void EmitPlaceAntennaButtonPressed(BuildingComponent buildingComponent, BuildingResource buildingResource)
+	{
+		Instance.EmitSignal(SignalName.PlaceAntennaButtonPressed, buildingComponent, buildingResource);
 	}
 
 	public static void EmitLiftRobotButtonPressed(BuildingComponent buildingComponent, BuildingComponent groundRobot)
