@@ -18,15 +18,17 @@ public partial class MainMenu : Node
 	private Button optionsButton;
 	private Button rulesButton;
 
+	private Button watchIntroButton;
+
 	public override void _Ready()
 	{
 		playButton = GetNode<Button>("%PlayButton");
 		quitButton = GetNode<Button>("%QuitButton");
 		optionsButton = GetNode<Button>("%OptionsButton");
 		rulesButton = GetNode<Button>("%RulesButton");
+		watchIntroButton = GetNode<Button>("%IntroButton");
 
-
-		AudioHelpers.RegisterButtons(new Button[] { playButton, quitButton, optionsButton, rulesButton });
+		AudioHelpers.RegisterButtons(new Button[] { playButton, quitButton, optionsButton, rulesButton, watchIntroButton });
 
 		mainMenuContainer = GetNode<Control>("%MainMenuContainer");
 		levelSelectScreen = GetNode<LevelSelectScreen>("%LevelSelectScreen");
@@ -39,6 +41,7 @@ public partial class MainMenu : Node
 		levelSelectScreen.BackPressed += OnLevelSelectBackPressed;
 		optionsButton.Pressed += OnOptionsButtonPressed;
 		rulesButton.Pressed += OnRulesButtonPressed;
+		watchIntroButton.Pressed += OnWatchIntroButtonPressed;
 	}
 
 	private void OnPlayButtonPressed()
@@ -56,6 +59,18 @@ public partial class MainMenu : Node
 	private void OnQuitButtonPressed()
 	{
 		GetTree().Quit();
+	}
+
+	private void OnWatchIntroButtonPressed()
+	{
+		mainMenuContainer.Visible = false;
+		//var introCutscene = IntroCutsceneSceneManager.Instance.IntroCutsceneScene.Instantiate<IntroCutscene>();
+		//AddChild(introCutscene);
+		//introCutscene.CutsceneFinished += () =>
+		//{
+			//introCutscene.QueueFree();
+			//mainMenuContainer.Visible = true;
+		//};
 	}
 
 	private void OnOptionsButtonPressed()
