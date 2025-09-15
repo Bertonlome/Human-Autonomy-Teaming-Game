@@ -118,9 +118,9 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent == null)
 					{
 						selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
+						if (selectedBuildingComponent == null) return;
 						GameEvents.EmitRobotSelected(selectedBuildingComponent);
 						EmitSignal(SignalName.NewRobotSelected, selectedBuildingComponent);
-						if (selectedBuildingComponent == null) return;
 						HighlightSelectedBuilding(selectedBuildingComponent);
 						GetViewport().SetInputAsHandled();
 					}
