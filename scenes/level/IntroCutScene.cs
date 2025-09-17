@@ -59,7 +59,7 @@ public partial class IntroCutScene : Node
 		typeWriterTextLabel.Text = "";
 		imageBackground.Texture = GD.Load<Texture2D>("res://assets/introImage/scene7.png");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
-		await StartTyping("Remember, the goal of the mission is to investigate and analyze the mysterious monolith,\n the ground rover is equipped for that task.");
+		await StartTyping("Remember, the goal of the mission is to locate and analyze the mysterious monolith,\n the ground rover is equipped for that task.");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
 		typeWriterTextLabel.Text = "";
 		imageBackground.Texture = GD.Load<Texture2D>("res://assets/introImage/scene7bis.png");
@@ -69,17 +69,17 @@ public partial class IntroCutScene : Node
 		typeWriterTextLabel.Text = "";
 		imageBackground.Texture = GD.Load<Texture2D>("res://assets/introImage/scene8.png");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
-		await StartTyping("Other tasks await:\nstrange minerals — red, green, and blue —\nmust be collected and analyzed.");
+		await StartTyping("While on the search for the monolith, try to gather samples of alien minerals \nCarry them back to the base for analysis.");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
 		typeWriterTextLabel.Text = "";
 		imageBackground.Texture = GD.Load<Texture2D>("res://assets/introImage/scene9.png");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
-		await StartTyping("Beware, the autonomous robots have limits:\nthey must be within antenna coverage\nto operate across the planet.\n Robots can chain and deploy antennas to extend coverage.");
+		await StartTyping("Beware, the autonomous robots have limits:\nthey must be within antenna coverage\nto operate.\n Robots can chain and deploy antennas to extend coverage.");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
 		typeWriterTextLabel.Text = "";
 		imageBackground.Texture = GD.Load<Texture2D>("res://assets/introImage/scene10.png");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
-		await StartTyping("Also, batteries are finite.\nRovers must gather alien wood\nand return it to the base to power up the recharge station.");
+		await StartTyping("Also, batteries are finite.\nRovers must gather wood\nand return it to the base to power up the recharge station.");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
 		typeWriterTextLabel.Text = "";
 		imageBackground.Texture = GD.Load<Texture2D>("res://assets/introImage/scene11.png");
@@ -99,7 +99,7 @@ public partial class IntroCutScene : Node
 		typeWriterTextLabel.Text = "";
 		imageBackground.Texture = GD.Load<Texture2D>("res://assets/introImage/scene14.png");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
-		await StartTyping("Your mission: Learn how to build trust, coordination, and understanding in Human-Autonomy Teams.\nAre you ready?");
+		await StartTyping("Your mission: Learn how to improve task allocation, coordination, and control interface in Human-Autonomy Teams.\nAre you ready?");
 		await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
 	}
 
