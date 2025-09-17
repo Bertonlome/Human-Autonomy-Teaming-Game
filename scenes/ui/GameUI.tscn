@@ -161,6 +161,7 @@ focus_mode = 0
 text = "Stop all robots"
 
 [node name="MarginContainer2" type="MarginContainer" parent="."]
+visible = false
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0

@@ -99,9 +99,7 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent != null)
 					{
 						Vector2I targetGridCell = gridManager.GetMouseGridCellPosition();
-						Vector2I currentPos = selectedBuildingComponent.GetGridCellPosition();
-						var moves = selectedBuildingComponent.GetMovesToReachTile(currentPos, targetGridCell);
-						selectedBuildingComponent.MoveAlongPath(moves);
+						selectedBuildingComponent.MoveAlongPath(targetGridCell);
 						GetViewport().SetInputAsHandled();
 					}
 					//DestroyBuildingAtHoveredCellPosition();
@@ -128,6 +126,7 @@ public partial class BuildingManager : Node
 					{
 						//UnHighlightSelectedBuilding(selectedBuildingComponent);
 						//selectedBuildingComponent = null;
+						gridManager.HighlightBuildableTiles();
 						GetViewport().SetInputAsHandled();
 						return;
 					}

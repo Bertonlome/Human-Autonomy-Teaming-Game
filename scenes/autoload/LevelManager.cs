@@ -11,6 +11,11 @@ public partial class LevelManager : Node
 	[Export]
 	private LevelDefinitionResource[] levelDefinitions;
 
+	[Export(PropertyHint.File, "*.tscn")]
+	private string introCutScenePath;
+	[Export(PropertyHint.File, "*.tscn")]
+	private string mainMenuScenePath;
+
 	private static int currentLevelIndex;
 
 	public override void _Notification(int what)
@@ -33,6 +38,16 @@ public partial class LevelManager : Node
 
 		var levelDefinition = instance.levelDefinitions[currentLevelIndex];
 		instance.GetTree().ChangeSceneToFile(levelDefinition.LevelScenePath);
+	}
+
+	public static void ChangeToIntroCutScene()
+	{
+		instance.GetTree().ChangeSceneToFile(instance.introCutScenePath);
+	}
+
+	public static void ChangeToMainMenu()
+	{
+		instance.GetTree().ChangeSceneToFile(instance.mainMenuScenePath);
 	}
 
 	public static void ChangeToNextLevel()

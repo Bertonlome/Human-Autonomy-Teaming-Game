@@ -19,7 +19,6 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Button trackRobotButton;
 	private Button gradientSearchButton;
 	private Button returnToBaseButton;
-	private Button rewindMovesButton;
 	private Button startExplorButton;
 	private OptionButton explorModeOptionsButton;
 	private Label gravAnomValueLabel;
@@ -46,7 +45,6 @@ public partial class SelectedRobotUI : CanvasLayer
 		Random,
 		Gradient,
 		ReturnToBase,
-		Rewind,
 		None
 	}
 
@@ -81,7 +79,6 @@ public partial class SelectedRobotUI : CanvasLayer
 		randomExplorButton = GetNode<Button>("%RandomExplorButton");
 		gradientSearchButton = GetNode<Button>("%GradientSearchButton");
 		returnToBaseButton = GetNode<Button>("%ReturnToBaseButton");
-		rewindMovesButton = GetNode<Button>("%RewindMovesButton");
 		stopExplorbutton = GetNode<Button>("%StopExplorButton");
 		trackRobotButton = GetNode<Button>("%TrackRobotButton");
 		startExplorButton = GetNode<Button>("%StartExplorButton");
@@ -96,7 +93,6 @@ public partial class SelectedRobotUI : CanvasLayer
 		randomExplorButton.Pressed += OnRandomExplorButtonPressed;
 		gradientSearchButton.Pressed += OnGradientSearchButtonPressed;
 		returnToBaseButton.Pressed += OnReturnToBaseButtonPressed;
-		rewindMovesButton.Pressed += OnRewindMovesButtonPressed;
 		stopExplorbutton.Pressed += OnStopExplorButtonPressed;
 		trackRobotButton.Pressed += OnTrackRobotButtonPressed;
 		explorModeOptionsButton.ItemSelected += OnOptionsButtonItemSelected;
@@ -171,11 +167,6 @@ public partial class SelectedRobotUI : CanvasLayer
 		statusLabel.Text = "Returning to base";
 	}
 
-	private void OnRewindMovesButtonPressed()
-	{
-		selectedBuildingComponent.EnableRewindMovesMode();
-		statusLabel.Text = "Returning to base";
-	}
 
 	private void OnOptionsButtonItemSelected(long index)
 	{
@@ -189,10 +180,6 @@ public partial class SelectedRobotUI : CanvasLayer
 		}
 		else if (index == 2)
 		{
-			currentexplorMode = ExplorMode.Rewind;
-		}
-		else if (index == 3)
-		{
 			currentexplorMode = ExplorMode.ReturnToBase;
 		}
 	}
@@ -201,8 +188,7 @@ public partial class SelectedRobotUI : CanvasLayer
 	{
 		if (currentexplorMode == ExplorMode.Random || explorModeOptionsButton.Selected == 0) OnRandomExplorButtonPressed();
 		else if (currentexplorMode == ExplorMode.Gradient || explorModeOptionsButton.Selected == 1) OnGradientSearchButtonPressed();
-		else if (currentexplorMode == ExplorMode.Rewind || explorModeOptionsButton.Selected == 2) OnRewindMovesButtonPressed();
-		else if (currentexplorMode == ExplorMode.ReturnToBase || explorModeOptionsButton.Selected == 3) OnReturnToBaseButtonPressed();
+		else if (currentexplorMode == ExplorMode.ReturnToBase || explorModeOptionsButton.Selected == 2) OnReturnToBaseButtonPressed();
 	}
 
 	private void OnStopExplorButtonPressed()
@@ -300,7 +286,6 @@ public partial class SelectedRobotUI : CanvasLayer
 		}
 		gradientSearchButton.Pressed -= OnGradientSearchButtonPressed;
 		returnToBaseButton.Pressed -= OnReturnToBaseButtonPressed;
-		rewindMovesButton.Pressed -= OnRewindMovesButtonPressed;
 		explorModeOptionsButton.ItemSelected -= OnOptionsButtonItemSelected;
 		startExplorButton.Pressed -= OnStartExplorButtonSelected;
 		if(placeAntennaButton.IsConnected("pressed", Callable.From(OnPlaceAntennaButtonPressed)))

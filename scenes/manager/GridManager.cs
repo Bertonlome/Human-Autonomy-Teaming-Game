@@ -155,7 +155,7 @@ public partial class GridManager : Node
 		{
 			tileSetToCheck = GetBuildableTileSet(isAttackTiles).Except(BuildingManager.selectedBuildingComponent.GetOccupiedCellPositions());
 		}
-		else if (isBase)
+		if (isBase)
 		{
 			tileSetToCheck = allTilesBuildableOnTheMap;
 		}
@@ -663,12 +663,15 @@ public partial class GridManager : Node
 
 	private void RecalculateGrid()
 	{
+		//var stopwatch = new System.Diagnostics.Stopwatch();
+		//stopwatch.Start();
+
 		occupiedTiles.Clear();
 		validBuildableTiles.Clear();
 		validBuildableAttackTiles.Clear();
 		allTilesInBuildingRadius.Clear();
 		//collectedResourceTiles.Clear();
-		dangerOccupiedTiles.Clear();
+		//dangerOccupiedTiles.Clear();
 		buildingToBuildableTiles.Clear();
 		TileToBuilding.Clear();
 
@@ -690,6 +693,8 @@ public partial class GridManager : Node
 
 		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
 		EmitSignal(SignalName.GridStateUpdated);
+		//stopwatch.Stop();
+		//GD.Print($"RecalculateGrid took {stopwatch.ElapsedMilliseconds} ms");
 	}
 
 	private void UpdateTilesToBuilding(BuildingComponent buildingComponent)
@@ -890,9 +895,9 @@ public partial class GridManager : Node
 
 	private void OnBuildingMoved(BuildingComponent buildingComponent)
 	{
-		ClearHighlightedTiles();
+		//ClearHighlightedTiles();
 		CallDeferred("RecalculateGrid");
-		HighlightBuildableTiles();
+		//HighlightBuildableTiles();
 	}
 
 	private void OnBuildingStuck(BuildingComponent buildingComponent)

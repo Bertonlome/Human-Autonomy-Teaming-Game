@@ -1,0 +1,104 @@
+[gd_scene load_steps=4 format=3 uid="uid://jj1sgfeesqna"]
+
+[ext_resource type="Script" path="res://scenes/level/IntroCutScene.cs" id="1_kwdju"]
+[ext_resource type="Texture2D" uid="uid://dnmtseao4q3vg" path="res://assets/HAT_game_logo_cropped.png" id="2_i4gyq"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_s2qo7"]
+load_path = "res://.godot/imported/scene1.png-8d55bebd00bd400730fcb36d4cb16f01.ctex"
+
+[node name="IntroCutScene" type="Node"]
+script = ExtResource("1_kwdju")
+mainMenuScenePath = "res://scenes/ui/MainMenu.tscn"
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(640, 360)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="MainMenuContainer" type="MarginContainer" parent="CanvasLayer"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Control" type="Control" parent="CanvasLayer/MainMenuContainer"]
+layout_mode = 2
+
+[node name="Image" type="TextureRect" parent="CanvasLayer/MainMenuContainer/Control"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -12.0
+offset_top = -20.0
+offset_right = 323.0
+offset_bottom = 382.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.9, 0.8)
+texture = SubResource("CompressedTexture2D_s2qo7")
+
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/MainMenuContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/MainMenuContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="TypeWriterText" type="Label" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Je suis un exemple de texte
+Avec un retour a la ligne, et une virgule et un point."
+
+[node name="PanelContainer2" type="PanelContainer" parent="CanvasLayer/MainMenuContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/MainMenuContainer/PanelContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ReturnToMenuButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer2/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Return To Menu"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer"]
+offset_left = 16.0
+offset_right = 128.0
+offset_bottom = 64.0
+
+[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer"]
+z_index = 1
+layout_mode = 2
+theme_override_constants/line_spacing = 2
+theme_override_font_sizes/font_size = 12
+text = "EXOPLANET
+EXPLORATION
+GAME"
+
+[node name="Control" type="Control" parent="CanvasLayer/HBoxContainer"]
+z_index = -1
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/HBoxContainer/Control"]
+z_index = 1
+layout_mode = 2
+offset_left = -31.0
+offset_top = 8.0
+offset_right = 129.0
+offset_bottom = 32.0
+texture = ExtResource("2_i4gyq")
+expand_mode = 2
+stretch_mode = 4

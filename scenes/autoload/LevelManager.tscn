@@ -8,3 +8,5 @@
 [node name="LevelManager" type="Node"]
 script = ExtResource("1_olqhd")
 levelDefinitions = Array[Object]([ExtResource("5_us0cl"), ExtResource("3_dltol"), ExtResource("4_sxdgd")])
+introCutScenePath = "res://scenes/level/IntroCutScene.tscn"
+mainMenuScenePath = "res://scenes/ui/MainMenu.tscn"

@@ -63,14 +63,7 @@ public partial class MainMenu : Node
 
 	private void OnWatchIntroButtonPressed()
 	{
-		mainMenuContainer.Visible = false;
-		//var introCutscene = IntroCutsceneSceneManager.Instance.IntroCutsceneScene.Instantiate<IntroCutscene>();
-		//AddChild(introCutscene);
-		//introCutscene.CutsceneFinished += () =>
-		//{
-			//introCutscene.QueueFree();
-			//mainMenuContainer.Visible = true;
-		//};
+		LevelManager.ChangeToIntroCutScene();
 	}
 
 	private void OnOptionsButtonPressed()

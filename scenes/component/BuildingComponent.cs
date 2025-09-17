@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using Game.Autoload;
 using Game.Manager;
 using Game.Resources.Building;
@@ -75,7 +76,6 @@ public partial class BuildingComponent : Node2D
 	{
 		Random,
 		GradientSearch,
-		RewindMoves,
 		ReturnToBase,
 		MoveToPos,
 		None
@@ -253,13 +253,6 @@ public partial class BuildingComponent : Node2D
 		currentExplorMode = ExplorMode.GradientSearch;
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 		GradientSearch();
-	}
-
-	public void EnableRewindMovesMode()
-	{
-		currentExplorMode = ExplorMode.RewindMoves;
-		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-		RewindMoves();
 	}
 
 	public void EnableReturnToBase()
@@ -493,9 +486,11 @@ public partial class BuildingComponent : Node2D
 	}
 
 	public bool cancelMoveRequested = false;
-	public async void MoveAlongPath(List<string> moves)
+
+
+	public async void MoveAlongPath(Vector2I targetPosition)
 	{
-		DetachRobot();
+		if (AttachedRobot is not null) DetachRobot();
 		// Cancel any previous movement
 		cancelMoveRequested = true;
 		await ToSignal(GetTree().CreateTimer(0.01f), "timeout"); // Give time for previous to exit
@@ -507,11 +502,6 @@ public partial class BuildingComponent : Node2D
 			FloatingTextManager.ShowMessageAtBuildingPosition("Already moving!", this);
 			return;
 		}
-		if (Battery < moves.Count)
-		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to move automatically", this);
-			return;
-		}
 		if (IsStuck)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot move while stuck", this);
@@ -520,43 +510,76 @@ public partial class BuildingComponent : Node2D
 		currentExplorMode = ExplorMode.MoveToPos;
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 
-		foreach (var direction in moves)
+		Vector2I currentPos = GetGridCellPosition();
+		int maxSteps = 100; // Prevent infinite loops
+		int steps = 0;
+		int visitedLimit = 5; // How many tiles to remember
+		Queue<Vector2I> visited = new Queue<Vector2I>();
+		HashSet<Vector2I> visitedSet = new HashSet<Vector2I>();
+		var chosenDirection = (string)null;
+		bool couldMove = true;
+		while (currentPos != targetPosition && !cancelMoveRequested && steps < maxSteps)
 		{
-			if (!CanMove)
-				break;
-			if (cancelMoveRequested)
+			if (!couldMove)
+			{
+				chosenDirection = GetPerpendicularDirection(chosenDirection);
+				Vector2I nextPos = currentPos;
+				if (chosenDirection == MOVE_UP) nextPos += new Vector2I(0, -1);
+				else if (chosenDirection == MOVE_DOWN) nextPos += new Vector2I(0, 1);
+				else if (chosenDirection == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
+				else if (chosenDirection == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
+				if (visitedSet.Contains(nextPos))
 				{
-					currentExplorMode = ExplorMode.None;
-					EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-					return; // Stop movement
+					chosenDirection = GetOppositeDirection(chosenDirection);
 				}
-			CanMove = buildingManager.MoveInDirectionAutomated(this, direction);
+			}
+			else
+			{
+			// Plan only the next move
+			var nextMoves = GetMovesToReachTile(currentPos, targetPosition);
+			// Filter out moves that would revisit a recently visited tile
+			Vector2I nextPos = currentPos;
+			if (nextMoves[0] == MOVE_UP) nextPos += new Vector2I(0, -1);
+			else if (nextMoves[0] == MOVE_DOWN) nextPos += new Vector2I(0, 1);
+			else if (nextMoves[0] == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
+			else if (nextMoves[0] == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
+			if (!visitedSet.Contains(nextPos))
+			{
+				chosenDirection = nextMoves[0];
+			}
+			else
+			{
+				chosenDirection = GetPerpendicularDirection(nextMoves[0]);
+			}
+			}
+
+			couldMove = buildingManager.MoveInDirectionAutomated(this, chosenDirection);
 			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+			Vector2I newPos = GetGridCellPosition();
+			// Mark as visited
+			visited.Enqueue(newPos);
+			visitedSet.Add(newPos);
+			if (visited.Count > visitedLimit)
+			{
+				var old = visited.Dequeue();
+				visitedSet.Remove(old);
+			}
+			currentPos = newPos;
+			steps++;
 		}
 		currentExplorMode = ExplorMode.None;
 		CanMove = true; // Reset in case it wasn't already
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
-	public async void RewindMoves()
+	private string GetPerpendicularDirection(string direction)
 	{
-		DetachRobot();
-		if (Battery < moveHistory.Count)
+		return direction switch
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to go back to base automatically", this);
-		}
-		if (!IsStuck && Battery > moveHistory.Count)
-		{
-			var reversedHistoryMove = GenerateHistoryMoveList();
-			foreach (StringName direction in reversedHistoryMove)
-			{
-				buildingManager.MoveInDirectionAutomated(this, direction);
-
-				await ToSignal(GetTree().CreateTimer(this.BuildingResource.moveInterval), "timeout");
-			}
-		}
-		currentExplorMode = ExplorMode.None;
-		moveHistory.Clear();
+			"move_up" or "move_down" => (new Random().Next(0, 2) == 0) ? "move_left" : "move_right",
+			"move_left" or "move_right" => (new Random().Next(0, 2) == 0) ? "move_up" : "move_down",
+			_ => direction,
+		};
 	}
 
 	public async void ReturnToBase()

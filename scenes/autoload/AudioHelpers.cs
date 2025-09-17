@@ -14,13 +14,18 @@ public partial class AudioHelpers : Node
 	private AudioStreamPlayer victoryAudioStreamPlayer;
 	private AudioStreamPlayer musicAudioStreamPlayer;
 	private AudioStreamPlayer robotMoveAudioStreamPlayer;
-
-
+	private AudioStreamPlayer endOfLineSoundStreamPlayer;
+	private AudioStreamPlayer characterOneStreamPlayer;
+	private AudioStreamPlayer characterTwoStreamPlayer;
+	private AudioStreamPlayer characterThreeStreamPlayer;
+	private AudioStreamPlayer characterFourStreamPlayer;
+	private AudioStreamPlayer introMusicStreamPlayer;
+	private int noiseReductionForTextSounds = 35;
 
 
 	public override void _Notification(int what)
 	{
-		if(what == NotificationSceneInstantiated)
+		if (what == NotificationSceneInstantiated)
 		{
 			instance = this;
 		}
@@ -33,8 +38,15 @@ public partial class AudioHelpers : Node
 		victoryAudioStreamPlayer = GetNode<AudioStreamPlayer>("VictoryAudioStreamPlayer");
 		musicAudioStreamPlayer = GetNode<AudioStreamPlayer>("MusicAudioStreamPlayer");
 		robotMoveAudioStreamPlayer = GetNode<AudioStreamPlayer>("RobotMoveAudioStreamPlayer");
+		endOfLineSoundStreamPlayer = GetNode<AudioStreamPlayer>("EndOfLineSoundStreamPlayer");
+		characterOneStreamPlayer = GetNode<AudioStreamPlayer>("CharacterOneStreamPlayer");
+		characterTwoStreamPlayer = GetNode<AudioStreamPlayer>("CharacterTwoStreamPlayer");
+		characterThreeStreamPlayer = GetNode<AudioStreamPlayer>("CharacterThreeStreamPlayer");
+		characterFourStreamPlayer = GetNode<AudioStreamPlayer>("CharacterFourStreamPlayer");
+		introMusicStreamPlayer = GetNode<AudioStreamPlayer>("IntroMusicStreamPlayer");
 
 		musicAudioStreamPlayer.Finished += OnMusicFinished;
+		introMusicStreamPlayer.Finished += OnIntroMusicFinished;
 
 	}
 
@@ -52,6 +64,46 @@ public partial class AudioHelpers : Node
 		instance.explosionAudioStreamPlayer.Play();
 	}
 
+	public static void PlayCharacterOne()
+	{
+		instance.characterOneStreamPlayer.VolumeDb = - instance.noiseReductionForTextSounds;
+		instance.characterOneStreamPlayer.Play();
+	}
+	public static void PlayCharacterTwo()
+	{
+		instance.characterTwoStreamPlayer.VolumeDb = - instance.noiseReductionForTextSounds;
+		instance.characterTwoStreamPlayer.Play();
+	}
+	public static void PlayCharacterThree()
+	{
+		instance.characterThreeStreamPlayer.VolumeDb = - instance.noiseReductionForTextSounds;
+		instance.characterThreeStreamPlayer.Play();
+	}
+	public static void PlayCharacterFour()
+	{
+		instance.characterFourStreamPlayer.VolumeDb = - instance.noiseReductionForTextSounds;
+		instance.characterFourStreamPlayer.Play();
+	}
+	public static void PlayEndOfLineSound()
+	{
+		instance.endOfLineSoundStreamPlayer.VolumeDb = - instance.noiseReductionForTextSounds / 1.5f;
+		instance.endOfLineSoundStreamPlayer.Play();
+	}
+
+	public static void PlayIntroMusic()
+	{
+		instance.musicAudioStreamPlayer.Stop();
+		instance.introMusicStreamPlayer.Play();
+	}
+
+	public static void PlayMusic()
+	{
+		instance.introMusicStreamPlayer.Stop();
+		if (instance.musicAudioStreamPlayer.Playing)
+			return;
+		instance.musicAudioStreamPlayer.Play();
+	}
+
 	public static void PlayMove()
 	{
 		instance.robotMoveAudioStreamPlayer.Play();
@@ -66,6 +118,10 @@ public partial class AudioHelpers : Node
 	}
 
 	private void OnMusicFinished()
+	{
+		GetTree().CreateTimer(5).Timeout += OnMusicDelayTimerTimeout;
+	}
+	private void OnIntroMusicFinished()
 	{
 		GetTree().CreateTimer(5).Timeout += OnMusicDelayTimerTimeout;
 	}

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://dtanw3tk455ur"]
+[gd_scene load_steps=21 format=3 uid="uid://dtanw3tk455ur"]
 
 [ext_resource type="Script" path="res://scenes/autoload/AudioHelpers.cs" id="1_s3wg7"]
 [ext_resource type="AudioStream" uid="uid://qsbn74jjuvup" path="res://assets/audio/explosion_01.wav" id="2_yoq2d"]
@@ -12,6 +12,12 @@
 [ext_resource type="AudioStream" uid="uid://bxcmasc2a615x" path="res://assets/audio/Future Renaissance _ Epic Sci-Fi Trailer Music.mp3" id="10_co8tf"]
 [ext_resource type="AudioStream" uid="uid://mj063tcx2r73" path="res://assets/audio/Stranger Things Style Music [Royalty Free No Copyright] [ ezmp3.cc ].mp3" id="11_lmpfm"]
 [ext_resource type="AudioStream" uid="uid://broplbacxltq7" path="res://assets/audio/robot_move.wav" id="12_ptdvl"]
+[ext_resource type="AudioStream" uid="uid://c3isigaglv5d" path="res://assets/audio/long_blip.wav" id="13_4afek"]
+[ext_resource type="AudioStream" uid="uid://gblyti5i6k53" path="res://assets/audio/question_001.wav" id="14_7klck"]
+[ext_resource type="AudioStream" uid="uid://f0880o7eh8pg" path="res://assets/audio/question_002.wav" id="15_2t3p7"]
+[ext_resource type="AudioStream" uid="uid://dn5kiqkx227mp" path="res://assets/audio/question_003.wav" id="16_7m8lt"]
+[ext_resource type="AudioStream" uid="uid://caljj3d1nbyt2" path="res://assets/audio/question_004.wav" id="17_n2ltc"]
+[ext_resource type="AudioStream" uid="uid://bv4ksa82uohfn" path="res://assets/audio/intergalactic-landing-327868.mp3" id="18_2sneg"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_emq37"]
 streams_count = 3
@@ -55,3 +61,28 @@ bus = &"Music"
 stream = ExtResource("12_ptdvl")
 volume_db = -10.0
 bus = &"SFX"
+
+[node name="EndOfLineSoundStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("13_4afek")
+bus = &"SFX"
+
+[node name="CharacterOneStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("14_7klck")
+bus = &"SFX"
+
+[node name="CharacterTwoStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("15_2t3p7")
+bus = &"SFX"
+
+[node name="CharacterThreeStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("16_7m8lt")
+bus = &"SFX"
+
+[node name="CharacterFourStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("17_n2ltc")
+bus = &"SFX"
+
+[node name="IntroMusicStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("18_2sneg")
+volume_db = -18.0
+bus = &"Music"
