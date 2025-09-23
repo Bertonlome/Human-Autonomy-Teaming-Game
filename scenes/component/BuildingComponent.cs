@@ -57,6 +57,8 @@ public partial class BuildingComponent : Node2D
 	private List<(Vector2I, StringName)> moveHistory = new();
 
 	private HashSet<Vector2I> occupiedTiles = new();
+	private HashSet<Vector2I> scannedTiles = new HashSet<Vector2I>();
+	private HashSet<Vector2I> obstacleTiles = new HashSet<Vector2I>();
 
 	private readonly StringName MOVE_UP = "move_up";
 	private readonly StringName MOVE_DOWN = "move_down";
@@ -143,29 +145,27 @@ public partial class BuildingComponent : Node2D
 
     public override void _Process(double delta)
     {
-		switch(currentExplorMode)
-		{
-			case ExplorMode.Random:
-			if (!IsStuck)
-			{
-				// Update the timer
-				timerMove += (float)delta;
-
-				// Check if enough time has passed to move
-				if (timerMove >= this.BuildingResource.moveInterval)
-				{
-					var randDir = buildingManager.GetRandomDirection(previousDir);
-					//GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
-					buildingManager.MoveInDirectionAutomated(this, randDir);
-					previousDir = randDir;
-					timerMove = 0.0f; // Reset the timer
-				}
-			}
-			break;
-			case ExplorMode.GradientSearch:
-			break;
-		}
-        
+		//switch(currentExplorMode)
+		//{
+			//case ExplorMode.Random:
+			//if (!IsStuck)
+			//{
+				//// Update the timer
+				//timerMove += (float)delta;
+//
+				//// Check if enough time has passed to move
+				//if (timerMove >= this.BuildingResource.moveInterval)
+				//{
+					//var randDir = buildingManager.GetRandomDirection(previousDir);
+					////GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
+					//buildingManager.MoveInDirectionAutomated(this, randDir);
+					//previousDir = randDir;
+					//timerMove = 0.0f; // Reset the timer
+				//}
+			//}
+			//break;
+		//}
+        //	 Handle recharging	
 		if(IsRecharging)
 		{
 			timerRecharge += (float)delta;
@@ -246,6 +246,7 @@ public partial class BuildingComponent : Node2D
 	{
 		currentExplorMode = ExplorMode.Random;
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+		RandomExplore();
 	}
 
 	public void EnableGradientSearchMode()
@@ -497,7 +498,7 @@ public partial class BuildingComponent : Node2D
 
 		cancelMoveRequested = false; // Reset for this movement
 
-		if (currentExplorMode != ExplorMode.None)
+		if (currentExplorMode != ExplorMode.None && currentExplorMode != ExplorMode.ReturnToBase && currentExplorMode != ExplorMode.Random)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Already moving!", this);
 			return;
@@ -505,6 +506,12 @@ public partial class BuildingComponent : Node2D
 		if (IsStuck)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot move while stuck", this);
+			return;
+		}
+		if (Battery <= 0)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Battery depleted!", this);
+			currentExplorMode = ExplorMode.None;
 			return;
 		}
 		currentExplorMode = ExplorMode.MoveToPos;
@@ -528,7 +535,7 @@ public partial class BuildingComponent : Node2D
 				else if (chosenDirection == MOVE_DOWN) nextPos += new Vector2I(0, 1);
 				else if (chosenDirection == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
 				else if (chosenDirection == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-				if (visitedSet.Contains(nextPos))
+				if (visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos))
 				{
 					chosenDirection = GetOppositeDirection(chosenDirection);
 				}
@@ -543,7 +550,7 @@ public partial class BuildingComponent : Node2D
 			else if (nextMoves[0] == MOVE_DOWN) nextPos += new Vector2I(0, 1);
 			else if (nextMoves[0] == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
 			else if (nextMoves[0] == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-			if (!visitedSet.Contains(nextPos))
+			if (!visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos))
 			{
 				chosenDirection = nextMoves[0];
 			}
@@ -552,8 +559,13 @@ public partial class BuildingComponent : Node2D
 				chosenDirection = GetPerpendicularDirection(nextMoves[0]);
 			}
 			}
-
+			var attemptPos = currentPos;
+			if (chosenDirection == MOVE_UP) attemptPos += new Vector2I(0, -1);
+			else if (chosenDirection == MOVE_DOWN) attemptPos += new Vector2I(0, 1);
+			else if (chosenDirection == MOVE_LEFT) attemptPos += new Vector2I(-1, 0);
+			else if (chosenDirection == MOVE_RIGHT) attemptPos += new Vector2I(1, 0);
 			couldMove = buildingManager.MoveInDirectionAutomated(this, chosenDirection);
+			obstacleTiles.Add(attemptPos);
 			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 			Vector2I newPos = GetGridCellPosition();
 			// Mark as visited
@@ -582,29 +594,14 @@ public partial class BuildingComponent : Node2D
 		};
 	}
 
-	public async void ReturnToBase()
+	public void ReturnToBase()
 	{
 		DetachRobot();
 		var myBase = GetBaseBuilding(this).FirstOrDefault();
-		var movesToReachBase = GetMovesToReachTile(GetGridCellPosition(), myBase.GetGridCellPosition());
-		if(Battery < movesToReachBase.Count)
-		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Not enough battery to go back to base automatically", this);
-		}
-		if (!IsStuck && Battery > movesToReachBase.Count)
-		{
-			foreach(StringName direction in movesToReachBase)
-			{
-				if (!CanMove)
-					break;
-				CanMove = buildingManager.MoveInDirectionAutomated(this, direction);
-
-				await ToSignal(GetTree().CreateTimer(this.BuildingResource.moveInterval), "timeout");
-			}
-		}
-		currentExplorMode = ExplorMode.None;
-		CanMove = true; // Reset in case it wasn't already
-		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+		var basePosition = myBase.GetGridCellPosition();
+		basePosition.X += 2; // Adjust to drop off position
+		basePosition.Y += 3;
+		MoveAlongPath(basePosition);
 	}
 
 	public List<string> GetMovesToReachTile(Vector2I currentPosition, Vector2I targetPosition)
@@ -699,9 +696,83 @@ public partial class BuildingComponent : Node2D
 	}
 
 
+	public async void RandomExplore()
+	{
+		// 1. Get all tiles under antenna coverage
+		var antennaTiles = buildingManager.gridManager.baseAntennaCoveredTiles; // HashSet<Vector2I>
+		if (antennaTiles == null || antennaTiles.Count == 0)
+		{
+			GD.Print("No antenna coverage tiles found.");
+			return;
+		}
+
+		// 2. Set of scanned tiles
+		int scanRadius = BuildingResource.AnomalySensorRadius;
+
+		// 3. Start from base
+		var baseRect = buildingManager.gridManager.baseArea; // Rect2I
+		Vector2I start = new Vector2I(baseRect.Position.X + 2, baseRect.Position.Y + 3); // Drop-off position
+		Vector2I current = GetGridCellPosition();
+		if (!antennaTiles.Contains(current))
+			await MoveAlongPathAsync(start);
+
+		// 4. Main exploration loop
+		int maxSteps = 1000;
+		int steps = 0;
+		while (scannedTiles.Count < antennaTiles.Count && steps < maxSteps && Battery > 50)
+		{
+			// Scan all tiles within radius
+			foreach (var tile in GetTilesWithinDistance(current, scanRadius))
+			{
+				if (antennaTiles.Contains(tile))
+					scannedTiles.Add(tile);
+			}
+
+			// Find next best tile to move to (greedy: maximizes new coverage)
+			Vector2I? bestNext = null;
+			int bestNew = 0;
+			foreach (var candidate in antennaTiles)
+			{
+				if (candidate == current) continue;
+				// Only consider reachable tiles
+				var path = GetMovesToReachTile(current, candidate);
+				if (path.Count == 0) continue;
+				// How many new tiles would be scanned from there?
+				int newTiles = 0;
+				foreach (var t in GetTilesWithinDistance(candidate, scanRadius))
+					if (antennaTiles.Contains(t) && !scannedTiles.Contains(t)) newTiles++;
+				if (newTiles > bestNew)
+				{
+					bestNew = newTiles;
+					bestNext = candidate;
+				}
+			}
+			if (bestNext == null || bestNew == 0)
+				break; // No more progress
+
+			await MoveAlongPathAsync(bestNext.Value);
+			current = GetGridCellPosition();
+			steps++;
+		}
+		GD.Print($"RandomExplore finished. Scanned {scannedTiles.Count} / {antennaTiles.Count} tiles.");
+	}
+
+	// Helper: awaitable MoveAlongPath
+	private async System.Threading.Tasks.Task MoveAlongPathAsync(Vector2I targetPosition)
+	{
+		var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+		void OnArrived() { tcs.TrySetResult(true); }
+		// Optionally, you can add a signal for arrival and connect/disconnect here
+		MoveAlongPath(targetPosition);
+		// Wait until robot arrives at target (simple polling)
+		while (GetGridCellPosition() != targetPosition || currentExplorMode == ExplorMode.MoveToPos)
+			await ToSignal(GetTree().CreateTimer(0.1f), "timeout");
+		tcs.TrySetResult(true);
+		await tcs.Task;
+	}
 
 
-public async void GradientSearch()
+	public async void GradientSearch()
 	{
 		DetachRobot();
 		// Cancel any previous gradient search
@@ -757,7 +828,7 @@ public async void GradientSearch()
 			}
 		}
 		currentExplorMode = ExplorMode.None;
-		EmitSignal(SignalName.ModeChanged, "Reached Maxima"); 
+		EmitSignal(SignalName.ModeChanged, "Reached Maxima");
 		CanMove = true; // Reset at the end, in case it wasn't already
 	}
 
@@ -774,6 +845,11 @@ public async void GradientSearch()
 		return "CURRENT"; // In case the target is the same as the current position
 	}
 
+	public void SetToIdle()
+	{
+		EmitSignal(SignalName.ModeChanged, "Idle");
+		currentExplorMode = ExplorMode.None;
+	}
 	
 
 	private void Initialize()

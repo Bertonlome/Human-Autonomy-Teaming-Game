@@ -364,6 +364,7 @@ public partial class BuildingManager : Node
 				FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
 				return;
 			}
+			gridManager.SetBaseArea(buildingResource.Dimensions, hoveredGridArea.Position);
 			CallDeferred("EmitSignalBasePlaced");
 		}
 		else if (!IsBuildingResourcePlaceableAtArea(hoveredGridArea))
@@ -544,6 +545,7 @@ public partial class BuildingManager : Node
 			else if (direction == MOVE_RIGHT) MoveInDirection(robot, MOVE_LEFT);
 			else if (direction == MOVE_UP) MoveInDirection(robot, MOVE_DOWN);
 		}
+		robot.SetToIdle();
 	}
 
 

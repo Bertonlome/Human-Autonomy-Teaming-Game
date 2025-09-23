@@ -48,9 +48,11 @@ public partial class GridManager : Node
 	private HashSet<Vector2I> discoveredElementsTiles = new();
 	private HashSet<Vector2I> occupiedTiles = new();
 	private HashSet<Vector2I> dangerOccupiedTiles = new();
-	private HashSet<Vector2I> baseAntennaCoveredTiles = new();
+	public HashSet<Vector2I> baseAntennaCoveredTiles = new();
 	private HashSet<Vector2I> baseProximityTiles = new();
 	private HashSet<Vector2I> monolithTiles = new();
+
+	public Rect2I baseArea = new();
 
 	private Monolith monolith;
 	public Vector2I monolithPosition = new();
@@ -89,6 +91,11 @@ public partial class GridManager : Node
 		allTilesBuildableOnTheMap = GetAllBuildableBaseTerrainTiles(baseTerrainTilemapLayer).ToHashSet();
 		allTilesBaseLayer = baseTerrainTilemapLayer.GetUsedCells().ToList();
 		MapTileMapLayersToElevationLayers();
+	}
+
+	public void SetBaseArea(Vector2I dimensions, Vector2I position)
+	{
+		baseArea = new Rect2I(position, dimensions);
 	}
 
 	public void SetMonolithPosition(Vector2I position)
@@ -575,7 +582,6 @@ public partial class GridManager : Node
 
 	private void SetBaseAntennaCoverage()
 	{
-		
 		var buildingComponents = BuildingComponent.GetBaseBuilding(this);
 		foreach(var buildingComponent in buildingComponents)
 		{
