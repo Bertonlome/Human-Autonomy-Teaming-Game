@@ -76,6 +76,7 @@ public partial class GridManager : Node
 
 	public override void _Ready()
 	{
+		ClearAll();
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingPlaced, Callable.From<BuildingComponent>(OnBuildingPlaced));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingDestroyed, Callable.From<BuildingComponent>(OnBuildingDestroyed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingEnabled, Callable.From<BuildingComponent>(OnBuildingEnabled));
@@ -83,6 +84,7 @@ public partial class GridManager : Node
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnBuildingMoved));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingUnStuck, Callable.From<BuildingComponent>(OnBuildingUnStuck));
+		GameEvents.Instance.Connect(GameEvents.SignalName.RobotSelected, Callable.From<BuildingComponent>(OnRobotSelected));
 
 		monolith = GetNode<Monolith>("%Monolith");
 		SetMonolithPosition(ConvertWorldPositionToTilePosition(monolith.GlobalPosition));
@@ -96,6 +98,14 @@ public partial class GridManager : Node
 	public void SetBaseArea(Vector2I dimensions, Vector2I position)
 	{
 		baseArea = new Rect2I(position, dimensions);
+	}
+
+	private void OnRobotSelected(BuildingComponent buildingComponent)
+	{
+		if (buildingComponent.BuildingResource.IsAerial)
+		{
+			CallDeferred(nameof(CheckGroundRobotBelow), buildingComponent);
+		}
 	}
 
 	public void SetMonolithPosition(Vector2I position)
@@ -187,6 +197,11 @@ public partial class GridManager : Node
 		});
 	}
 
+	public bool IsTileOccupied(Vector2I tilePosition)
+	{
+		return occupiedTiles.Contains(tilePosition);
+	}
+
 	public bool IsBuildingMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea)
 	{
 		IEnumerable<Vector2I> tileSetToCheckGround;
@@ -215,16 +230,16 @@ public partial class GridManager : Node
 			var elevationLayer = tileMapLayer != null ? tileMapLayerToElevationLayer[tileMapLayer] : null;
 			(tileMapLayer, bool isWood) = GetTileCustomData(tilePosition, IS_WOOD);
 			//(tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
-			
+
 			//Check for ground vehicle
-			var check1 = tileSetToCheckGround.Contains(tilePosition) ? false: true;
-			var check2 = elevationLayer == targetElevationLayer ? true: false;
-			var check3 = OriginElevationLayer == targetElevationLayer ? true: false;
+			var check1 = tileSetToCheckGround.Contains(tilePosition) ? false : true;
+			var check2 = elevationLayer == targetElevationLayer ? true : false;
+			var check3 = OriginElevationLayer == targetElevationLayer ? true : false;
 			var check7 = !isRoulable;
 			var check8 = !buildingComponent.BuildingResource.IsAerial;
 			//Check for aerial vehicle
 			var check4 = buildingComponent.BuildingResource.IsAerial;
-			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false: true;
+			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false : true;
 			var check6 = !isWood;
 			return (check1 && check2 && check3 && check7 && check8) || (check4 && check5 && check6);
 		});
@@ -690,13 +705,16 @@ public partial class GridManager : Node
 			UpdateTilesToBuilding(buildingComponent);
 			CheckGroundRobotTouchingMonolith(buildingComponent);
 			CheckAerialRobotVisualMonolith(buildingComponent);
-			if (buildingComponent.BuildingResource.IsAerial)
+		}
+		var aerials = buildingComponents.Where(r => r.BuildingResource.IsAerial).ToList();
+		if (aerials.Count > 0)
+		{
+			foreach (var aerial in aerials)
 			{
-				CheckStuckRobotNearby(buildingComponent);
-				CheckGroundRobotBelow(buildingComponent);
+				CheckStuckRobotNearby(aerial);
+				CheckGroundRobotBelow(aerial);
 			}
 		}
-
 		EmitSignal(SignalName.ResourceTilesUpdated, collectedResourceTiles.Count);
 		EmitSignal(SignalName.GridStateUpdated);
 		//stopwatch.Stop();
@@ -737,6 +755,11 @@ public partial class GridManager : Node
 			if (uavOccupiedTiles.Contains(aboveTile))
 			{
 				var groundRobot = TileToBuilding[tile];
+				if (groundRobot.BuildingResource.IsBase)
+				{
+					GameEvents.EmitNoGroundRobotBelowUav();
+					return;
+				}
 				GameEvents.EmitGroundRobotBelowUav(groundRobot);
 				bingo = true;
 				return;
@@ -930,5 +953,24 @@ public partial class GridManager : Node
 	private void OnBuildingDisabled(BuildingComponent buildingComponent)
 	{
 		RecalculateGrid();
+	}
+	private void ClearAll()
+	{
+    allTilesBuildableOnTheMap.Clear();
+    validBuildableTiles.Clear();
+    validBuildableAttackTiles.Clear();
+    allTilesInBuildingRadius.Clear();
+    collectedResourceTiles.Clear();
+    collectedMineralTiles.Clear();
+    discoveredElementsTiles.Clear();
+    occupiedTiles.Clear();
+    dangerOccupiedTiles.Clear();
+    baseAntennaCoveredTiles.Clear();
+    baseProximityTiles.Clear();
+    monolithTiles.Clear();
+    TileToBuilding.Clear();
+    buildingToBuildableTiles.Clear();
+    buildingStuckToTiles.Clear();
+    // Reset other state as needed
 	}
 }

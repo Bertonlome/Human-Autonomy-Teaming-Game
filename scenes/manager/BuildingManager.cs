@@ -79,6 +79,7 @@ public partial class BuildingManager : Node
 
 	public override void _Ready()
 	{
+		ClearAllRobots();
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
 		gameUI.BuildingResourceSelected += OnBuildingResourceSelected;
 		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceBridgeButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceBridgeButtonPressed));
@@ -99,7 +100,7 @@ public partial class BuildingManager : Node
 					if (selectedBuildingComponent != null)
 					{
 						Vector2I targetGridCell = gridManager.GetMouseGridCellPosition();
-						selectedBuildingComponent.MoveAlongPath(targetGridCell);
+						selectedBuildingComponent.MoveAlongPath(targetGridCell, true);
 						GetViewport().SetInputAsHandled();
 					}
 					//DestroyBuildingAtHoveredCellPosition();
@@ -927,4 +928,13 @@ public partial class BuildingManager : Node
 		}
 	}
 
+	private void ClearAllRobots()
+	{
+		foreach (var robot in AliveRobots)
+		{
+			robot.QueueFree();
+		}
+		AliveRobots.Clear();
+		selectedBuildingComponent = null;
+	}
 }

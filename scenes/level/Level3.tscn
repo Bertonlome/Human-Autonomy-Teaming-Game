@@ -1,12 +1,9 @@
-[gd_scene load_steps=8 format=4 uid="uid://dkvhnguxmu6jw"]
+[gd_scene load_steps=5 format=4 uid="uid://dkvhnguxmu6jw"]
 
 [ext_resource type="PackedScene" uid="uid://bipxsk1snp5nq" path="res://scenes/level/BaseLevel.tscn" id="1_ht352"]
 [ext_resource type="Resource" uid="uid://beg3tak5yp2j4" path="res://resources/level/level_03.tres" id="2_8g37j"]
 [ext_resource type="PackedScene" uid="uid://iv4rk5h4ybki" path="res://scenes/level/util/ElevationLayer.tscn" id="2_mvqur"]
 [ext_resource type="TileSet" uid="uid://dvqwr0ci0x55u" path="res://resources/tiles.tres" id="3_tkeup"]
-[ext_resource type="PackedScene" uid="uid://ctkj7x7qqbjk1" path="res://scenes/LandscapeElements/RedOreScene.tscn" id="5_phfv7"]
-[ext_resource type="PackedScene" uid="uid://kkn3b22q1ucy" path="res://scenes/LandscapeElements/BlueOreScene.tscn" id="6_xyj63"]
-[ext_resource type="PackedScene" uid="uid://cx8br5unsto1x" path="res://scenes/LandscapeElements/GreenOreScene.tscn" id="7_cbwor"]
 
 [node name="Level3" instance=ExtResource("1_ht352")]
 levelDefinitionResource = ExtResource("2_8g37j")
@@ -42,10 +39,5 @@ tile_set = ExtResource("3_tkeup")
 y_sort_enabled = true
 tile_map_data = PackedByteArray("AAAVAAUAAQAAAAAAAAAXAAQAAQAAAAAAAAAWAAUAAQAAAAAAAAAWAAQAAQAAAAAAAAAXAAUAAQAAAAAAAAAYAAMAAQAAAAAAAAAWAAMAAQAAAAAAAAAUAAQAAQAAAAAAAAD//wYAAQAAAAAAAAD9/wUAAQAAAAAAAAD+/wUAAQAAAAAAAAD8/wMAAQAAAAAAAAD9/wMAAQAAAAAAAAD8/wQAAQAAAAAAAAAEAP//AQAAAAAAAAAHAAAAAQAAAAAAAAAIAAoAAQAAAAAAAAAJAAsAAQAAAAAAAAADAAsAAQAAAAAAAAAEAAoAAQAAAAAAAAAWAAEAAQAAAAAAAAAXAAIAAQAAAAAAAAAVAAAAAQAAAAAAAAAVAAEAAQAAAAAAAAAUAAAAAQAAAAAAAAA=")
 tile_set = ExtResource("3_tkeup")
-
-[node name="DiscoveredElementsManager" parent="YSortRoot" index="2"]
-redOreScene = ExtResource("5_phfv7")
-blueOreScene = ExtResource("6_xyj63")
-greenOreScene = ExtResource("7_cbwor")
 
 [editable path="YSortRoot/BaseTerrainTileMapLayer/ElevationLayer"]

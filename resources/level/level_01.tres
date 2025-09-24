@@ -8,4 +8,4 @@ Id = "when_cucumbers_fall"
 StartingWoodCount = 6
 StartingMaterialCount = 14
 LevelScenePath = "res://scenes/level/Level1.tscn"
-LevelDuration = 15
+LevelDuration = 300

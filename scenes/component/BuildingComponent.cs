@@ -143,31 +143,11 @@ public partial class BuildingComponent : Node2D
 		}
 		Battery = this.BuildingResource.BatteryMax;
 		gravitationalAnomalyMap = level.GetFirstNodeOfType<GravitationalAnomalyMap>();
+
 	}
 
     public override void _Process(double delta)
     {
-		//switch(currentExplorMode)
-		//{
-			//case ExplorMode.Random:
-			//if (!IsStuck)
-			//{
-				//// Update the timer
-				//timerMove += (float)delta;
-//
-				//// Check if enough time has passed to move
-				//if (timerMove >= this.BuildingResource.moveInterval)
-				//{
-					//var randDir = buildingManager.GetRandomDirection(previousDir);
-					////GD.Print($"Robot Position: {GetGridCellPosition()}, Action Taken: {randDir}");
-					//buildingManager.MoveInDirectionAutomated(this, randDir);
-					//previousDir = randDir;
-					//timerMove = 0.0f; // Reset the timer
-				//}
-			//}
-			//break;
-		//}
-        //	 Handle recharging	
 		if(IsRecharging)
 		{
 			timerRecharge += (float)delta;
@@ -391,7 +371,7 @@ public partial class BuildingComponent : Node2D
 		Initialize();
 		if (IsLifting)
 		{
-			if (Battery >= 0) Battery -= 4;
+			if (Battery >= 0) Battery -= 20;
 		}
 		else if (!IsLifted && Battery >= 0) Battery -= 1;
 		EmitSignal(SignalName.BatteryChange, Battery);
@@ -513,7 +493,9 @@ public partial class BuildingComponent : Node2D
 		open.Add(new NodeAStar(currentPos, null, 0, Heuristic(currentPos, targetPos)));
 		var directions = new[] { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT };
 
-		while (open.Count > 0)
+		int maxIterations = 1000;
+		int iteration = 0;
+		while (open.Count > 0 && iteration < maxIterations)
 		{
 			open.Sort((a, b) => a.F.CompareTo(b.F));
 			var current = open[0];
@@ -539,13 +521,14 @@ public partial class BuildingComponent : Node2D
 			foreach (var direction in directions)
 			{
 				var neighborPos = GetNextPosFromCurrentPos(current.Position, direction);
+
 				if (this.BuildingResource.IsAerial)
 				{
 					var (_, isWood) = gridManager.GetTileCustomData(neighborPos, "is_wood");
-					if (isWood || closed.Contains(neighborPos)) continue;
+					if (isWood || closed.Contains(neighborPos) || gridManager.IsTileOccupied(neighborPos)) continue;
 				}
 				else
-				if (!gridManager.IsTileAreaBuildable(new Rect2I(neighborPos, Vector2I.One)) || closed.Contains(neighborPos)) continue;
+				if (!gridManager.IsTileAreaBuildable(new Rect2I(neighborPos, Vector2I.One)) || closed.Contains(neighborPos) || gridManager.IsTileOccupied(neighborPos)) continue;
 
 				var gCost = current.G + 1; // Assume cost is 1 for each move
 				var hCost = Heuristic(neighborPos, targetPos);
@@ -563,6 +546,7 @@ public partial class BuildingComponent : Node2D
 					existing.Parent = current;
 				}
 			}
+			iteration ++;
 		}
 		return new List<string> {}; 
 	}
@@ -594,7 +578,7 @@ public partial class BuildingComponent : Node2D
 		return "";
 	}
 
-	public async void MoveAlongPath(Vector2I targetPosition)
+	public async void MoveAlongPath(Vector2I targetPosition, bool astar=false)
 	{
 		if (AttachedRobot is not null) DetachRobot();
 		// Cancel any previous movement
@@ -623,103 +607,109 @@ public partial class BuildingComponent : Node2D
 		currentExplorMode = ExplorMode.MoveToPos;
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 
-		// trying with a*
-		var path = GetMovesWithAStar(GetGridCellPosition(), targetPosition);
-		if (path.Count == 0)
+		if (astar)
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("No path found!", this);
-			currentExplorMode = ExplorMode.None;
-			EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-			return;
-		}
-		foreach (var chosenDirection in path)
-		{
-			if (cancelMoveRequested) break;
-			buildingManager.MoveInDirectionAutomated(this, chosenDirection);
-			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
-		}
-
-		// end of trying with a*
-		/*
-		Vector2I currentPos = GetGridCellPosition();
-		int maxSteps = 100; // Prevent infinite loops
-		int steps = 0;
-		int visitedLimit = 5; // How many tiles to remember
-		Queue<Vector2I> visited = new Queue<Vector2I>();
-		HashSet<Vector2I> visitedSet = new HashSet<Vector2I>();
-		var chosenDirection = (string)null;
-		bool couldMove = true;
-		while (currentPos != targetPosition && !cancelMoveRequested && steps < maxSteps)
-		{
-			if (!couldMove)
+			// trying with a*
+			var path = GetMovesWithAStar(GetGridCellPosition(), targetPosition);
+			if (path.Count == 0)
 			{
-				chosenDirection = GetPerpendicularDirection(chosenDirection);
-				Vector2I nextPos = currentPos;
-				if (chosenDirection == MOVE_UP) nextPos += new Vector2I(0, -1);
-				else if (chosenDirection == MOVE_DOWN) nextPos += new Vector2I(0, 1);
-				else if (chosenDirection == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
-				else if (chosenDirection == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-				var limit = 0;
-				while (limit < 20 && visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos))
+				FloatingTextManager.ShowMessageAtBuildingPosition("No path found!", this);
+				GD.Print("No path found for " + GetGridCellPosition() + " to " + targetPosition);
+				currentExplorMode = ExplorMode.None;
+				EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+				return;
+			}
+			foreach (var chosenDirection in path)
+			{
+				if (cancelMoveRequested) break;
+				if (currentExplorMode == ExplorMode.None) break;
+				if (IsStuck) break;
+				if (Battery <= 0) break;
+				buildingManager.MoveInDirectionAutomated(this, chosenDirection);
+				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+			}
+		}
+		else
+		{
+			Vector2I currentPos = GetGridCellPosition();
+			int maxSteps = 100; // Prevent infinite loops
+			int steps = 0;
+			int visitedLimit = 5; // How many tiles to remember
+			Queue<Vector2I> visited = new Queue<Vector2I>();
+			HashSet<Vector2I> visitedSet = new HashSet<Vector2I>();
+			var chosenDirection = (string)null;
+			bool couldMove = true;
+			while (currentPos != targetPosition && !cancelMoveRequested && steps < maxSteps && !IsStuck && Battery > 0 && currentExplorMode != ExplorMode.None)
+			{
+				if (!couldMove)
 				{
-					chosenDirection = buildingManager.GetRandomDirection();
+					chosenDirection = GetPerpendicularDirection(chosenDirection);
+					Vector2I nextPos = currentPos;
 					if (chosenDirection == MOVE_UP) nextPos += new Vector2I(0, -1);
 					else if (chosenDirection == MOVE_DOWN) nextPos += new Vector2I(0, 1);
 					else if (chosenDirection == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
 					else if (chosenDirection == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-					limit++;
-				}
-			}
-			else
-			{
-				// Plan only the next move
-				var nextMoves = GetMovesToReachTile(currentPos, targetPosition);
-				// Filter out moves that would revisit a recently visited tile
-				Vector2I nextPos = currentPos;
-				if (nextMoves[0] == MOVE_UP) nextPos += new Vector2I(0, -1);
-				else if (nextMoves[0] == MOVE_DOWN) nextPos += new Vector2I(0, 1);
-				else if (nextMoves[0] == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
-				else if (nextMoves[0] == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-				if (!visitedSet.Contains(nextPos) || !obstacleTiles.Contains(nextPos))
-				{
-					chosenDirection = nextMoves[0];
-				}
-				else
-				{
 					var limit = 0;
-					while (limit < 20 && (visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos)))
+					while (limit < 20 && visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos))
 					{
-						chosenDirection = buildingManager.GetRandomDirection(chosenDirection);
-						if (chosenDirection == MOVE_UP) nextPos = currentPos + new Vector2I(0, -1);
-						else if (chosenDirection == MOVE_DOWN) nextPos = currentPos + new Vector2I(0, 1);
-						else if (chosenDirection == MOVE_LEFT) nextPos = currentPos + new Vector2I(-1, 0);
-						else if (chosenDirection == MOVE_RIGHT) nextPos = currentPos + new Vector2I(1, 0);
+						chosenDirection = buildingManager.GetRandomDirection();
+						if (chosenDirection == MOVE_UP) nextPos += new Vector2I(0, -1);
+						else if (chosenDirection == MOVE_DOWN) nextPos += new Vector2I(0, 1);
+						else if (chosenDirection == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
+						else if (chosenDirection == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
 						limit++;
 					}
 				}
+				else
+				{
+					// Plan only the next move
+					var nextMoves = GetMovesToReachTile(currentPos, targetPosition);
+					// Filter out moves that would revisit a recently visited tile
+					Vector2I nextPos = currentPos;
+					if (nextMoves[0] == MOVE_UP) nextPos += new Vector2I(0, -1);
+					else if (nextMoves[0] == MOVE_DOWN) nextPos += new Vector2I(0, 1);
+					else if (nextMoves[0] == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
+					else if (nextMoves[0] == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
+					if (!visitedSet.Contains(nextPos) || !obstacleTiles.Contains(nextPos))
+					{
+						chosenDirection = nextMoves[0];
+					}
+					else
+					{
+						var limit = 0;
+						while (limit < 20 && (visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos)))
+						{
+							chosenDirection = buildingManager.GetRandomDirection(chosenDirection);
+							if (chosenDirection == MOVE_UP) nextPos = currentPos + new Vector2I(0, -1);
+							else if (chosenDirection == MOVE_DOWN) nextPos = currentPos + new Vector2I(0, 1);
+							else if (chosenDirection == MOVE_LEFT) nextPos = currentPos + new Vector2I(-1, 0);
+							else if (chosenDirection == MOVE_RIGHT) nextPos = currentPos + new Vector2I(1, 0);
+							limit++;
+						}
+					}
+				}
+				var attemptPos = currentPos;
+				if (chosenDirection == MOVE_UP) attemptPos += new Vector2I(0, -1);
+				else if (chosenDirection == MOVE_DOWN) attemptPos += new Vector2I(0, 1);
+				else if (chosenDirection == MOVE_LEFT) attemptPos += new Vector2I(-1, 0);
+				else if (chosenDirection == MOVE_RIGHT) attemptPos += new Vector2I(1, 0);
+				couldMove = buildingManager.MoveInDirectionAutomated(this, chosenDirection);
+				obstacleTiles.Add(attemptPos);
+				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+				Vector2I newPos = GetGridCellPosition();
+				// Mark as visited
+				visited.Enqueue(newPos);
+				visitedSet.Add(newPos);
+				if (visited.Count > visitedLimit)
+				{
+					var old = visited.Dequeue();
+					visitedSet.Remove(old);
+				}
+				currentPos = newPos;
+				steps++;
 			}
-			var attemptPos = currentPos;
-			if (chosenDirection == MOVE_UP) attemptPos += new Vector2I(0, -1);
-			else if (chosenDirection == MOVE_DOWN) attemptPos += new Vector2I(0, 1);
-			else if (chosenDirection == MOVE_LEFT) attemptPos += new Vector2I(-1, 0);
-			else if (chosenDirection == MOVE_RIGHT) attemptPos += new Vector2I(1, 0);
-			couldMove = buildingManager.MoveInDirectionAutomated(this, chosenDirection);
-			obstacleTiles.Add(attemptPos);
-			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
-			Vector2I newPos = GetGridCellPosition();
-			// Mark as visited
-			visited.Enqueue(newPos);
-			visitedSet.Add(newPos);
-			if (visited.Count > visitedLimit)
-			{
-				var old = visited.Dequeue();
-				visitedSet.Remove(old);
-			}
-			currentPos = newPos;
-			steps++;
 		}
-		*/
-		currentExplorMode = ExplorMode.None;
+			currentExplorMode = ExplorMode.None;
 		CanMove = true; // Reset in case it wasn't already
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
@@ -741,11 +731,20 @@ public partial class BuildingComponent : Node2D
 		var basePosition = myBase.GetGridCellPosition();
 		basePosition.X += 2; // Adjust to drop off position
 		basePosition.Y += 3;
-		MoveAlongPath(basePosition);
+		MoveAlongPath(basePosition, true);
 	}
 
 	public List<string> GetMovesToReachTile(Vector2I currentPosition, Vector2I targetPosition)
 	{
+		if (currentPosition == targetPosition)
+		{
+			return new List<string>(); // Already at the target
+		}
+		bool isWood = gridManager.GetTileCustomData(targetPosition, "is_wood").Item2;
+		if (gridManager.IsTileOccupied(targetPosition) || isWood)
+		{
+			return new List<string>(); // Target is not reachable
+		}
 		List<string> moves = new List<string>();
 
 		// Calculate the deltas
@@ -903,7 +902,7 @@ public partial class BuildingComponent : Node2D
 		var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
 		void OnArrived() { tcs.TrySetResult(true); }
 		// Optionally, you can add a signal for arrival and connect/disconnect here
-		MoveAlongPath(targetPosition);
+		MoveAlongPath(targetPosition, true);
 		// Wait until robot arrives at target (simple polling)
 		while (GetGridCellPosition() != targetPosition || currentExplorMode == ExplorMode.MoveToPos)
 			await ToSignal(GetTree().CreateTimer(0.1f), "timeout");

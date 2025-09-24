@@ -101,7 +101,14 @@ public partial class SelectedRobotUI : CanvasLayer
 
 		if (selectedBuildingComponent.BuildingResource.IsAerial)
 		{
-			ChangeStateMultiPurposeButton(MultiPurposeButtonState.LiftRobot);
+			if (selectedBuildingComponent.IsLifting)
+			{
+				ChangeStateMultiPurposeButton(MultiPurposeButtonState.DropRobot);
+			}
+			else
+			{
+				ChangeStateMultiPurposeButton(MultiPurposeButtonState.LiftRobot);
+			}
 			placeAntennaButton.Hide();
 		}
 		else
