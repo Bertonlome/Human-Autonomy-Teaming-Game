@@ -8,51 +8,33 @@ Module d'Atterrissage :
 Le jeu commence par l'atterrissage d'un module central (la base) qui déploie une antenne relais permettant la communication avec la Terre et les robots.
 Déploiement des Robots :
 
-Quatre robots peuvent être déployés autour du module. Chaque robot possède ses propres capacités de détection, de déplacement et d'exploration.
+Deux type de robots peuvent être déployés autour du module. Chaque robot possède ses propres capacités de détection, de déplacement et d'exploration.
+
 Couverture de l'Antenne :
-
-La zone visible sur la carte dépend de la position de l'antenne relais et des robots. Le champ de vision est limité à :
-
-    10 unités autour de la base.
-    6 unités autour de chaque drone volant (UAV).
-    4 unités autour de chaque drone roulant (UGV).
+La zone visible sur la carte dépend de la position de l'antenne relais et des robots. 
 
 Objectifs du Jeu :
-Explorer la Carte :
+- Explorer la Carte
+- Retrouver le Monolithe : Cherchez la position du monolithe. Pour vous aider, les robots sont équipés de capteurs qui leur permettent d'évaluer l'anomalie gravitationnelle autour de leur position. Selon les recherches, le monolithe exerce une anomalie considérable autour de lui.
 
-Dissiper le brouillard de guerre en déployant les robots pour explorer les alentours de l'antenne et au-delà.
-Retrouver le Monolithe :
-
-Cherchez la position du monolithe. Pour vous aider, les robots sont équipés de capteurs qui leur permettent d'évaluer l'anomalie gravitationnelle autour de leur position. Selon les recherches, le monolithe exerce une anomalie considérable autour de lui.
 Règles de Communication et de Déplacement :
 Communication Limitée :
 
 Les robots ne peuvent recevoir d'instructions que s'ils sont dans une zone de couverture :
-
     À portée de l'antenne de la base.
     À portée d'un autre robot, lui-même en portée de l'antenne.
 
-Autonomie des Robots Hors Zone :
+Vous pouvez diriger chaque robot manuellement à l'aide des touches de direction (WASD/ZQSD) ou les laisser explorer de manière autonome
+    Le drone peut survoler la plupart des terrains.
+    Le rover ne peut rouler que sur des terrains non accidentés.
 
-Si un robot sort de la zone de couverture, il ne répondra plus aux commandes.
-Mécaniques d'Exploration :
-Contrôle Manuel ou Autonome :
-
-Vous pouvez diriger chaque robot manuellement à l'aide des touches de direction (WASD/ZQSD) ou les laisser explorer de manière autonome (aléatoirement).
-
-    Le robot volant peut survoler la plupart des terrains.
-    Le robot roulant ne peut rouler que sur des terrains non accidentés.
-
-Le robot roulant peut se retrouver bloqué après une manœuvre. Pour le débloquer, un autre robot doit venir se positionner à côté pour l'extraire.
-Vision Dynamique :
+Le rover peut se retrouver bloqué après une manœuvre. Pour le débloquer, un drone doit venir se positionner à côté pour l'extraire.
 
 La carte est révélée en fonction du déplacement des robots. Ils sont équipés de caméras pouvant détecter les éléments de l'environnement.
-
-    La caméra du jeu peut suivre le robot sélectionné à l'aide d'un bouton dans l'interface.
-    La caméra du jeu peut être déplacée à l'aide des flèches du clavier lorsqu'elle ne suit pas un robot.
+La caméra du jeu peut suivre le robot sélectionné à l'aide d'un bouton dans l'interface.
+La caméra du jeu peut être déplacée à l'aide des flèches du clavier lorsqu'elle ne suit pas un robot.
 
 Gestion de l'Énergie :
-
     Consommation d'Énergie : Chaque mouvement des robots consomme de l'énergie. Vous devrez gérer les ressources pour que les robots puissent retourner au module afin de se recharger avant d'épuiser leur batterie.
 
 Interaction Homme-Machine :

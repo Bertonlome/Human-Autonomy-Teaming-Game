@@ -13,6 +13,9 @@ public partial class GravitationalAnomalyMap : Node
     private bool fullMapDisplayed = false;
     private bool traceDisplayed = false;
 
+    // Track which tiles have already been painted in the trace
+    private HashSet<Vector2I> paintedTraceTiles = new();
+
     [Export]
     private GridManager gridManager;
     [Export]
@@ -21,6 +24,7 @@ public partial class GravitationalAnomalyMap : Node
     private TileMapLayer baseTerrainTilemapLayer;
 
     private Dictionary<Vector2I, float> anomalyMap;
+    private Dictionary<Vector2I, ColorRect> traceRects = new();
 
     public override void _Ready()
     {
@@ -36,9 +40,26 @@ public partial class GravitationalAnomalyMap : Node
         // Get bounds of the tilemap
         (int xMin, int yMin, int xRange, int yRange) = AnalyzeVector2IList(sortedList);
 
-        // Generate anomaly map
+        // Generate anomaly map and pre-create ColorRects
         anomalyMap = GenerateGravitationalAnomalyMapPerlinNoise(xMin, yMin, xRange, yRange);
         AddMonolithToAnomalyMap(gridManager.monolithPosition, anomalyMap);
+
+        // Pre-create ColorRects for all tiles
+        Vector2 size = new Vector2(64, 64);
+        GD.Print("number of tiles in anomaly map: " + anomalyMap.Count);
+        foreach (var kv in anomalyMap)
+        {
+            Vector2I cell = kv.Key;
+            float scaledAnomaly = kv.Value;
+            ColorRect colorRect = new ColorRect();
+            colorRect.SetSize(size);
+            colorRect.GlobalPosition = new Vector2(cell.X * 64, cell.Y * 64);
+            Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
+            colorRect.Color = squareColor;
+            colorRect.Visible = false;
+            AddChild(colorRect);
+            traceRects[cell] = colorRect;
+        }
     }
 
     private (int, int, int, int) AnalyzeVector2IList(List<Vector2I> vectorList)
@@ -154,42 +175,39 @@ public partial class GravitationalAnomalyMap : Node
         }
     }
 
+
     public void DisplayTrace(HashSet<Vector2I> tileDiscovered)
     {
-        // Always clear previous trace
-        foreach(Node child in GetChildren())
-        {
-            child.QueueFree();
-        }
+        //var stopwatch = new System.Diagnostics.Stopwatch();
+        //stopwatch.Start();
 
-        Vector2 size = new Vector2(64, 64);
-
+        // Only update tiles that are newly discovered (not already painted)
+        int newTiles = 0;
         foreach (var tile in tileDiscovered)
         {
-            if (!anomalyMap.ContainsKey(tile)) continue; // Safety check
+            if (paintedTraceTiles.Contains(tile))
+                continue;
+            if (!traceRects.ContainsKey(tile))
+                continue;
             float scaledAnomaly = anomalyMap[tile];
-            ColorRect colorRect = new ColorRect();
-            colorRect.SetSize(size);
-
-            // Position it in world space
-            colorRect.GlobalPosition = new Vector2(tile.X * 64, tile.Y * 64);
-
-            // Set its color with opacity based on the anomaly value
-            Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
-            colorRect.Color = squareColor;
-
-            // Add it to the scene tree
-            AddChild(colorRect);
+            var rect = traceRects[tile];
+            rect.Color = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
+            rect.Visible = true;
+            paintedTraceTiles.Add(tile);
+            newTiles++;
         }
-        traceDisplayed = true; // Optional, but not needed for toggling anymore
+    traceDisplayed = true;
+    //stopwatch.Stop();
+    //GD.Print($"Trace rendering time: {stopwatch.Elapsed.TotalMilliseconds:F3} ms, new tiles: {newTiles}");
     }
 
     public void HideTrace()
     {
-        foreach (Node child in GetChildren())
+        foreach (var rect in traceRects.Values)
         {
-            child.QueueFree();
+            rect.Visible = false;
         }
+        paintedTraceTiles.Clear();
         traceDisplayed = false;
     }
 
