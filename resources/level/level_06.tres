@@ -6,6 +6,6 @@
 script = ExtResource("1_dmcg8")
 Id = "earthmover"
 StartingWoodCount = 6
-StartingMaterialCount = 15
+StartingMaterialCount = 16
 LevelScenePath = "res://scenes/level/Level6.tscn"
 LevelDuration = 900

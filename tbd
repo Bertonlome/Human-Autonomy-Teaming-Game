@@ -31,3 +31,32 @@ Troisièmement, trouvez les OPD pour proposer une nouvelle interface
 Quatrièmement, faire un sketch de l'interface.
 
 Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (ex: le plus safe) pour le tester avec leur camarade.
+
+
+help section from level view for the keymaps
+
+Confusion sur le déploiement il faut cacher les boutons rover et droneLes messages d'erreur ne sont pas assez gros
+
+peut être normalisé l'appelation rover et drone
+
+difficulté à comprendre ce qui représente la zone de déplacement
+
+Bug no path found sur exploration random de l'ugv
+
+bug already moving sur l'exploration random de l'UAV
+
+tracking not sure when its activated and when its not
+
+maybe render the stop button only if the robot is moving
+
+il faut changer le gradient, il ne doit jamais y avoir de gros marais barométrique sinon c'est injouable sur une grande map
+
+Plus de temps sur grande map
+
+peut etre click and grab pour deplacer la map avec left click
+
+Reached maxima ne s'affiche pas sur le selected robot UI et il faudrait peut être mettre un glow rouge pour indiquer le moment de reached maxima.
+
+expliquer que lift robot ne marche qu'avec ZQSD
+
+Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.
