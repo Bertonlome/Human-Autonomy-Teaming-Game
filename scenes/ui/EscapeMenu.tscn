@@ -1,13 +1,15 @@
-[gd_scene load_steps=3 format=3 uid="uid://cx2k42pew5v1f"]
+[gd_scene load_steps=4 format=3 uid="uid://cx2k42pew5v1f"]
 
 [ext_resource type="Script" path="res://scenes/ui/EscapeMenu.cs" id="1_8il8c"]
 [ext_resource type="PackedScene" uid="uid://cgi3e02262en8" path="res://scenes/ui/OptionsMenu.tscn" id="2_pxjna"]
+[ext_resource type="PackedScene" uid="uid://cbehbevyhshu0" path="res://scenes/ui/ControlsMenu.tscn" id="3_ovguq"]
 
 [node name="EscapeMenu" type="CanvasLayer"]
 layer = 2
 script = ExtResource("1_8il8c")
 mainMenuScenePath = "res://scenes/ui/MainMenu.tscn"
 optionsMenuScene = ExtResource("2_pxjna")
+controlsMenuScene = ExtResource("3_ovguq")
 
 [node name="ColorRect" type="ColorRect" parent="."]
 anchors_preset = 15
@@ -52,6 +54,11 @@ text = "Resume"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Options"
+
+[node name="ControlsButton" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Controls"
 
 [node name="QuitButton" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

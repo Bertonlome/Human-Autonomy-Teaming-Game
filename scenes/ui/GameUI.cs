@@ -66,6 +66,7 @@ public partial class GameUI : CanvasLayer
 		displayTraceButton.Toggled += OnDisplayTraceToggled;
 
 		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
+		buildingManager.BasePlaced += OnBasePlaced;
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnRobotMoved));
 	}
 
@@ -144,18 +145,47 @@ public partial class GameUI : CanvasLayer
 
 	private void CreateBuildingSections()
 	{
-		foreach (var buildingResource in buildingResources)
+		if (buildingManager.IsBasePlaced)
 		{
-			var buildingSection = buildingSectionScene.Instantiate<BuildingSection>();
-			buildingSectionContainer.AddChild(buildingSection);
-			buildingSection.SetBuildingResource(buildingResource);
-
-			buildingSection.SelectButtonPressed += () =>
+			foreach (var buildingResource in buildingResources)
 			{
-				EmitSignal(SignalName.BuildingResourceSelected, buildingResource);
-			};
+				if (buildingResource.DisplayName == "Base") continue; // Skip the Base section if already placed
+				var buildingSection = buildingSectionScene.Instantiate<BuildingSection>();
+				buildingSectionContainer.AddChild(buildingSection);
+				buildingSection.SetBuildingResource(buildingResource);
+	
+				buildingSection.SelectButtonPressed += () =>
+				{
+					EmitSignal(SignalName.BuildingResourceSelected, buildingResource);
+				};
+			}
+		}
+		else if (!buildingManager.IsBasePlaced)
+		{
+			// Only show the Base building section
+			foreach (var buildingResource in buildingResources)
+			{
+				if (buildingResource.DisplayName == "Base")
+				{
+					var buildingSection = buildingSectionScene.Instantiate<BuildingSection>();
+					buildingSectionContainer.AddChild(buildingSection);
+					buildingSection.SetBuildingResource(buildingResource);
+	
+					buildingSection.SelectButtonPressed += () =>
+					{
+						EmitSignal(SignalName.BuildingResourceSelected, buildingResource);
+					};
+					break; // Exit the loop after adding the Base section
+				}
+			}
 		}
 	}
+
+	private void OnBasePlaced()
+	{
+		CreateBuildingSections();
+	}
+
 
 	private void OnNewBuildingPlaced(BuildingComponent buildingComponent, BuildingResource buildingResource)
 	{
@@ -165,11 +195,11 @@ public partial class GameUI : CanvasLayer
 		var unitSection = UnitSectionScene.Instantiate<UnitSection>();
 		unitsSectionContainer.AddChild(unitSection);
 
-		if (buildingResource.DisplayName == "Ground Robot")
+		if (buildingResource.DisplayName == "Rover")
 		{
 			unitSection.SetRobotType(buildingComponent, buildingResource, UnitSection.RobotType.GroundRobot);
 		}
-		else if (buildingResource.DisplayName == "Aerial Robot")
+		else if (buildingResource.DisplayName == "Drone")
 		{
 			unitSection.SetRobotType(buildingComponent, buildingResource, UnitSection.RobotType.AerialRobot);
 		}

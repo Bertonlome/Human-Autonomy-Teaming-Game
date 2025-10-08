@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=4 uid="uid://c2im13c7kn4xj"]
+[gd_scene load_steps=13 format=4 uid="uid://c2im13c7kn4xj"]
 
 [ext_resource type="Script" path="res://scenes/ui/MainMenu.cs" id="1_k6ppd"]
 [ext_resource type="TileSet" uid="uid://dvqwr0ci0x55u" path="res://resources/tiles.tres" id="2_jc5mq"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://dnchhrrd18axl" path="res://scenes/ui/RulesMenu.tscn" id="3_1n4bs"]
 [ext_resource type="PackedScene" uid="uid://cv6tnl0bv6sfg" path="res://scenes/building/Base.tscn" id="3_p8kyu"]
 [ext_resource type="PackedScene" uid="uid://iv4rk5h4ybki" path="res://scenes/level/util/ElevationLayer.tscn" id="3_pnm4a"]
+[ext_resource type="PackedScene" uid="uid://cbehbevyhshu0" path="res://scenes/ui/ControlsMenu.tscn" id="4_mq4j0"]
 [ext_resource type="PackedScene" uid="uid://bky5c7di5gcc0" path="res://scenes/Monolith.tscn" id="4_smdta"]
 [ext_resource type="PackedScene" uid="uid://bb2ug053frok2" path="res://scenes/building/GroundRobot.tscn" id="4_tfh3j"]
 [ext_resource type="PackedScene" uid="uid://dr2vs3njjnlm4" path="res://scenes/ui/LevelSelectScreen.tscn" id="7_3j1st"]
@@ -16,6 +17,7 @@
 script = ExtResource("1_k6ppd")
 optionsMenuScene = ExtResource("2_v8d5j")
 rulesMenuScene = ExtResource("3_1n4bs")
+controlsMenuScene = ExtResource("4_mq4j0")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(896, 320)
@@ -124,6 +126,12 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Rules"
+
+[node name="ControlsButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Controls"
 
 [node name="QuitButton" type="Button" parent="CanvasLayer/MainMenuContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

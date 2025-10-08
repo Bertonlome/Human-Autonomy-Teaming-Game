@@ -6,7 +6,7 @@
 
 [resource]
 script = ExtResource("3_0f206")
-DisplayName = "Ground Robot"
+DisplayName = "Rover"
 Description = "Perform sample analysis"
 IsBase = false
 IsDeletable = true
@@ -16,12 +16,10 @@ StuckChancePerMove = 0.005
 moveInterval = 0.5
 BatteryMax = 250
 ResourceCost = 1
-BuildableRadius = 8
+BuildableRadius = 12
 ResourceRadius = 1
 ResourceCapacity = 8
 VisionRadius = 2
 AnomalySensorRadius = 1
-DangerRadius = 0
-AttackRadius = 0
 BuildingScene = ExtResource("1_j4dnl")
 SpriteScene = ExtResource("2_qg7mt")

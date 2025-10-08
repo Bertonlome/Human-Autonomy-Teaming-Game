@@ -10,6 +10,8 @@ public partial class MainMenu : Node
 
 	[Export]
 	private PackedScene rulesMenuScene;
+	[Export]
+	private PackedScene controlsMenuScene;
 
 	private Button playButton;
 	private Control mainMenuContainer;
@@ -17,6 +19,7 @@ public partial class MainMenu : Node
 	private Button quitButton;
 	private Button optionsButton;
 	private Button rulesButton;
+	private Button controlsButton;
 
 	private Button watchIntroButton;
 
@@ -27,8 +30,9 @@ public partial class MainMenu : Node
 		optionsButton = GetNode<Button>("%OptionsButton");
 		rulesButton = GetNode<Button>("%RulesButton");
 		watchIntroButton = GetNode<Button>("%IntroButton");
+		controlsButton = GetNode<Button>("%ControlsButton");
 
-		AudioHelpers.RegisterButtons(new Button[] { playButton, quitButton, optionsButton, rulesButton, watchIntroButton });
+		AudioHelpers.RegisterButtons(new Button[] { playButton, quitButton, optionsButton, rulesButton, watchIntroButton, controlsButton });
 
 		mainMenuContainer = GetNode<Control>("%MainMenuContainer");
 		levelSelectScreen = GetNode<LevelSelectScreen>("%LevelSelectScreen");
@@ -42,6 +46,7 @@ public partial class MainMenu : Node
 		optionsButton.Pressed += OnOptionsButtonPressed;
 		rulesButton.Pressed += OnRulesButtonPressed;
 		watchIntroButton.Pressed += OnWatchIntroButtonPressed;
+		controlsButton.Pressed += OnControlsButtonPressed;
 	}
 
 	private void OnPlayButtonPressed()
@@ -93,10 +98,27 @@ public partial class MainMenu : Node
 		optionsMenu.QueueFree();
 		mainMenuContainer.Visible = true;
 	}
-	
+
 	private void OnRulesDonePressed(RulesMenu rulesMenu)
 	{
 		rulesMenu.QueueFree();
+		mainMenuContainer.Visible = true;
+	}
+
+	private void OnControlsButtonPressed()
+	{
+		mainMenuContainer.Visible = false;
+		var controlsMenu = controlsMenuScene.Instantiate<ControlsMenu>();
+		AddChild(controlsMenu);
+		controlsMenu.DonePressed += () =>
+		{
+			OnControlsDonePressed(controlsMenu);
+		};
+	}
+
+	private void OnControlsDonePressed(ControlsMenu controlsMenu)
+	{
+		controlsMenu.QueueFree();
 		mainMenuContainer.Visible = true;
 	}
 }

@@ -604,15 +604,19 @@ public partial class BuildingComponent : Node2D
 			currentExplorMode = ExplorMode.None;
 			return;
 		}
-		currentExplorMode = ExplorMode.MoveToPos;
-		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-
+		if (currentExplorMode != ExplorMode.Random)
+		{
+			currentExplorMode = ExplorMode.MoveToPos;
+			EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+		}
 		if (astar)
 		{
 			// trying with a*
 			var path = GetMovesWithAStar(GetGridCellPosition(), targetPosition);
 			if (path.Count == 0)
 			{
+				//if (currentExplorMode == ExplorMode.Random)
+					//return;
 				FloatingTextManager.ShowMessageAtBuildingPosition("No path found!", this);
 				GD.Print("No path found for " + GetGridCellPosition() + " to " + targetPosition);
 				currentExplorMode = ExplorMode.None;

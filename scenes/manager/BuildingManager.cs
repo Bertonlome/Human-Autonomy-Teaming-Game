@@ -32,6 +32,7 @@ public partial class BuildingManager : Node
 	public delegate void BuildingPlacedEventHandler(BuildingComponent buildingComponent, BuildingResource resource);
 	[Signal]
 	public delegate void BasePlacedEventHandler();
+	public bool IsBasePlaced = false;
 	[Signal]
 	public delegate void ClockIsTickingEventHandler();
 	[Signal]
@@ -88,6 +89,7 @@ public partial class BuildingManager : Node
 
 
 		Callable.From(() => EmitSignal(SignalName.AvailableResourceCountChanged, AvailableWoodCount)).CallDeferred();
+		IsBasePlaced = false;
 	}
 
 	public override void _UnhandledInput(InputEvent evt)
@@ -348,6 +350,7 @@ public partial class BuildingManager : Node
 
 	private void EmitSignalBasePlaced()
 	{
+		IsBasePlaced = true;
 		EmitSignal(SignalName.BasePlaced);
 	}
 

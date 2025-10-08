@@ -8,7 +8,7 @@ public partial class GravitationalAnomalyMap : Node
 {
     private const float NoiseScale = 0.1f; // Adjust for smoothness
     private const float MinAnomaly = 0f;
-    private const float MaxAnomaly = 255f;
+    private const float MaxAnomaly = 200f;
     private List<Vector2I> allTilesBaseLayer;
     private bool fullMapDisplayed = false;
     private bool traceDisplayed = false;
@@ -97,10 +97,10 @@ public partial class GravitationalAnomalyMap : Node
                 float rawNoise = noise.GetNoise2D(x * noiseScale, y * noiseScale);
 
                 // Wide range for pronounced clouds
-                float scaledAnomaly = Mathf.Lerp(MinAnomaly - 500, MaxAnomaly + 500, (rawNoise + 1f) / 2f);
+                float scaledAnomaly = Mathf.Lerp(MinAnomaly - 100, MaxAnomaly + 0, (rawNoise + 1f) / 2f);
 
                 // Clamp for display
-                scaledAnomaly = Mathf.Clamp(scaledAnomaly, MinAnomaly, 100f);
+                scaledAnomaly = Mathf.Clamp(scaledAnomaly, MinAnomaly, 255f);
 
                 map[new Vector2I(x, y)] = scaledAnomaly;
             }
@@ -226,8 +226,8 @@ public partial class GravitationalAnomalyMap : Node
 
     public void AddMonolithToAnomalyMap(Vector2I monolithPosition, Dictionary<Vector2I,float> anomalyMap)
     {
-        int maxDistance = 70; // Maximum distance to affect tiles
-        float maxValue = 255f; // Highest value near the monolith
+        int maxDistance = 250; // Maximum distance to affect tiles
+        float maxValue = 500f; // Highest value near the monolith
         float minValue = 0f;   // Lowest value farthest from the monolith
         var randomAnomaly = new RandomNumberGenerator();
 
@@ -236,7 +236,7 @@ public partial class GravitationalAnomalyMap : Node
             int manhattanDistance = Mathf.Abs(monolithPosition.X - cell.X) + Mathf.Abs(monolithPosition.Y - cell.Y);
 
             // Add a ring
-            if (manhattanDistance == 9 || manhattanDistance == 10 || manhattanDistance == 11)
+            if (manhattanDistance == 7 || manhattanDistance == 8 || manhattanDistance == 9)
             {
                 anomalyMap[cell] += randomAnomaly.RandfRange(0, 30);
                 anomalyMap[cell] = Mathf.Clamp(anomalyMap[cell], minValue, maxValue);

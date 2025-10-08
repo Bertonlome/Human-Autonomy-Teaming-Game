@@ -77,6 +77,10 @@ public partial class SelectedRobotUI : CanvasLayer
 	{
 		explorModeOptionsButton = GetNode<OptionButton>("%ExplorModeOptionsButton");
 		randomExplorButton = GetNode<Button>("%RandomExplorButton");
+		if (!selectedBuildingComponent.BuildingResource.IsAerial)
+		{
+			explorModeOptionsButton.RemoveItem(0); // Removes the first item (index 0)
+		}
 		gradientSearchButton = GetNode<Button>("%GradientSearchButton");
 		returnToBaseButton = GetNode<Button>("%ReturnToBaseButton");
 		stopExplorbutton = GetNode<Button>("%StopExplorButton");
@@ -95,6 +99,14 @@ public partial class SelectedRobotUI : CanvasLayer
 		returnToBaseButton.Pressed += OnReturnToBaseButtonPressed;
 		stopExplorbutton.Pressed += OnStopExplorButtonPressed;
 		trackRobotButton.Pressed += OnTrackRobotButtonPressed;
+		if (SettingManager.Instance.IsTrackingRobot)
+		{
+			trackRobotButton.Text = "Stop tracking";
+		}
+		else
+		{
+			trackRobotButton.Text = "Track Robot";
+		}
 		explorModeOptionsButton.ItemSelected += OnOptionsButtonItemSelected;
 		startExplorButton.Pressed += OnStartExplorButtonSelected;
 

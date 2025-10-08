@@ -6,7 +6,7 @@
 
 [resource]
 script = ExtResource("3_oadmm")
-DisplayName = "Aerial Robot"
+DisplayName = "Drone"
 Description = "Explore the map"
 IsBase = false
 IsDeletable = true
@@ -16,7 +16,7 @@ StuckChancePerMove = 0.0
 moveInterval = 0.1
 BatteryMax = 500
 ResourceCost = 2
-BuildableRadius = 12
+BuildableRadius = 16
 ResourceRadius = 0
 ResourceCapacity = 0
 VisionRadius = 6
