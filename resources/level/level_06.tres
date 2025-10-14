@@ -8,4 +8,4 @@ Id = "earthmover"
 StartingWoodCount = 6
 StartingMaterialCount = 16
 LevelScenePath = "res://scenes/level/Level6.tscn"
-LevelDuration = 900
+LevelDuration = 1500

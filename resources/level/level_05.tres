@@ -8,4 +8,4 @@ Id = "pull_off_your_skin"
 StartingWoodCount = 6
 StartingMaterialCount = 16
 LevelScenePath = "res://scenes/level/Level5.tscn"
-LevelDuration = 900
+LevelDuration = 1500

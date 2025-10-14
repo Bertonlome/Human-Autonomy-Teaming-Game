@@ -29,20 +29,20 @@ Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (
 
 #### Améliorations UI/UX
 
-difficulté à comprendre ce qui représente la zone de déplacement
+[ ] difficulté à comprendre ce qui représente la zone de déplacement
 
-bug already moving sur l'exploration random de l'UAV
+[ ] bug already moving sur l'exploration random de l'UAV
 
-maybe render the stop button only if the robot is moving
+[ ] maybe render the stop button only if the robot is moving
 
-il faut changer le gradient, il ne doit jamais y avoir de gros marais barométrique sinon c'est injouable sur une grande map
+[x] il faut changer le gradient, il ne doit jamais y avoir de gros marais barométrique sinon c'est injouable sur une grande map
 
-Plus de temps sur grande map
+[x] Plus de temps sur grande map
 
-peut etre click and grab pour deplacer la map avec left click
+[ ] peut etre click and grab pour deplacer la map avec left click
 
-Reached maxima ne s'affiche pas sur le selected robot UI et il faudrait peut être mettre un glow rouge pour indiquer le moment de reached maxima.
+[ ] Reached maxima ne s'affiche pas sur le selected robot UI et il faudrait peut être mettre un glow rouge pour indiquer le moment de reached maxima.
 
-expliquer que lift robot ne marche qu'avec ZQSD
+[ ] expliquer que lift robot ne marche qu'avec ZQSD
 
-Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.
+[ ] Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.

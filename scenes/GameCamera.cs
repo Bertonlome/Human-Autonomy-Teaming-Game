@@ -43,6 +43,10 @@ public partial class GameCamera : Camera2D
 	private Vector2 noiseSample;
 	private float currentShakePercentage;
 	private BuildingComponent robotTracked;
+	
+	// Mouse drag variables
+	private bool isDragging = false;
+	private Vector2 lastMousePosition;
 
     public override void _Ready()
     {
@@ -65,6 +69,24 @@ public partial class GameCamera : Camera2D
 
     public override void _Process(double delta)
 	{
+		// Handle mouse drag panning
+		if (isDragging && currentState == State.CameraFree)
+		{
+			var currentMousePosition = GetViewport().GetMousePosition();
+			var mouseDelta = lastMousePosition - currentMousePosition;
+			// Scale mouse delta by zoom to maintain consistent drag speed
+			GlobalPosition += mouseDelta / Zoom;
+			lastMousePosition = currentMousePosition;
+			
+			// Apply camera limits
+			var viewPortrect = GetViewportRect();
+			var halfWidth = viewPortrect.Size.X / 2;
+			var halfHeight = viewPortrect.Size.Y / 2;
+			var xClamped = Mathf.Clamp(GlobalPosition.X, LimitLeft + halfWidth, LimitRight - halfWidth);
+			var yClamped = Mathf.Clamp(GlobalPosition.Y, LimitTop + halfHeight, LimitBottom - halfHeight);
+			GlobalPosition = new Vector2(xClamped, yClamped);
+		}
+		
 		switch (currentState)
 		{
 			case State.CameraFree:
@@ -94,6 +116,25 @@ public partial class GameCamera : Camera2D
 
 	public override void _UnhandledInput(InputEvent evt)
 	{
+		// Handle mouse button press/release for drag panning
+		if (evt is InputEventMouseButton mouseButton)
+		{
+			if (mouseButton.ButtonIndex == MouseButton.Left)
+			{
+				if (mouseButton.Pressed && currentState == State.CameraFree)
+				{
+					// Start dragging - input reached here so BuildingManager didn't handle it
+					isDragging = true;
+					lastMousePosition = GetViewport().GetMousePosition();
+				}
+				else if (!mouseButton.Pressed && isDragging)
+				{
+					// Stop dragging
+					isDragging = false;
+				}
+			}
+		}
+		
 		if(evt.IsActionPressed(ACTION_SPACEBAR) && currentState == State.CameraFree)
 		{
 			CenterOnPosition(buildingManager.hoveredGridArea.Position * 64);
