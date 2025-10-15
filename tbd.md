@@ -39,10 +39,10 @@ Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (
 
 [x] Plus de temps sur grande map
 
-[ ] peut etre click and grab pour deplacer la map avec left click
+[x] peut etre click and grab pour deplacer la map avec left click
 
-[ ] Reached maxima ne s'affiche pas sur le selected robot UI et il faudrait peut être mettre un glow rouge pour indiquer le moment de reached maxima.
+[x] Reached maxima ne s'affiche pas sur le selected robot UI et il faudrait peut être mettre un glow rouge pour indiquer le moment de reached maxima.
 
-[ ] expliquer que lift robot ne marche qu'avec ZQSD
+[x] expliquer que lift robot ne marche qu'avec ZQSD
 
 [ ] Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.

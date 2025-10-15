@@ -14,6 +14,10 @@ public partial class SelectedRobotUI : CanvasLayer
 	BuildingResource bridgeBuildingResource;
 	[Export]
 	BuildingResource antennaBuildingResource;
+	[Export]
+	Texture2D mutedGeigerTexture;
+	[Export]
+	Texture2D unmutedGeigerTexture;
 	private Button randomExplorButton;
 	private Button stopExplorbutton;
 	private Button trackRobotButton;
@@ -25,7 +29,9 @@ public partial class SelectedRobotUI : CanvasLayer
 	private Label statusLabel;
 	private Label batteryLabel;
 	private Label resourceLabel;
+	private Label titleLabel;
 	private Button multiPurposeButton;
+	private Button toggleSoundGeigerButton;
 
 	private Button placeAntennaButton;
 
@@ -70,6 +76,7 @@ public partial class SelectedRobotUI : CanvasLayer
 	public void SetupUI(BuildingComponent component)
 	{
 		selectedBuildingComponent = component;
+		selectedBuildingComponent.ModeChanged += OnModeChanged;
 		InitializeUI();
 	}
 
@@ -88,17 +95,31 @@ public partial class SelectedRobotUI : CanvasLayer
 		startExplorButton = GetNode<Button>("%StartExplorButton");
 		multiPurposeButton = GetNode<Button>("%PlaceBridgeButton");
 		placeAntennaButton = GetNode<Button>("%PlaceAntennaButton");
+		toggleSoundGeigerButton = GetNode<Button>("%ToggleSoundGeigerButton");
 		gravAnomValueLabel = GetNode<Label>("%GravAnomValueLabel");
 		statusLabel = GetNode<Label>("%StatusLabel");
 		batteryLabel = GetNode<Label>("%BatteryLabel");
 		resourceLabel = GetNode<Label>("%ResourceLabel");
-
+		titleLabel = GetNode<Label>("%Title");
 
 		randomExplorButton.Pressed += OnRandomExplorButtonPressed;
 		gradientSearchButton.Pressed += OnGradientSearchButtonPressed;
 		returnToBaseButton.Pressed += OnReturnToBaseButtonPressed;
 		stopExplorbutton.Pressed += OnStopExplorButtonPressed;
 		trackRobotButton.Pressed += OnTrackRobotButtonPressed;
+		toggleSoundGeigerButton.Pressed += () =>
+		{
+			if (!AudioHelpers.geigerActive)
+			{
+				AudioHelpers.StartGeigerCounter(initialAnomalyValue: selectedBuildingComponent.GetAnomalyReadingAtCurrentPos());
+				toggleSoundGeigerButton.Icon = unmutedGeigerTexture; // Remove the muted icon
+			}
+			else
+			{
+				AudioHelpers.StopGeigerCounter();
+				toggleSoundGeigerButton.Icon = mutedGeigerTexture; // Set the muted icon
+			}
+		};
 		if (SettingManager.Instance.IsTrackingRobot)
 		{
 			trackRobotButton.Text = "Stop tracking";
@@ -113,6 +134,7 @@ public partial class SelectedRobotUI : CanvasLayer
 
 		if (selectedBuildingComponent.BuildingResource.IsAerial)
 		{
+			titleLabel.Text = "Selected Drone";
 			if (selectedBuildingComponent.IsLifting)
 			{
 				ChangeStateMultiPurposeButton(MultiPurposeButtonState.DropRobot);
@@ -125,6 +147,7 @@ public partial class SelectedRobotUI : CanvasLayer
 		}
 		else
 		{
+			titleLabel.Text = "Selected Rover";
 			multiPurposeButton.Pressed += OnPlaceBridgeButtonPressed;
 			placeAntennaButton.Pressed += OnPlaceAntennaButtonPressed;
 		}
@@ -149,6 +172,8 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	private void OnNoMoreRobotSelected(BuildingComponent component)
 	{
+		// Stop Geiger counter when robot is deselected
+		AudioHelpers.StopGeigerCounter();
 		DisconnectSignals();
 		QueueFree();
 	}
@@ -239,10 +264,14 @@ public partial class SelectedRobotUI : CanvasLayer
 	private void SetAnomalySignal()
 	{
 		selectedBuildingComponent.NewAnomalyReading += OnNewAnomalyReading;
-		gravAnomValueLabel.Text = "Value: " + selectedBuildingComponent.GetAnomalyReadingAtCurrentPos();
+		int initialAnomaly = selectedBuildingComponent.GetAnomalyReadingAtCurrentPos();
+		gravAnomValueLabel.Text = "Value: " + initialAnomaly;
 		if (selectedBuildingComponent.IsStuck) { statusLabel.Text = "Stuck"; }
 		else if (selectedBuildingComponent.currentExplorMode != BuildingComponent.ExplorMode.None) statusLabel.Text = "Busy";
 		else statusLabel.Text = "Available";
+		
+		// Start Geiger counter with initial anomaly reading
+		AudioHelpers.StartGeigerCounter(initialAnomaly);
 	}
 
 	private void SetBatterySignal()
@@ -266,6 +295,8 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	public void HideUI()
 	{
+		// Stop Geiger counter when UI is hidden
+		AudioHelpers.StopGeigerCounter();
 		Visible = false;
 	}
 
@@ -275,6 +306,9 @@ public partial class SelectedRobotUI : CanvasLayer
 		{
 			gravAnomValueLabel.Text = "Value: " + value;
 		}
+		
+		// Update Geiger counter with new reading
+		AudioHelpers.UpdateAnomalyReading(value);
 	}
 
 	public void OnResourceCarriedCountChanged(int carriedResourceCount)
@@ -365,5 +399,76 @@ public partial class SelectedRobotUI : CanvasLayer
 				break;
 		}
 	}
+
+	private void OnModeChanged(string mode)
+	{
+		if (IsInstanceValid(statusLabel))
+		{
+			if (mode == "Stuck")
+			{
+				statusLabel.Text = "Stuck";
+			}
+			else if (mode == "Available")
+			{
+				statusLabel.Text = "Available";
+			}
+			else if (mode == "Busy")
+			{
+				statusLabel.Text = "Busy";
+			}
+			else if (mode == "Reached Maxima")
+			{
+				statusLabel.Text = "Reached Maxima";
+				AlertStatus();
+			}
+			else if (mode == "Idle")
+			{
+				statusLabel.Text = "Idle";
+				AlertStatus();
+			}
+			else if (mode == "Lifting")
+			{
+				statusLabel.Text = "Lifting";
+			}
+			else if (mode == "Lifted")
+			{
+				statusLabel.Text = "Lifted";
+			}
+		}
+	}
+
+	private async void AlertStatus()
+	{
+		if (!IsInstanceValid(statusLabel)) return;
+		
+		// Pulse from white to red 3 times
+		for (int i = 0; i < 3; i++)
+		{
+			// Fade from white to red
+			for (float t = 0; t <= 1; t += 0.05f)
+			{
+				if (!IsInstanceValid(statusLabel)) return;
+				Color color = new Color(1, 1 - t, 1 - t); // White (1,1,1) to Red (1,0,0)
+				statusLabel.AddThemeColorOverride("font_color", color);
+				await ToSignal(GetTree().CreateTimer(0.02f), "timeout");
+			}
+			
+			// Fade from red back to white
+			for (float t = 0; t <= 1; t += 0.05f)
+			{
+				if (!IsInstanceValid(statusLabel)) return;
+				Color color = new Color(1, t, t); // Red (1,0,0) to White (1,1,1)
+				statusLabel.AddThemeColorOverride("font_color", color);
+				await ToSignal(GetTree().CreateTimer(0.02f), "timeout");
+			}
+		}
+		
+		// End with white color
+		if (IsInstanceValid(statusLabel))
+		{
+			statusLabel.AddThemeColorOverride("font_color", Colors.White);
+		}
+	}
+
 
 }

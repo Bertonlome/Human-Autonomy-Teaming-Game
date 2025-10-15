@@ -963,6 +963,7 @@ public partial class BuildingComponent : Node2D
 				else
 				{
 					reachedMaxima = true;
+					FloatingTextManager.ShowMessageAtBuildingPosition("Reached Maxima", this);
 					EmitSignal(SignalName.ModeChanged, "Reached Maxima");
 				}
 				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");

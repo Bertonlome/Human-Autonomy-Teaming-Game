@@ -100,6 +100,41 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Up"
 
+[node name="GeigerContainer" type="PanelContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"PanelContainerAlternate"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/GeigerContainer"]
+layout_mode = 2
+theme_override_constants/separation = 64
+
+[node name="Label" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/GeigerContainer/HBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"OptionLabel"
+text = "Geiger counter SFX
+"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/GeigerContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 10
+theme_override_constants/separation = 16
+
+[node name="GeigerDownButton" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/GeigerContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Down"
+
+[node name="GeigerLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/GeigerContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionLabel"
+text = "10"
+
+[node name="GeigerUpButton" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer/GeigerContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Up"
+
 [node name="WindowContainer" type="PanelContainer" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_type_variation = &"PanelContainerAlternate"
