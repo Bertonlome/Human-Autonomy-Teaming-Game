@@ -35,7 +35,7 @@ window/size/window_height_override=1080
 
 [dotnet]
 
-project/assembly_name="PuzzleCourse"
+project/assembly_name="HAT_Game"
 
 [editor]
 
