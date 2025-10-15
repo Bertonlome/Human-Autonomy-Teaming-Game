@@ -6,251 +6,290 @@ using System.Linq;
 
 public partial class GravitationalAnomalyMap : Node
 {
-    private const float NoiseScale = 0.1f; // Adjust for smoothness
     private const float MinAnomaly = 0f;
-    private const float MaxAnomaly = 200f;
-    private List<Vector2I> allTilesBaseLayer;
-    private bool fullMapDisplayed = false;
-    private bool traceDisplayed = false;
+    private const float MaxAnomaly = 500f;   // unify max (you clamp to 500 later)
+    private const int   TilePx = 64;
 
-    // Track which tiles have already been painted in the trace
-    private HashSet<Vector2I> paintedTraceTiles = new();
+    [Export] private GridManager gridManager;
+    [Export] private FastNoiseLite noise;
+    [Export] private TileMapLayer baseTerrainTilemapLayer;
 
-    [Export]
-    private GridManager gridManager;
-    [Export]
-    private FastNoiseLite noise;
-    [Export]
-    private TileMapLayer baseTerrainTilemapLayer;
+    // Visual tuning
+    [Export] public float Gamma = 0.6f;                 // <1 boosts lows
+    [Export] public bool UseAdditiveBlend = true;       // makes peaks pop
+    [Export] public float OverlayAlpha = 1.0f;          // master alpha
 
     private Dictionary<Vector2I, float> anomalyMap;
-    private Dictionary<Vector2I, ColorRect> traceRects = new();
+    private List<Vector2I> allTilesBaseLayer;
+
+    // --- New: MultiMesh overlays ---
+    private MultiMeshInstance2D _fullHeatMMI;  // whole-map heat layer
+    private MultiMeshInstance2D _traceMMI;     // “discovered” layer
+    private MultiMesh _fullHeatMM;
+    private MultiMesh _traceMM;
+
+    // Fast index for per-instance updates
+    private Dictionary<Vector2I,int> _cellToIndex = new();
+
+    // State
+    private bool fullMapDisplayed = false;
+    private bool traceDisplayed = false;
+    private HashSet<Vector2I> paintedTraceTiles = new();
 
     public override void _Ready()
     {
-        // Initialize and generate anomalies
+        // 1) Tiles & bounds
         allTilesBaseLayer = baseTerrainTilemapLayer.GetUsedCells().ToList();
+        var sorted = allTilesBaseLayer.OrderBy(v => v.X).ThenBy(v => v.Y).ToList();
+        var (xMin, yMin, xRange, yRange) = AnalyzeVector2IList(sorted);
 
-        // Sort the list by x, then by y
-        List<Vector2I> sortedList = allTilesBaseLayer
-            .OrderBy(v => v.X)
-            .ThenBy(v => v.Y)
-            .ToList();
-
-        // Get bounds of the tilemap
-        (int xMin, int yMin, int xRange, int yRange) = AnalyzeVector2IList(sortedList);
-
-        // Generate anomaly map and pre-create ColorRects
+        // 2) Generate anomalies
         anomalyMap = GenerateGravitationalAnomalyMapPerlinNoise(xMin, yMin, xRange, yRange);
         AddMonolithToAnomalyMap(gridManager.monolithPosition, anomalyMap);
 
-        // Pre-create ColorRects for all tiles
-        Vector2 size = new Vector2(64, 64);
-        GD.Print("number of tiles in anomaly map: " + anomalyMap.Count);
-        foreach (var kv in anomalyMap)
+        // 3) Build overlays (but don’t add to tree yet)
+        BuildFullHeatOverlay(sorted);
+        BuildTraceOverlay(sorted);
+    }
+
+    // ---------- Building overlays ----------
+
+    private void BuildFullHeatOverlay(List<Vector2I> cells)
+    {
+        _fullHeatMMI = new MultiMeshInstance2D();
+        _fullHeatMM = new MultiMesh
         {
-            Vector2I cell = kv.Key;
-            float scaledAnomaly = kv.Value;
-            ColorRect colorRect = new ColorRect();
-            colorRect.SetSize(size);
-            colorRect.GlobalPosition = new Vector2(cell.X * 64, cell.Y * 64);
-            Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
-            colorRect.Color = squareColor;
-            colorRect.Visible = false;
-            AddChild(colorRect);
-            traceRects[cell] = colorRect;
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform2D,
+            UseColors = true,  // Change this line
+            InstanceCount = cells.Count,
+            Mesh = MakeQuadMesh(new Vector2(TilePx, TilePx))
+        };
+
+        var mat = new CanvasItemMaterial
+        {
+            BlendMode = UseAdditiveBlend ? CanvasItemMaterial.BlendModeEnum.Add
+                                         : CanvasItemMaterial.BlendModeEnum.Mix,
+            LightMode = CanvasItemMaterial.LightModeEnum.Unshaded
+        };
+
+        _fullHeatMMI.Multimesh = _fullHeatMM;
+        _fullHeatMMI.Material = mat;
+        _fullHeatMMI.ZIndex = 100;
+
+        _cellToIndex.Clear();
+        int i = 0;
+        foreach (var cell in cells)
+        {
+            _cellToIndex[cell] = i;
+
+            // Place a quad at tile center
+            var pos = new Vector2(cell.X * TilePx + TilePx * 0.5f,
+                                  cell.Y * TilePx + TilePx * 0.5f);
+            _fullHeatMM.SetInstanceTransform2D(i, new Transform2D(0, pos));
+
+            // Color from anomaly using gamma + heat ramp
+            float raw = anomalyMap.TryGetValue(cell, out var v) ? v : 0f;
+            float n = Mathf.Pow(Mathf.Clamp(raw / MaxAnomaly, 0f, 1f), Gamma);
+            var c = HeatColor(n);
+            c.A *= OverlayAlpha;
+            _fullHeatMM.SetInstanceColor(i, c);
+
+            i++;
         }
     }
 
-    private (int, int, int, int) AnalyzeVector2IList(List<Vector2I> vectorList)
+    private void BuildTraceOverlay(List<Vector2I> cells)
     {
-        if (vectorList.Count == 0)
+        _traceMMI = new MultiMeshInstance2D();
+        _traceMM = new MultiMesh
         {
-            GD.PrintErr("The list is empty.");
-            return (0, 0, 0, 0);
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform2D,
+            UseColors = true,  // Change this line
+            InstanceCount = cells.Count,
+            Mesh = MakeQuadMesh(new Vector2(TilePx, TilePx))
+        };
+
+        var mat = new CanvasItemMaterial
+        {
+            BlendMode = UseAdditiveBlend ? CanvasItemMaterial.BlendModeEnum.Add
+                                         : CanvasItemMaterial.BlendModeEnum.Mix,
+            LightMode = CanvasItemMaterial.LightModeEnum.Unshaded
+        };
+
+        _traceMMI.Multimesh = _traceMM;
+        _traceMMI.Material = mat;
+        _traceMMI.ZIndex = 110; // draw above full heat if both shown
+
+        int i = 0;
+        foreach (var cell in cells)
+        {
+            var pos = new Vector2(cell.X * TilePx + TilePx * 0.5f,
+                                  cell.Y * TilePx + TilePx * 0.5f);
+            _traceMM.SetInstanceTransform2D(i, new Transform2D(0, pos));
+
+            // Start hidden (alpha 0). We’ll reveal as the player “discovers”.
+            _traceMM.SetInstanceColor(i, new Color(0,0,0,0));
+            i++;
         }
-
-        // Extract min and max
-        int xMin = vectorList[0].X;
-        int yMin = vectorList[0].Y;
-        int xMax = vectorList[^1].X;
-        int yMax = vectorList[^1].Y;
-
-        // Calculate ranges
-        int xRange = xMax - xMin + 1;
-        int yRange = yMax - yMin + 1;
-
-        return (xMin, yMin, xRange, yRange);
     }
 
-    private Dictionary<Vector2I, float> GenerateGravitationalAnomalyMapPerlinNoise(int xMin, int yMin, int width, int height)
+    private static Mesh MakeQuadMesh(Vector2 size)
     {
-        var noiseScale = 0.6f;
-        Dictionary<Vector2I, float> map = new Dictionary<Vector2I, float>();
+        var m = new QuadMesh { Size = size };  // Remove Offset property
+        return m;
+    }
+
+    // ---------- Your existing generators (kept, minor tidy) ----------
+
+    private (int, int, int, int) AnalyzeVector2IList(List<Vector2I> list)
+    {
+        if (list.Count == 0) return (0,0,0,0);
+        int xMin = list[0].X;
+        int yMin = list[0].Y;
+        int xMax = list[^1].X;
+        int yMax = list[^1].Y;
+        return (xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+    }
+
+    private Dictionary<Vector2I, float> GenerateGravitationalAnomalyMapPerlinNoise(
+        int xMin, int yMin, int width, int height)
+    {
+        var map = new Dictionary<Vector2I, float>(width * height);
+        float noiseScale = 0.6f;
         noise.Seed = (int)GD.Randi();
 
         for (int y = yMin; y < yMin + height; y++)
+        for (int x = xMin; x < xMin + width; x++)
         {
-            for (int x = xMin; x < xMin + width; x++)
-            {
-                // Use noise scale for clouds
-                float rawNoise = noise.GetNoise2D(x * noiseScale, y * noiseScale);
-
-                // Wide range for pronounced clouds
-                float scaledAnomaly = Mathf.Lerp(MinAnomaly - 100, MaxAnomaly + 0, (rawNoise + 1f) / 2f);
-
-                // Clamp for display
-                scaledAnomaly = Mathf.Clamp(scaledAnomaly, MinAnomaly, 255f);
-
-                map[new Vector2I(x, y)] = scaledAnomaly;
-            }
+            float rawNoise = noise.GetNoise2D(x * noiseScale, y * noiseScale); // [-1,1]
+            float scaled = Mathf.Lerp(MinAnomaly - 200, MaxAnomaly -200, (rawNoise + 1f) * 0.5f);
+            map[new Vector2I(x, y)] = Mathf.Clamp(scaled, MinAnomaly, MaxAnomaly);
         }
-
         return map;
     }
 
-    private Dictionary<Vector2I, float> GenerateGravitationalAnomalyMap(int xMin, int yMin, int width, int height)
+    public void AddMonolithToAnomalyMap(Vector2I monolithPosition, Dictionary<Vector2I,float> map)
     {
-        Dictionary<Vector2I, float> map = new Dictionary<Vector2I, float>();
-        Vector2I monolithPos = gridManager.monolithPosition;
-        int maxDistance = 50; // or calculate based on map size
-        float maxValue = 255f;
-        float minValue = 0f;
+        int maxDistance = 150;
+        float maxValue = MaxAnomaly;
+        float minValue = MinAnomaly;
         var rng = new RandomNumberGenerator();
 
-        for (int y = yMin; y < yMin + height; y++)
+        foreach (var cell in map.Keys.ToList())
         {
-            for (int x = xMin; x < xMin + width; x++)
+            int d = Mathf.Abs(monolithPosition.X - cell.X) + Mathf.Abs(monolithPosition.Y - cell.Y);
+
+            if (d == 7 || d == 8 || d == 9)
             {
-                Vector2I cell = new Vector2I(x, y);
-                int distance = Mathf.Abs(monolithPos.X - x) + Mathf.Abs(monolithPos.Y - y); // Manhattan distance
-                float normalizedDistance = Mathf.Clamp((float)distance / maxDistance, 0f, 1f);
-
-                // Main gradient
-                float anomalyValue = Mathf.Lerp(maxValue, minValue, normalizedDistance);
-
-                // Optional: add subtle noise
-                anomalyValue += rng.RandfRange(-20f, 20f);
-
-                anomalyValue = Mathf.Clamp(anomalyValue, minValue, maxValue);
-
-                map[cell] = anomalyValue;
+                map[cell] = Mathf.Clamp(map[cell] + rng.RandfRange(0, 30), minValue, maxValue);
+            }
+            else if (d <= maxDistance)
+            {
+                float t = Mathf.Clamp((float)d / maxDistance, 0f, 1f);
+                
+                // Use power curve: smaller exponent = steeper near monolith, gentler far away
+                float curve = Mathf.Pow(t, 0.5f);  // Try values between 2.0-3.0
+                
+                float grad = Mathf.Lerp(maxValue, minValue, curve);
+                map[cell] = Mathf.Clamp(map[cell] + grad, minValue, maxValue);
             }
         }
-        return map;
     }
+
+    // ---------- Public API (same names) ----------
 
     public void DisplayAnomalyMap()
     {
-        if (fullMapDisplayed == true)
+        if (fullMapDisplayed)
         {
-            foreach(Node child in GetChildren())
+            if (_fullHeatMMI.IsInsideTree())
             {
-                child.QueueFree();
+                RemoveChild(_fullHeatMMI);
+                _fullHeatMMI.QueueFree();
             }
             fullMapDisplayed = false;
         }
         else
+        {
+            // Rebuild the instance if it was disposed
+            if (!IsInstanceValid(_fullHeatMMI))
             {
-            Vector2 size = new Vector2(64, 64);
-
-            foreach (KeyValuePair<Vector2I, float> entry in anomalyMap)
-            {
-                Vector2I cell = entry.Key;
-                float scaledAnomaly = entry.Value;
-                ColorRect colorRect = new ColorRect();
-                colorRect.SetSize(size);
-
-                // Position it in world space
-                colorRect.GlobalPosition = new Vector2(cell.X * 64, cell.Y * 64);
-
-                // Set its color with opacity based on the anomaly value
-                Color squareColor = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
-                colorRect.Color = squareColor;
-
-                // Add it to the scene tree
-                AddChild(colorRect);
+                BuildFullHeatOverlay(allTilesBaseLayer.OrderBy(v => v.X).ThenBy(v => v.Y).ToList());
             }
+            AddChild(_fullHeatMMI);
             fullMapDisplayed = true;
         }
     }
 
-
     public void DisplayTrace(HashSet<Vector2I> tileDiscovered)
     {
-        //var stopwatch = new System.Diagnostics.Stopwatch();
-        //stopwatch.Start();
-
-        // Only update tiles that are newly discovered (not already painted)
-        int newTiles = 0;
-        foreach (var tile in tileDiscovered)
+        if (!traceDisplayed)
         {
-            if (paintedTraceTiles.Contains(tile))
-                continue;
-            if (!traceRects.ContainsKey(tile))
-                continue;
-            float scaledAnomaly = anomalyMap[tile];
-            var rect = traceRects[tile];
-            rect.Color = Color.Color8(255, 255, 255, (byte)scaledAnomaly);
-            rect.Visible = true;
-            paintedTraceTiles.Add(tile);
-            newTiles++;
+            // Rebuild if disposed
+            if (!IsInstanceValid(_traceMMI))
+            {
+                BuildTraceOverlay(allTilesBaseLayer.OrderBy(v => v.X).ThenBy(v => v.Y).ToList());
+            }
+            AddChild(_traceMMI);
+            traceDisplayed = true;
         }
-    traceDisplayed = true;
-    //stopwatch.Stop();
-    //GD.Print($"Trace rendering time: {stopwatch.Elapsed.TotalMilliseconds:F3} ms, new tiles: {newTiles}");
+
+        int revealed = 0;
+        foreach (var cell in tileDiscovered)
+        {
+            if (paintedTraceTiles.Contains(cell)) continue;
+            if (!_cellToIndex.TryGetValue(cell, out int idx)) continue;
+
+            float raw = anomalyMap.TryGetValue(cell, out var v) ? v : 0f;
+            float n = Mathf.Pow(Mathf.Clamp(raw / MaxAnomaly, 0f, 1f), Gamma);
+            var c = HeatColor(n);
+            c.A *= OverlayAlpha;
+
+            _traceMM.SetInstanceColor(idx, c);
+            paintedTraceTiles.Add(cell);
+            revealed++;
+        }
     }
 
     public void HideTrace()
     {
-        foreach (var rect in traceRects.Values)
+        if (_traceMMI.IsInsideTree())
         {
-            rect.Visible = false;
+            RemoveChild(_traceMMI);
+            _traceMMI.QueueFree();
         }
-        paintedTraceTiles.Clear();
         traceDisplayed = false;
+        paintedTraceTiles.Clear();
+
+        // Rebuild empty trace (so we can show it again later without realloc)
+        BuildTraceOverlay(allTilesBaseLayer.OrderBy(v=>v.X).ThenBy(v=>v.Y).ToList());
     }
 
     public float GetAnomalyAt(int x, int y)
     {
-        Vector2I cell = new Vector2I(x, y);
-
-        if (anomalyMap.TryGetValue(cell, out float anomaly))
-        {
-            return anomaly;
-        }
-
-        //GD.PrintErr($"No anomaly data found for tile at ({x}, {y})");
-        return 0f;
+        var cell = new Vector2I(x, y);
+        return anomalyMap.TryGetValue(cell, out float a) ? a : 0f;
     }
 
-    public void AddMonolithToAnomalyMap(Vector2I monolithPosition, Dictionary<Vector2I,float> anomalyMap)
+    // ---------- Color mapping ----------
+
+    private Color HeatColor(float t)
     {
-        int maxDistance = 250; // Maximum distance to affect tiles
-        float maxValue = 500f; // Highest value near the monolith
-        float minValue = 0f;   // Lowest value farthest from the monolith
-        var randomAnomaly = new RandomNumberGenerator();
-
-        foreach (var cell in anomalyMap.Keys.ToList())
+        // 0..1 → blue→cyan→yellow→red (high contrast)
+        t = Mathf.Clamp(t, 0f, 1f);
+        if (t < 0.33f)
         {
-            int manhattanDistance = Mathf.Abs(monolithPosition.X - cell.X) + Mathf.Abs(monolithPosition.Y - cell.Y);
-
-            // Add a ring
-            if (manhattanDistance == 7 || manhattanDistance == 8 || manhattanDistance == 9)
-            {
-                anomalyMap[cell] += randomAnomaly.RandfRange(0, 30);
-                anomalyMap[cell] = Mathf.Clamp(anomalyMap[cell], minValue, maxValue);
-            }
-            // Smooth gradient within maxDistance, combine with noise
-            else if (manhattanDistance <= maxDistance)
-            {
-                float normalizedDistance = Mathf.Clamp((float)manhattanDistance / maxDistance, 0f, 1f);
-                float gradientValue = Mathf.Lerp(maxValue, minValue, normalizedDistance);
-
-                anomalyMap[cell] += gradientValue;
-                anomalyMap[cell] = Mathf.Clamp(anomalyMap[cell], minValue, maxValue);
-            }
-            // else: leave the anomaly value as is (background noise)
+            float k = t / 0.33f;
+            return new Color(0f, 0.2f + 0.8f * k, 1f, 1f);
+        }
+        if (t < 0.66f)
+        {
+            float k = (t - 0.33f) / 0.33f;
+            return new Color(k, 1f, 1f - 0.5f * k, 1f);
+        }
+        {
+            float k = (t - 0.66f) / 0.34f;
+            return new Color(1f, 1f - 0.7f * k, 0.5f - 0.5f * k, 1f);
         }
     }
 }
