@@ -45,4 +45,4 @@ Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (
 
 [x] expliquer que lift robot ne marche qu'avec ZQSD
 
-[ ] Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.
+[x] Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.
