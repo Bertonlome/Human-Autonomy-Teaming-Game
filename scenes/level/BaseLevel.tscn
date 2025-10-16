@@ -82,6 +82,7 @@ gridManager = NodePath("../GridManager")
 [node name="FloatingTextManager" parent="." instance=ExtResource("13_p7dg5")]
 
 [node name="GravitationalAnomalyMap" type="Node" parent="." node_paths=PackedStringArray("gridManager", "baseTerrainTilemapLayer")]
+unique_name_in_owner = true
 script = ExtResource("8_ufxub")
 gridManager = NodePath("../GridManager")
 noise = SubResource("FastNoiseLite_uikxx")

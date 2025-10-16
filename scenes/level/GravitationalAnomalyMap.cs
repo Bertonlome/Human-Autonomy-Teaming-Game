@@ -1,8 +1,8 @@
 using Game.Manager;
 using Godot;
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 public partial class GravitationalAnomalyMap : Node
 {
@@ -35,6 +35,8 @@ public partial class GravitationalAnomalyMap : Node
     private bool fullMapDisplayed = false;
     private bool traceDisplayed = false;
     private HashSet<Vector2I> paintedTraceTiles = new();
+    public Vector2I MapSize => new Vector2I(baseTerrainTilemapLayer.GetUsedRect().Size.X, baseTerrainTilemapLayer.GetUsedRect().Size.Y);
+    public Rect2I MapBounds => baseTerrainTilemapLayer.GetUsedRect(); // Full bounds including position
 
     public override void _Ready()
     {
@@ -62,7 +64,7 @@ public partial class GravitationalAnomalyMap : Node
             TransformFormat = MultiMesh.TransformFormatEnum.Transform2D,
             UseColors = true,  // Change this line
             InstanceCount = cells.Count,
-            Mesh = MakeQuadMesh(new Vector2(TilePx, TilePx))
+            Mesh = MakeQuadMesh(new Godot.Vector2(TilePx, TilePx))
         };
 
         var mat = new CanvasItemMaterial
@@ -83,7 +85,7 @@ public partial class GravitationalAnomalyMap : Node
             _cellToIndex[cell] = i;
 
             // Place a quad at tile center
-            var pos = new Vector2(cell.X * TilePx + TilePx * 0.5f,
+            var pos = new Godot.Vector2(cell.X * TilePx + TilePx * 0.5f,
                                   cell.Y * TilePx + TilePx * 0.5f);
             _fullHeatMM.SetInstanceTransform2D(i, new Transform2D(0, pos));
 
@@ -106,7 +108,7 @@ public partial class GravitationalAnomalyMap : Node
             TransformFormat = MultiMesh.TransformFormatEnum.Transform2D,
             UseColors = true,  // Change this line
             InstanceCount = cells.Count,
-            Mesh = MakeQuadMesh(new Vector2(TilePx, TilePx))
+            Mesh = MakeQuadMesh(new Godot.Vector2(TilePx, TilePx))
         };
 
         var mat = new CanvasItemMaterial
@@ -123,7 +125,7 @@ public partial class GravitationalAnomalyMap : Node
         int i = 0;
         foreach (var cell in cells)
         {
-            var pos = new Vector2(cell.X * TilePx + TilePx * 0.5f,
+            var pos = new Godot.Vector2(cell.X * TilePx + TilePx * 0.5f,
                                   cell.Y * TilePx + TilePx * 0.5f);
             _traceMM.SetInstanceTransform2D(i, new Transform2D(0, pos));
 
@@ -133,7 +135,7 @@ public partial class GravitationalAnomalyMap : Node
         }
     }
 
-    private static Mesh MakeQuadMesh(Vector2 size)
+    private static Mesh MakeQuadMesh(Godot.Vector2 size)
     {
         var m = new QuadMesh { Size = size };  // Remove Offset property
         return m;

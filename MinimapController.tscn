@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://crt56cgg5wtwh"]
+
+[ext_resource type="Script" path="res://scenes/ui/MiniMapController.cs" id="1_k44v5"]
+[ext_resource type="PackedScene" uid="uid://1cac11aj1xh2" path="res://scenes/ui/AnomalyMiniMap.tscn" id="2_0o31r"]
+
+[node name="MiniMapController" type="Control" node_paths=PackedStringArray("Container")]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_k44v5")
+MiniMapScene = ExtResource("2_0o31r")
+Container = NodePath("MarginContainer/PanelContainer/MarginContainer/SubViewportContainer")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 0
+offset_left = -136.0
+offset_top = -24.0
+offset_right = 137.0
+offset_bottom = 265.0
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer/PanelContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/PanelContainer/Panel"]
+layout_mode = 0
+offset_right = 24.0
+offset_bottom = 32.0
+theme_override_constants/margin_top = 9
+
+[node name="Label" type="Label" parent="MarginContainer/PanelContainer/Panel/MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Anomaly histogram
+"
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 28
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/PanelContainer/MarginContainer/SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(225, 225)
+size_2d_override = Vector2i(128, 128)
+render_target_update_mode = 4
+
+[node name="AnomalyMiniMap" parent="MarginContainer/PanelContainer/MarginContainer/SubViewportContainer/SubViewport" instance=ExtResource("2_0o31r")]

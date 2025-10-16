@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://1cac11aj1xh2"]
+[gd_scene load_steps=6 format=3 uid="uid://1cac11aj1xh2"]
 
 [ext_resource type="Script" path="res://scenes/ui/AnomalyMiniMap.cs" id="1_kqy2l"]
 
@@ -13,6 +13,10 @@ emission = Color(1, 1, 1, 1)
 emission_energy_multiplier = 5.0
 
 [sub_resource type="PrismMesh" id="PrismMesh_lngw1"]
+
+[sub_resource type="Environment" id="Environment_xh3p6"]
+background_mode = 1
+background_color = Color(0.0352941, 0.113725, 0.270588, 1)
 
 [node name="AnomalyMiniMap" type="Node3D" node_paths=PackedStringArray("Bars", "RobotMarker", "Cam")]
 script = ExtResource("1_kqy2l")
@@ -35,3 +39,6 @@ material_override = SubResource("StandardMaterial3D_1buea")
 unique_name_in_owner = true
 material_override = SubResource("StandardMaterial3D_3hdfm")
 mesh = SubResource("PrismMesh_lngw1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_xh3p6")

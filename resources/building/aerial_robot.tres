@@ -20,6 +20,6 @@ BuildableRadius = 16
 ResourceRadius = 0
 ResourceCapacity = 0
 VisionRadius = 6
-AnomalySensorRadius = 3
+AnomalySensorRadius = 10
 BuildingScene = ExtResource("1_hekwi")
 SpriteScene = ExtResource("2_3g6nv")

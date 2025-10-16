@@ -34,6 +34,7 @@ public partial class BaseLevel : Node
 	private bool isComplete;
 	private bool isFailed;
 	private int currentTimeElapsed = 0;
+	private GravitationalAnomalyMap gravitationalAnomalyMap;
 	SelectedRobotUI selectedRobotUI;
 
 	public override void _Ready()
@@ -46,6 +47,7 @@ public partial class BaseLevel : Node
 		baseTerrainTilemapLayer = GetNode<TileMapLayer>("%BaseTerrainTileMapLayer");
 		gameUI = GetNode<GameUI>("GameUI");
 		buildingManager = GetNode<BuildingManager>("BuildingManager");
+		gravitationalAnomalyMap = GetNode<GravitationalAnomalyMap>("GravitationalAnomalyMap");
 
 		buildingManager.SetStartingResourceCount(levelDefinitionResource.StartingWoodCount);
 		buildingManager.SetStartingMaterialCount(levelDefinitionResource.StartingMaterialCount);
@@ -134,7 +136,7 @@ public partial class BaseLevel : Node
 		selectedRobotUI = selectedRobotUIScene.Instantiate<SelectedRobotUI>();
 		AddChild(selectedRobotUI);
 		//selectedRobotUI.selectedBuildingComponent = buildingComponent;
-		selectedRobotUI.SetupUI(buildingComponent); // Call setup after adding to tree
+		selectedRobotUI.SetupUI(buildingComponent, gravitationalAnomalyMap); // Call setup after adding to tree
 	}
 
 	private void OnClockisTicking()

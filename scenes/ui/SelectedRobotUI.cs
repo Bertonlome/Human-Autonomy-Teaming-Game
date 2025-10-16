@@ -38,6 +38,7 @@ public partial class SelectedRobotUI : CanvasLayer
 	private MultiPurposeButtonState currentButtonState;
 	public BuildingComponent selectedBuildingComponent;
 	public BuildingComponent groundRobotBelowUav;
+	private MiniMapController miniMapController;
 
 	public enum MultiPurposeButtonState
 	{
@@ -73,11 +74,37 @@ public partial class SelectedRobotUI : CanvasLayer
 		GameEvents.Instance.Connect(GameEvents.SignalName.NoGroundRobotBelowUav, Callable.From(OnNoGroundRobotBelowUav));
 	}
 
-	public void SetupUI(BuildingComponent component)
+	public void SetupUI(BuildingComponent component, GravitationalAnomalyMap anomalyMap)
 	{
 		selectedBuildingComponent = component;
 		selectedBuildingComponent.ModeChanged += OnModeChanged;
 		InitializeUI();
+		
+		
+		// MiniMapController is optional - only initialize if it exists
+		if (HasNode("%MiniMapController"))
+		{
+			miniMapController = GetNode<MiniMapController>("%MiniMapController");
+			miniMapController.Initialize(selectedBuildingComponent, anomalyMap, anomalyMap.MapSize);
+			
+			// Set to robot-centered window mode with sensor radius
+			int sensorRadius = selectedBuildingComponent.BuildingResource.AnomalySensorRadius;
+			int windowSize = sensorRadius * 2; // diameter of sensor range
+			miniMapController.SetMode(false, new Vector2I(windowSize, windowSize)); // false = robot window mode
+			
+			// Update robot position (this will refresh internally)
+			miniMapController.SetRobotCell(selectedBuildingComponent.GetGridCellPosition());
+			// Removed redundant Refresh() call - SetRobotCell already refreshes
+			
+			// Connect to building moved event to update minimap when robot moves
+			GameEvents.Instance.Connect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnBuildingMovedForMinimap));
+		}
+		else
+		{
+			GD.PrintErr("MiniMapController node not found in SelectedRobotUI scene.");
+		}
+		
+		Visible = true;
 	}
 
 	private void InitializeUI()
@@ -306,9 +333,21 @@ public partial class SelectedRobotUI : CanvasLayer
 		{
 			gravAnomValueLabel.Text = "Value: " + value;
 		}
+
+		// Don't refresh minimap here - OnBuildingMovedForMinimap already handles it
+		// This was causing double-refresh on every move
 		
 		// Update Geiger counter with new reading
 		AudioHelpers.UpdateAnomalyReading(value);
+	}
+
+	private void OnBuildingMovedForMinimap(BuildingComponent movedBuilding)
+	{
+		// Only update if it's the selected robot that moved
+		if (movedBuilding == selectedBuildingComponent && IsInstanceValid(miniMapController))
+		{
+			miniMapController.SetRobotCell(selectedBuildingComponent.GetGridCellPosition());
+		}
 	}
 
 	public void OnResourceCarriedCountChanged(int carriedResourceCount)
@@ -348,6 +387,12 @@ public partial class SelectedRobotUI : CanvasLayer
 		if (selectedBuildingComponent != null)
 		{
 			selectedBuildingComponent.NewAnomalyReading -= OnNewAnomalyReading;
+		}
+		
+		// Disconnect minimap building moved event
+		if (GameEvents.Instance != null && GameEvents.Instance.IsConnected(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnBuildingMovedForMinimap)))
+		{
+			GameEvents.Instance.Disconnect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnBuildingMovedForMinimap));
 		}
 	}
 
