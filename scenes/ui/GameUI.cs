@@ -32,6 +32,7 @@ public partial class GameUI : CanvasLayer
 	private CheckButton displayTraceButton;
 	private bool isTraceActive = false;
 	private readonly StringName ACTION_SPACEBAR = "spacebar";
+	private HashSet<Vector2I> _previouslyDiscoveredTiles = new(); // Track to calculate delta
 
 	[Export]
 	private GravitationalAnomalyMap gravitationalAnomalyMap;
@@ -74,6 +75,8 @@ public partial class GameUI : CanvasLayer
 	{
 		if (isTraceActive)
 		{
+			var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+			
 			var allRobots = BuildingComponent.GetValidBuildingComponents(this);
 			HashSet<Vector2I> tileDiscoveredByAllRobots = new();
 			foreach (var robot in allRobots)
@@ -84,7 +87,26 @@ public partial class GameUI : CanvasLayer
 					tileDiscoveredByAllRobots.Add(tile);
 				}
 			}
-			gravitationalAnomalyMap.DisplayTrace(tileDiscoveredByAllRobots);
+			
+			var gatherTime = stopwatch.Elapsed.TotalMilliseconds;
+			
+			// OPTIMIZATION: Only send newly discovered tiles to DisplayTrace
+			var newTiles = new HashSet<Vector2I>(tileDiscoveredByAllRobots);
+			newTiles.ExceptWith(_previouslyDiscoveredTiles);
+			
+			var deltaTime = stopwatch.Elapsed.TotalMilliseconds;
+			
+			if (newTiles.Count > 0)
+			{
+				gravitationalAnomalyMap.DisplayTrace(newTiles);
+			}
+			
+			stopwatch.Stop();
+			
+			GD.Print($"OnRobotMoved: Total tiles={tileDiscoveredByAllRobots.Count}, New tiles={newTiles.Count}, Gather={gatherTime:F2}ms, Delta={deltaTime-gatherTime:F2}ms, Total={stopwatch.Elapsed.TotalMilliseconds:F2}ms");
+			
+			// Remember all discovered tiles for next frame
+			_previouslyDiscoveredTiles = tileDiscoveredByAllRobots;
 		}
 	}
 
@@ -243,6 +265,7 @@ public partial class GameUI : CanvasLayer
 		{
 			gravitationalAnomalyMap.HideTrace();
 			isTraceActive = false;
+			_previouslyDiscoveredTiles.Clear(); // Reset tracking when disabled
 			return;
 		}
 		else
@@ -257,7 +280,12 @@ public partial class GameUI : CanvasLayer
 					tileDiscoveredByAllRobots.Add(tile);
 				}
 			}
+			
+			// First time enabling: send ALL discovered tiles
 			gravitationalAnomalyMap.DisplayTrace(tileDiscoveredByAllRobots);
+			
+			// Remember for next update
+			_previouslyDiscoveredTiles = tileDiscoveredByAllRobots;
 		}
 		isTraceActive = buttonPressed;
 	}

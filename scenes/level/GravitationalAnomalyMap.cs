@@ -223,8 +223,11 @@ public partial class GravitationalAnomalyMap : Node
         }
     }
 
-    public void DisplayTrace(HashSet<Vector2I> tileDiscovered)
+    // Now receives only newly discovered tiles (delta), not all tiles
+    public void DisplayTrace(HashSet<Vector2I> newlyDiscoveredTiles)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
         if (!traceDisplayed)
         {
             // Rebuild if disposed
@@ -236,10 +239,10 @@ public partial class GravitationalAnomalyMap : Node
             traceDisplayed = true;
         }
 
+        // OPTIMIZED: Only process new tiles (no iteration over previously discovered tiles)
         int revealed = 0;
-        foreach (var cell in tileDiscovered)
+        foreach (var cell in newlyDiscoveredTiles)
         {
-            if (paintedTraceTiles.Contains(cell)) continue;
             if (!_cellToIndex.TryGetValue(cell, out int idx)) continue;
 
             float raw = anomalyMap.TryGetValue(cell, out var v) ? v : 0f;
@@ -248,9 +251,14 @@ public partial class GravitationalAnomalyMap : Node
             c.A *= OverlayAlpha;
 
             _traceMM.SetInstanceColor(idx, c);
-            paintedTraceTiles.Add(cell);
+            paintedTraceTiles.Add(cell); // Track that we've painted this
             revealed++;
         }
+        
+        stopwatch.Stop();
+        
+        // Performance metrics
+        GD.Print($"DisplayTrace: Processed {newlyDiscoveredTiles.Count} input tiles, revealed {revealed} new tiles, total painted: {paintedTraceTiles.Count}, Time: {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
     }
 
     public void HideTrace()

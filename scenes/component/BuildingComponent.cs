@@ -60,6 +60,7 @@ public partial class BuildingComponent : Node2D
 	private HashSet<Vector2I> occupiedTiles = new();
 	private HashSet<Vector2I> scannedTiles = new HashSet<Vector2I>();
 	private HashSet<Vector2I> obstacleTiles = new HashSet<Vector2I>();
+	private HashSet<Vector2I> _discoveredTilesCache = new HashSet<Vector2I>(); // Cache for GetTileDiscovered()
 
 	private readonly StringName MOVE_UP = "move_up";
 	private readonly StringName MOVE_DOWN = "move_down";
@@ -222,6 +223,14 @@ public partial class BuildingComponent : Node2D
 	public void UpdateMoveHistory(Vector2I position, StringName direction)
 	{
 		moveHistory.Add((position, direction));
+		
+		// OPTIMIZATION: Update discovered tiles cache incrementally
+		_discoveredTilesCache.Add(position);
+		var tilesInRadius = GetTilesWithinDistance(position, BuildingResource.AnomalySensorRadius);
+		foreach (var tile in tilesInRadius)
+		{
+			_discoveredTilesCache.Add(tile);
+		}
 	}
 
 	public void EnableRandomMode()
@@ -387,20 +396,9 @@ public partial class BuildingComponent : Node2D
 
 	public List<Vector2I> GetTileDiscovered()
 	{
-		List<Vector2I> tileDiscovered = new();
-		foreach((var tile, _) in moveHistory)
-		{
-			tileDiscovered.Add(tile);
-			var tilesInRadius = GetTilesWithinDistance(tile, BuildingResource.AnomalySensorRadius);
-			foreach (var tileInRadius in tilesInRadius)
-			{
-				if (!tileDiscovered.Contains(tileInRadius))
-				{
-					tileDiscovered.Add(tileInRadius);
-				}
-			}
-		}
-		return tileDiscovered;
+		// OPTIMIZED: Return cached discovered tiles instead of rebuilding every time
+		// The cache is updated incrementally in UpdateMoveHistory()
+		return new List<Vector2I>(_discoveredTilesCache);
 	}
 
 	public Rect2I GetAreaOccupied(Vector2I position)
