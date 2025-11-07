@@ -57,6 +57,7 @@ public partial class BuildingManager : Node
 		Normal,
 		PlacingBuilding,
 		RobotSelected,
+		PaintingPath,
 		PlacingBridge
 	}
 

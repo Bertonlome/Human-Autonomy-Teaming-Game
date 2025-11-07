@@ -226,7 +226,7 @@ public partial class GravitationalAnomalyMap : Node
     // Now receives only newly discovered tiles (delta), not all tiles
     public void DisplayTrace(HashSet<Vector2I> newlyDiscoveredTiles)
     {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        //var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         
         if (!traceDisplayed)
         {
@@ -255,10 +255,10 @@ public partial class GravitationalAnomalyMap : Node
             revealed++;
         }
         
-        stopwatch.Stop();
+        //stopwatch.Stop();
         
         // Performance metrics
-        GD.Print($"DisplayTrace: Processed {newlyDiscoveredTiles.Count} input tiles, revealed {revealed} new tiles, total painted: {paintedTraceTiles.Count}, Time: {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
+        //GD.Print($"DisplayTrace: Processed {newlyDiscoveredTiles.Count} input tiles, revealed {revealed} new tiles, total painted: {paintedTraceTiles.Count}, Time: {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
     }
 
     public void HideTrace()
