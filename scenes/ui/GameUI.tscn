@@ -160,7 +160,9 @@ layout_mode = 2
 focus_mode = 0
 text = "Stop all robots"
 
-[node name="MarginContainer2" type="MarginContainer" parent="."]
+[node name="SpecialFunctionsContainer" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+visible = false
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -172,44 +174,58 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="PanelContainer" type="PanelContainer" parent="MarginContainer2"]
+[node name="PanelContainer" type="PanelContainer" parent="SpecialFunctionsContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 0
 theme = ExtResource("5_to3pn")
 
-[node name="Panel" type="Panel" parent="MarginContainer2/PanelContainer"]
+[node name="Panel" type="Panel" parent="SpecialFunctionsContainer/PanelContainer"]
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="SpecialFunctionsContainer/PanelContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="SpecialFunctionsContainer/PanelContainer/MarginContainer"]
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="SpecialFunctionsContainer/PanelContainer/MarginContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Label" type="Label" parent="MarginContainer2/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="SpecialFunctionsContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "<CHEAT DEV FUNCTION>"
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer2/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="SpecialFunctionsContainer/PanelContainer/MarginContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
-[node name="DisplayAnomalyMapButton" type="Button" parent="MarginContainer2/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+[node name="DisplayAnomalyMapButton" type="Button" parent="SpecialFunctionsContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
 unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 text = "DISPLAY ANOMALY MAP"
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="SpecialFunctionsContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="SendPathToRobotButton" type="Button" parent="SpecialFunctionsContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer4"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 40
+text = "SEND PATH TO ROBOT"
 
 [node name="MarginContainer3" type="MarginContainer" parent="."]
 anchors_preset = 6

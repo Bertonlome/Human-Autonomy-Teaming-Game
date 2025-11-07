@@ -14,6 +14,8 @@ namespace Game.Manager;
 public partial class BuildingManager : Node
 {
 	private readonly StringName ACTION_LEFT_CLICK = "left_click";
+	private readonly StringName ACTION_PAINT_PATH = "b_stroke";
+	private readonly StringName ACTION_ANNOTATE_PATH = "n_stroke";
 	private readonly StringName ACTION_CANCEL = "cancel";
 	private readonly StringName ACTION_RIGHT_CLICK = "right_click";
 	private readonly StringName MOVE_UP = "move_up";
@@ -51,6 +53,11 @@ public partial class BuildingManager : Node
 	private Node2D ySortRoot;
 	[Export]
 	private PackedScene buildingGhostScene;
+	[Export]
+	private PackedScene tileGhostScene;
+	[Export]
+	private PackedScene paintedTileScene;
+	private List<PaintedTile> paintedTiles = new();
 
 	private enum State
 	{
@@ -58,6 +65,7 @@ public partial class BuildingManager : Node
 		PlacingBuilding,
 		RobotSelected,
 		PaintingPath,
+		AnnotatingPath,
 		PlacingBridge
 	}
 
@@ -66,7 +74,9 @@ public partial class BuildingManager : Node
 	private BuildingResource toPlaceBuildingResource;
 	public Rect2I hoveredGridArea = new(Vector2I.Zero, Vector2I.One);
 	private BuildingGhost buildingGhost;
+	private TileGhost tileGhost;
 	private Vector2I buildingGhostDimensions;
+	private Vector2I tileGhostDimensions;
 	private State currentState;
 	private int startingWoodCount;
 	private int currentMaterialCount;
@@ -75,9 +85,12 @@ public partial class BuildingManager : Node
 	private int startingMaterialCount;
 	public static BuildingComponent selectedBuildingComponent { get; private set; } = null;
 	private static Random random = new Random();
+	private bool isPaintingWithMouse = false;
+	private Vector2I lastPaintedTile = new Vector2I(int.MinValue, int.MinValue);
 
 	public int AvailableWoodCount => startingWoodCount + currentWoodCount - currentlyUsedWoodCount;
 	public int AvailableMaterialCount => startingMaterialCount + currentMaterialCount - currentlyUsedMaterialCount;
+	public bool IsInPaintingMode => currentState == State.PaintingPath || currentState == State.AnnotatingPath;
 
 	public override void _Ready()
 	{
@@ -128,8 +141,6 @@ public partial class BuildingManager : Node
 					}
 					else if (SelectBuildingAtHoveredCellPosition() == selectedBuildingComponent) //Clicked on the same robot
 					{
-						//UnHighlightSelectedBuilding(selectedBuildingComponent);
-						//selectedBuildingComponent = null;
 						gridManager.HighlightBuildableTiles();
 						GetViewport().SetInputAsHandled();
 						return;
@@ -188,6 +199,15 @@ public partial class BuildingManager : Node
 						GetViewport().SetInputAsHandled();
 					}
 				}
+				if (evt.IsActionPressed(ACTION_PAINT_PATH))
+				{
+					if (selectedBuildingComponent != null)
+					{
+						ChangeState(State.PaintingPath);
+						selectedBuildingComponent.paintedTiles.Clear();
+						GetViewport().SetInputAsHandled();
+					}
+				}
 				break;
 			case State.PlacingBuilding:
 				if (evt.IsActionPressed(ACTION_CANCEL))
@@ -212,6 +232,77 @@ public partial class BuildingManager : Node
 					PlaceBridgeAtHoveredCellPosition(toPlaceBuildingResource);
 					GetViewport().SetInputAsHandled();
 				}
+				break;
+			case State.PaintingPath:
+				if (evt.IsActionPressed(ACTION_CANCEL) || evt.IsActionPressed(ACTION_RIGHT_CLICK))
+				{
+					ChangeState(State.Normal);
+					DestroyAllPaintedTiles();
+					selectedBuildingComponent.paintedTiles.Clear();
+					isPaintingWithMouse = false;
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt is InputEventMouseButton mouseButton && mouseButton.ButtonIndex == MouseButton.Left)
+				{
+					if (mouseButton.Pressed)
+					{
+						if (selectedBuildingComponent != null)
+						{
+							if (selectedBuildingComponent != null //Switch to another robot
+								&& SelectBuildingAtHoveredCellPosition() != selectedBuildingComponent
+								&& SelectBuildingAtHoveredCellPosition() != null
+								&& !selectedBuildingComponent.IsDestroying)
+							{
+								UnHighlightSelectedBuilding(selectedBuildingComponent);
+								selectedBuildingComponent = null;
+								EmitSignal(SignalName.NoMoreRobotSelected);
+								selectedBuildingComponent = SelectBuildingAtHoveredCellPosition();
+								EmitSignal(SignalName.NewRobotSelected, selectedBuildingComponent);
+								GameEvents.EmitRobotSelected(selectedBuildingComponent);
+								HighlightSelectedBuilding(selectedBuildingComponent);
+								ChangeState(State.PaintingPath);
+								GetViewport().SetInputAsHandled();
+							}
+							else
+							{
+								// Start painting
+								isPaintingWithMouse = true;
+								Vector2I targetGridCell = gridManager.GetMouseGridCellPosition();
+								lastPaintedTile = targetGridCell;
+								PaintTileAtHoveredCellPosition(targetGridCell);
+								GetViewport().SetInputAsHandled();
+							}
+						}
+					}
+					else
+					{
+						// Mouse button released
+						isPaintingWithMouse = false;
+						lastPaintedTile = new Vector2I(int.MinValue, int.MinValue);
+					}
+				}
+				else if (evt.IsActionPressed(ACTION_ANNOTATE_PATH))
+				{
+					ChangeState(State.AnnotatingPath);
+				}
+				break;
+			case State.AnnotatingPath:
+				if (evt.IsActionPressed(ACTION_CANCEL) || evt.IsActionPressed(ACTION_PAINT_PATH))
+				{
+					ChangeState(State.PaintingPath);
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_LEFT_CLICK))
+                {
+					Vector2I clickedGridCell = gridManager.GetMouseGridCellPosition();
+					PaintedTile clickedTile = GetPaintedTileAtPosition(clickedGridCell);
+					
+					if (clickedTile != null)
+					{
+						clickedTile.DisplayLabelEdit();
+						GetViewport().SetInputAsHandled();
+					}
+                }
 				break;
 			default:
 				break;
@@ -261,6 +352,25 @@ public partial class BuildingManager : Node
 			case State.PlacingBridge:
 				mouseGridPosition = gridManager.GetMouseGridCellPositionWithDimensionOffset(buildingGhostDimensions);
 				buildingGhost.GlobalPosition = mouseGridPosition * 64;
+				break;
+			case State.PaintingPath:
+				mouseGridPosition = gridManager.GetMouseGridCellPositionWithDimensionOffset(tileGhostDimensions);
+				tileGhost.GlobalPosition = mouseGridPosition * 64;
+				
+				// Continuously paint while mouse button is held down
+				if (isPaintingWithMouse && selectedBuildingComponent != null)
+				{
+					Vector2I currentTile = gridManager.GetMouseGridCellPosition();
+					// Only paint if we've moved to a new tile
+					if (currentTile != lastPaintedTile)
+					{
+						lastPaintedTile = currentTile;
+						PaintTileAtHoveredCellPosition(currentTile);
+					}
+				}
+				break;
+			case State.AnnotatingPath:
+				mouseGridPosition = gridManager.GetMouseGridCellPosition();
 				break;
 		}
 
@@ -434,6 +544,22 @@ public partial class BuildingManager : Node
 
 		selectedBuildingComponent.RemoveResource("wood");
 		ChangeState(State.Normal);
+	}
+
+	private void PaintTileAtHoveredCellPosition(Vector2I targetGridCell)
+	{
+		if (selectedBuildingComponent == null) return;
+
+		var paintedTile = paintedTileScene.Instantiate<PaintedTile>();
+		paintedTile.GlobalPosition = targetGridCell * 64;
+		ySortRoot.AddChild(paintedTile);
+		
+		if (selectedBuildingComponent.BuildingResource.IsAerial) paintedTile.SetColor(Colors.Cyan);
+		else paintedTile.SetColor(Colors.Yellow);
+		paintedTile.SetNumberLabel(selectedBuildingComponent.GetNextPaintedTileNumber());
+		
+		selectedBuildingComponent.AddPaintedTile(paintedTile);
+		paintedTiles.Add(paintedTile);
 	}
 
 	public void LiftInDirection(BuildingComponent liftedRobot, StringName direction)
@@ -659,6 +785,29 @@ public partial class BuildingManager : Node
 		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
+	private void DestroyAllPaintedTiles()
+	{
+		foreach (var paintedTile in paintedTiles)
+		{
+			paintedTile.QueueFree();
+		}
+		paintedTiles.Clear();
+	}
+
+	private PaintedTile GetPaintedTileAtPosition(Vector2I gridPosition)
+	{
+		// Check if any painted tile is at this grid position
+		foreach (var paintedTile in paintedTiles)
+		{
+			Vector2I tileGridPos = new Vector2I((int)(paintedTile.GlobalPosition.X / 64), (int)(paintedTile.GlobalPosition.Y / 64));
+			if (tileGridPos == gridPosition)
+			{
+				return paintedTile;
+			}
+		}
+		return null;
+	}
+
 	private BuildingComponent SelectBuildingAtHoveredCellPosition()
 	{
 		var rootCell = hoveredGridArea.Position;
@@ -742,6 +891,17 @@ public partial class BuildingManager : Node
 		buildingGhost = null;
 	}
 
+	private void ClearTileGhost()
+	{
+		gridManager.ClearHighlightedTiles();
+
+		if (IsInstanceValid(tileGhost))
+		{
+			tileGhost.QueueFree();
+		}
+		tileGhost = null;
+	}
+
 	private bool CanAffordRobot()
 	{
 		return AvailableMaterialCount >= toPlaceBuildingResource.ResourceCost;
@@ -816,6 +976,11 @@ public partial class BuildingManager : Node
 				ClearBuildingGhost();
 				toPlaceBuildingResource = null;
 				break;
+			case State.PaintingPath:
+				gridManager.ClearHighlightedTiles();
+				ClearTileGhost();
+				ClearBuildingGhost();
+				break;
 		}
 
 		currentState = toState;
@@ -823,6 +988,7 @@ public partial class BuildingManager : Node
 		switch (currentState)
 		{
 			case State.Normal:
+				gameUI.HideSpecialFunctions();
 				break;
 			case State.PlacingBuilding:
 				buildingGhost = buildingGhostScene.Instantiate<BuildingGhost>();
@@ -833,6 +999,15 @@ public partial class BuildingManager : Node
 				gridManager.HighlightBridgePlaceableTiles(selectedBuildingComponent.GetTileArea());
 				buildingGhost = buildingGhostScene.Instantiate<BuildingGhost>();
 				ySortRoot.AddChild(buildingGhost);
+				break;
+			case State.PaintingPath:
+				gameUI.DisplaySpecialFunctions();
+				if (selectedBuildingComponent == null) return;
+				tileGhost = tileGhostScene.Instantiate<TileGhost>();
+				ySortRoot.AddChild(tileGhost);
+				tileGhostDimensions = new Vector2I(1, 1);
+				if (selectedBuildingComponent.BuildingResource.IsAerial) tileGhost.SetColor(Colors.Cyan);
+				else tileGhost.SetColor(Colors.Yellow);
 				break;
 		}
 	}

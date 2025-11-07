@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
 using Game.Autoload;
+using Game.Building;
 using Game.Manager;
 using Game.Resources.Building;
 using Godot;
@@ -54,6 +55,7 @@ public partial class BuildingComponent : Node2D
 	public bool IsLifted;
 	public int Battery { get; set; } = 100;
 	public List<string> resourceCollected = new();
+	public List<PaintedTile> paintedTiles = new();
 
 	private List<(Vector2I, StringName)> moveHistory = new();
 
@@ -392,6 +394,16 @@ public partial class BuildingComponent : Node2D
 	public int GetAnomalyReadingAtCurrentPos()
 	{
 		return (int)gravitationalAnomalyMap.GetAnomalyAt(GetGridCellPosition().X, GetGridCellPosition().Y);
+	}
+
+	public void AddPaintedTile(PaintedTile tile)
+	{
+		paintedTiles.Add(tile);
+	}
+
+	public int GetNextPaintedTileNumber()
+	{
+		return paintedTiles.Count + 1;
 	}
 
 	public List<Vector2I> GetTileDiscovered()

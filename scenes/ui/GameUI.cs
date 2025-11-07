@@ -30,6 +30,7 @@ public partial class GameUI : CanvasLayer
 	private Button stopRobotButton;
 	private Button displayAnomalyMapButton;
 	private CheckButton displayTraceButton;
+	private MarginContainer specialFunctionsContainer;
 	private bool isTraceActive = false;
 	private readonly StringName ACTION_SPACEBAR = "spacebar";
 	private HashSet<Vector2I> _previouslyDiscoveredTiles = new(); // Track to calculate delta
@@ -56,6 +57,7 @@ public partial class GameUI : CanvasLayer
 		stopRobotButton = GetNode<Button>("%StopRobotButton");
 		displayAnomalyMapButton = GetNode<Button>("%DisplayAnomalyMapButton");
 		displayTraceButton = GetNode<CheckButton>("%DisplayTraceButton");
+		specialFunctionsContainer = GetNode<MarginContainer>("%SpecialFunctionsContainer");
 		CreateBuildingSections();
 
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
@@ -163,6 +165,16 @@ public partial class GameUI : CanvasLayer
 	public void HideUI()
 	{
 		Visible = false;
+	}
+
+	public void DisplaySpecialFunctions()
+	{
+		specialFunctionsContainer.Visible = true;
+	}
+
+	public void HideSpecialFunctions()
+	{
+		specialFunctionsContainer.Visible = false;
 	}
 
 	private void CreateBuildingSections()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Game.Autoload;
+using Game.Building;
 using Game.Component;
 using Game.Level.Util;
 using Godot;

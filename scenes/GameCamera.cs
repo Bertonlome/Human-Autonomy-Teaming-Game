@@ -123,6 +123,11 @@ public partial class GameCamera : Camera2D
 			{
 				if (mouseButton.Pressed && currentState == State.CameraFree)
 				{
+					// Don't start dragging if BuildingManager is in painting mode
+					if (buildingManager.IsInPaintingMode)
+					{
+						return;
+					}
 					// Start dragging - input reached here so BuildingManager didn't handle it
 					isDragging = true;
 					lastMousePosition = GetViewport().GetMousePosition();

@@ -20,6 +20,4 @@ ResourceRadius = 0
 ResourceCapacity = 0
 VisionRadius = 0
 AnomalySensorRadius = 0
-DangerRadius = 0
-AttackRadius = 0
 SpriteScene = ExtResource("1_7fuh7")
