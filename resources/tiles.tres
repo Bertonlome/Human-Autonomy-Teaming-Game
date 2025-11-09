@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=37 format=3 uid="uid://dvqwr0ci0x55u"]
+[gd_resource type="TileSet" load_steps=39 format=3 uid="uid://dvqwr0ci0x55u"]
 
 [ext_resource type="Texture2D" uid="uid://bgfp66sw1svfo" path="res://assets/tiles/tilemap_flat.png" id="1_rulrb"]
 [ext_resource type="Texture2D" uid="uid://1h0ewl6vfc5" path="res://assets/tiles/tree.png" id="2_qlsnn"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://ygojcuqq5ot3" path="res://assets/tiles/Bridge_All.png" id="7_1q8kn"]
 [ext_resource type="Texture2D" uid="uid://cmga11jrxgui1" path="res://assets/tiles/redOre.png" id="7_2dvyr"]
 [ext_resource type="Texture2D" uid="uid://dl5jfyv6i7snt" path="res://assets/tiles/blueOre.png" id="8_q58i0"]
+[ext_resource type="Texture2D" uid="uid://4yuf621j10g" path="res://assets/tiles/muddy_grass.png" id="8_xl6tv"]
 [ext_resource type="Texture2D" uid="uid://h05bn8w8fjap" path="res://assets/tiles/greenOre.png" id="9_esolr"]
 [ext_resource type="Texture2D" uid="uid://cmwmqd34wgapq" path="res://assets/tiles/big_rock.png" id="11_3cttr"]
 [ext_resource type="Texture2D" uid="uid://k3gfd2yrseeu" path="res://assets/tiles/medium_rock.png" id="12_2qlw6"]
@@ -291,6 +292,12 @@ texture_region_size = Vector2i(64, 64)
 0:3/0/terrains_peering_bit/top_side = 4
 0:3/0/custom_data_0 = true
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vwfd2"]
+texture = ExtResource("8_xl6tv")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+0:0/0/custom_data_6 = true
+
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_fohej"]
 texture = ExtResource("7_2dvyr")
 texture_region_size = Vector2i(64, 64)
@@ -507,6 +514,8 @@ custom_data_layer_4/name = "landscape_type"
 custom_data_layer_4/type = 4
 custom_data_layer_5/name = "Is_mineral"
 custom_data_layer_5/type = 1
+custom_data_layer_6/name = "Is_mud"
+custom_data_layer_6/type = 1
 sources/0 = SubResource("TileSetAtlasSource_3miq1")
 sources/1 = SubResource("TileSetAtlasSource_4ixhk")
 sources/2 = SubResource("TileSetAtlasSource_od7h3")
@@ -525,3 +534,4 @@ sources/17 = SubResource("TileSetAtlasSource_fohej")
 sources/18 = SubResource("TileSetAtlasSource_1eqby")
 sources/19 = SubResource("TileSetAtlasSource_sgbkv")
 sources/14 = SubResource("TileSetAtlasSource_kry2s")
+sources/16 = SubResource("TileSetAtlasSource_vwfd2")

@@ -26,6 +26,7 @@ public partial class GridManager : Node
 	private const string IS_IGNORED = "is_ignored";
 	private const string IS_ROUGH_TERRAIN = "is_rough_terrain";
 	private const string WOOD = "wood";
+	private const string IS_MUD = "Is_mud";
 
 	[Signal]
 	public delegate void ResourceTilesUpdatedEventHandler(int collectedTiles, string resourceType);
@@ -911,6 +912,12 @@ public partial class GridManager : Node
 		UpdateRechargeBattery(buildingComponent);
 		UpdateCollectedWoodTiles(buildingComponent);
 		UpdateCollectedMineralTiles(buildingComponent);
+	}
+
+	public bool IsTileMud(Vector2I tilePosition)
+	{
+		(_, bool isMud) = GetTileCustomData(tilePosition, IS_MUD);
+		return isMud;
 	}
 
 	private void OnBuildingPlaced(BuildingComponent buildingComponent)

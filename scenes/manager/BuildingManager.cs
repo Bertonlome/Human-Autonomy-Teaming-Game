@@ -649,12 +649,26 @@ public partial class BuildingManager : Node
 			return;
 		}
 
-		double chance = random.NextDouble();
-		if (chance <= robot.BuildingResource.StuckChancePerMove)
+		if (gridManager.IsTileMud(destinationPosition))
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("The robot got stuck while attempting to move", robot);
-			robot.SetToStuck();
-			return;
+			//Higher chance to get stuck on mud
+			double mudChance = random.NextDouble();
+			if (mudChance <= robot.BuildingResource.StuckChancePerMove * 100)
+			{
+				MoveInDirectionAutomated(robot, GetRandomDirection());
+				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck in the mud :-(", robot);
+				robot.SetToStuck();
+			}
+		}
+		else
+		{
+			double chance = random.NextDouble();
+			if (chance <= robot.BuildingResource.StuckChancePerMove)
+			{
+				MoveInDirectionAutomated(robot, GetRandomDirection());
+				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck in the mud :-(", robot);
+				robot.SetToStuck();
+			}
 		}
 
 		robot.UpdateMoveHistory(originPos, direction);
@@ -680,17 +694,17 @@ public partial class BuildingManager : Node
 	}
 
 
-	public bool MoveInDirectionAutomated(BuildingComponent buildingComponent, StringName direction)
+	public bool MoveInDirectionAutomated(BuildingComponent robot, StringName direction)
 	{
-		if (buildingComponent.IsStuck)
+		if (robot.IsStuck)
 		{
-			buildingComponent.currentExplorMode = BuildingComponent.ExplorMode.None;
+			robot.currentExplorMode = BuildingComponent.ExplorMode.None;
 			return false;
 		}
-		if (buildingComponent.Battery <= 0)
+		if (robot.Battery <= 0)
 		{
-			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", buildingComponent);
-			buildingComponent.currentExplorMode = BuildingComponent.ExplorMode.None;
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of battery", robot);
+			robot.currentExplorMode = BuildingComponent.ExplorMode.None;
 			return false;
 		}
 
@@ -702,58 +716,73 @@ public partial class BuildingManager : Node
 		else if (direction == MOVE_RIGHT) directionVector = new Vector2I(1, 0);
 		else return false;
 
-		Node2D buildingNode = (Node2D)buildingComponent.GetParent();
-		var originPos = buildingComponent.GetGridCellPosition();
-		var originArea = buildingComponent.GetAreaOccupied(originPos);
+		Node2D buildingNode = (Node2D)robot.GetParent();
+		var originPos = robot.GetGridCellPosition();
+		var originArea = robot.GetAreaOccupied(originPos);
 		//originArea.Position = new Vector2I(originArea.Position.X / 64, originArea.Position.Y / 64);
 		Vector2I destinationPosition = new Vector2I((int)((buildingNode.Position.X + (directionVector.X * 64)) / 64), (int)((buildingNode.Position.Y + (directionVector.Y * 64)) / 64));
-		Rect2I destinationArea = buildingComponent.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
+		Rect2I destinationArea = robot.GetAreaOccupiedAfterMovingFromPos(destinationPosition);
 
 
-		if (!gridManager.CanMoveBuilding(buildingComponent, destinationArea))
+		if (!gridManager.CanMoveBuilding(robot, destinationArea))
 		{
-			buildingComponent.CanMove = false;
-			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", buildingComponent);
+			robot.CanMove = false;
+			FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", robot);
 			return false;
 		}
 
-		if (!IsMoveableAtArea(buildingComponent, originArea, destinationArea))
+		if (!IsMoveableAtArea(robot, originArea, destinationArea))
 		{
 			//FloatingTextManager.ShowMessageAtBuildingPosition("Can't move there!", buildingComponent);
 			return false;
 		}
 
-		double chance = random.NextDouble();
-		if (chance <= buildingComponent.BuildingResource.StuckChancePerMove)
+		if (gridManager.IsTileMud(destinationPosition))
 		{
-			MoveInDirectionAutomated(buildingComponent, GetRandomDirection());
-			//FloatingTextManager.ShowMessageAtBuildingPosition("The robot got stuck while attempting to move", buildingComponent);
-			buildingComponent.SetToStuck();
-			return false;
+			//Higher chance to get stuck on mud
+			double mudChance = random.NextDouble();
+			if (mudChance <= robot.BuildingResource.StuckChancePerMove * 10)
+			{
+				MoveInDirectionAutomated(robot, GetRandomDirection());
+				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck in the mud :-(", robot);
+				robot.SetToStuck();
+				return false;
+			}
+		}
+		else
+		{
+			double chance = random.NextDouble();
+			if (chance <= robot.BuildingResource.StuckChancePerMove)
+			{
+				MoveInDirectionAutomated(robot, GetRandomDirection());
+				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck in the mud :-(", robot);
+				robot.SetToStuck();
+				return false;
+			}
 		}
 
-		if (buildingComponent.currentExplorMode != BuildingComponent.ExplorMode.ReturnToBase)
+		if (robot.currentExplorMode != BuildingComponent.ExplorMode.ReturnToBase)
 		{
-			buildingComponent.UpdateMoveHistory(originPos, direction);
+			robot.UpdateMoveHistory(originPos, direction);
 		}
 
-		buildingComponent.FreeOccupiedCellPosition();
-		gridManager.UpdateBuildingComponentGridState(buildingComponent);
+		robot.FreeOccupiedCellPosition();
+		gridManager.UpdateBuildingComponentGridState(robot);
 
 		buildingNode.Position += directionVector * 64;
-		buildingComponent.Moved((Vector2I)originPos, destinationPosition);
-		buildingComponent.TryDropResourcesAtBase();
+		robot.Moved((Vector2I)originPos, destinationPosition);
+		robot.TryDropResourcesAtBase();
 
 		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 
-		var test = gridManager.CanMoveBuilding(buildingComponent);
+		var test = gridManager.CanMoveBuilding(robot);
 		if (!test)
 		{
 			//FloatingTextManager.ShowMessageAtBuildingPosition("Robot out of antenna coverage", buildingComponent);
-			if (direction == MOVE_DOWN) MoveInDirectionAutomated(buildingComponent, MOVE_UP);
-			else if (direction == MOVE_LEFT) MoveInDirectionAutomated(buildingComponent, MOVE_RIGHT);
-			else if (direction == MOVE_RIGHT) MoveInDirectionAutomated(buildingComponent, MOVE_LEFT);
-			else if (direction == MOVE_UP) MoveInDirectionAutomated(buildingComponent, MOVE_DOWN);
+			if (direction == MOVE_DOWN) MoveInDirectionAutomated(robot, MOVE_UP);
+			else if (direction == MOVE_LEFT) MoveInDirectionAutomated(robot, MOVE_RIGHT);
+			else if (direction == MOVE_RIGHT) MoveInDirectionAutomated(robot, MOVE_LEFT);
+			else if (direction == MOVE_UP) MoveInDirectionAutomated(robot, MOVE_DOWN);
 		}
 		return true;
 	}
