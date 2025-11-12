@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://bipxsk1snp5nq"]
+[gd_scene load_steps=25 format=3 uid="uid://bipxsk1snp5nq"]
 
 [ext_resource type="Script" path="res://scenes/level/BaseLevel.cs" id="1_oetcv"]
 [ext_resource type="TileSet" uid="uid://be2deub8k3gjr" path="res://resources/highlight_tileset.tres" id="2_8gl76"]
@@ -22,6 +22,7 @@
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="11_vgav0"]
 [ext_resource type="PackedScene" uid="uid://b0eal3gs3jkha" path="res://scenes/manager/FloatingTextManager.tscn" id="13_p7dg5"]
 [ext_resource type="PackedScene" uid="uid://bllsmwyng6v5f" path="res://scenes/manager/DiscoveredElementsManager.tscn" id="16_6uy6k"]
+[ext_resource type="PackedScene" uid="uid://b6cycnj1fd6ut" path="res://scenes/LandscapeElements/MudScene.tscn" id="19_30ydk"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_uikxx"]
 noise_type = 4
@@ -74,6 +75,7 @@ visible = false
 
 [node name="DiscoveredElementsManager" parent="YSortRoot" node_paths=PackedStringArray("gridManager") instance=ExtResource("16_6uy6k")]
 gridManager = NodePath("../../GridManager")
+mudScene = ExtResource("19_30ydk")
 
 [node name="HighlightTileMapLayer" type="TileMapLayer" parent="YSortRoot"]
 modulate = Color(1, 1, 1, 0.705882)

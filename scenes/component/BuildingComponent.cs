@@ -354,6 +354,8 @@ public partial class BuildingComponent : Node2D
 
 	public void SetToStuck()
 	{
+		if (IsStuck) return; // Already stuck, don't rotate again
+		
 		IsStuck = true;
 		buildingAnimatorComponent.Rotate(-1.05f);
 		GameEvents.EmitBuildingStuck(this);
@@ -362,6 +364,8 @@ public partial class BuildingComponent : Node2D
 
 	public void SetToUnstuck()
 	{
+		if (!IsStuck) return; // Not stuck, don't rotate again
+		
 		IsStuck = false;
 		buildingAnimatorComponent.Rotate(1.05f);
 		GameEvents.EmitBuildingUnStuck(this);
@@ -633,6 +637,13 @@ public partial class BuildingComponent : Node2D
 				EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 				return;
 			}
+			var currentPosition = GetGridCellPosition();
+			foreach (var move in path)
+			{
+				var nextPosition = GetNextPosFromCurrentPos(currentPosition, move);
+				buildingManager.CreatePaintedTileAt(nextPosition);
+				currentPosition = nextPosition;
+			}
 			foreach (var chosenDirection in path)
 			{
 				if (cancelMoveRequested) break;
@@ -725,6 +736,7 @@ public partial class BuildingComponent : Node2D
 		}
 			currentExplorMode = ExplorMode.None;
 		CanMove = true; // Reset in case it wasn't already
+		buildingManager.ClearAllPaintedTiles();
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
@@ -938,12 +950,13 @@ public partial class BuildingComponent : Node2D
 		{
 			bool reachedMaxima = false;
 			var currentPosition = GetGridCellPosition();
-			var candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
+			
+			// Oscillation detection: track recent positions
+			Queue<Vector2I> recentPositions = new Queue<Vector2I>();
+			int oscillationWindowSize = 6; // Check last 6 positions
+			int oscillationThreshold = 2; // If we revisit a position 2+ times in the window, it's oscillating
 
-			Vector2I highestTile = currentPosition; // Default to current position
-			float highestAnomaly = float.MinValue; // Start with a very low value
-
-			while (currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima)
+			while (currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima && Battery > 0)
 			{
 				if (cancelMoveRequested || IsStuck || !CanMove)
 				{
@@ -953,36 +966,108 @@ public partial class BuildingComponent : Node2D
 					return; // Stop search
 				}
 
-				highestAnomaly = float.MinValue;
-				foreach (var tile in candidateTiles)
+				// Check for oscillation (going back and forth between same tiles)
+				if (recentPositions.Count >= oscillationWindowSize)
 				{
-					var anomaly = gravitationalAnomalyMap.GetAnomalyAt(tile.X, tile.Y);
-					if (anomaly > highestAnomaly)
+					var positionCounts = new Dictionary<Vector2I, int>();
+					foreach (var pos in recentPositions)
 					{
-						highestAnomaly = anomaly;
-						highestTile = tile;
+						if (positionCounts.ContainsKey(pos))
+							positionCounts[pos]++;
+						else
+							positionCounts[pos] = 1;
+					}
+					
+					// If any position appears multiple times, we're oscillating
+					if (positionCounts.Values.Any(count => count >= oscillationThreshold))
+					{
+						reachedMaxima = true;
+						FloatingTextManager.ShowMessageAtBuildingPosition("Oscillating - Reached Maxima", this);
+						EmitSignal(SignalName.ModeChanged, "Reached Maxima (Oscillation Detected)");
+						break;
 					}
 				}
 
-				string relativeDirection = GetDirectionFromDelta(currentPosition, highestTile);
+				// Get all candidate tiles within sensor radius
+				var candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
+				
+				// Sort candidates by anomaly value (highest first)
+				var sortedCandidates = candidateTiles
+					.Select(tile => new { 
+						Tile = tile, 
+						Anomaly = gravitationalAnomalyMap.GetAnomalyAt(tile.X, tile.Y) 
+					})
+					.OrderByDescending(x => x.Anomaly)
+					.ToList();
 
-				if (relativeDirection != "CURRENT")
+				Vector2I? targetTile = null;
+				List<string> path = null;
+
+				// Try to find a path to the highest anomaly tile, if not try next best
+				foreach (var candidate in sortedCandidates)
 				{
-					CanMove = buildingManager.MoveInDirectionAutomated(this, relativeDirection);
+					// Skip current position
+					if (candidate.Tile == currentPosition)
+						continue;
+
+					// Try to get A* path to this candidate
+					var testPath = GetMovesWithAStar(currentPosition, candidate.Tile);
+					
+					if (testPath.Count > 0)
+					{
+						// Found a valid path!
+						targetTile = candidate.Tile;
+						path = testPath;
+						break;
+					}
 				}
-				else
+
+				// If no path found to any candidate, we've reached a local maxima
+				if (targetTile == null || path == null || path.Count == 0)
 				{
 					reachedMaxima = true;
 					FloatingTextManager.ShowMessageAtBuildingPosition("Reached Maxima", this);
 					EmitSignal(SignalName.ModeChanged, "Reached Maxima");
+					break;
 				}
-				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
-				currentPosition = GetGridCellPosition();
-				candidateTiles = GetTilesWithinDistance(currentPosition, BuildingResource.AnomalySensorRadius);
+
+				var nextPosition = currentPosition;
+				foreach (var tile in path)
+				{
+					nextPosition = GetNextPosFromCurrentPos(nextPosition, tile);
+					buildingManager.CreatePaintedTileAt(nextPosition);
+				}
+				// Execute the path move by move
+				foreach (var move in path)
+				{
+					if (cancelMoveRequested || IsStuck || Battery <= 0 || currentExplorMode != ExplorMode.GradientSearch)
+					{
+						break;
+					}
+
+					CanMove = buildingManager.MoveInDirectionAutomated(this, move);
+					
+					if (!CanMove)
+					{
+						// Hit an obstacle, break and recalculate
+						break;
+					}
+
+					await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+					currentPosition = GetGridCellPosition();
+					
+					// Track position for oscillation detection
+					recentPositions.Enqueue(currentPosition);
+					if (recentPositions.Count > oscillationWindowSize)
+					{
+						recentPositions.Dequeue(); // Keep only the most recent positions
+					}
+				}
+				buildingManager.ClearAllPaintedTiles();
 			}
 		}
 		currentExplorMode = ExplorMode.None;
-		EmitSignal(SignalName.ModeChanged, "Reached Maxima");
+		EmitSignal(SignalName.ModeChanged, "Idle");
 		CanMove = true; // Reset at the end, in case it wasn't already
 	}
 

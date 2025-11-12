@@ -46,3 +46,7 @@ Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (
 [x] expliquer que lift robot ne marche qu'avec ZQSD
 
 [x] Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.
+
+[ ] Le rover doit pouvoir detecter le monolithe
+
+[ ] gradient descent doit utiliser A* pour eviter d'être bloqué + opérer au rayon du senseur pas juste les cases voisines

@@ -296,12 +296,15 @@ texture_region_size = Vector2i(64, 64)
 texture = ExtResource("8_xl6tv")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
+0:0/0/custom_data_0 = true
+0:0/0/custom_data_4 = "mud"
 0:0/0/custom_data_6 = true
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_fohej"]
 texture = ExtResource("7_2dvyr")
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
+0:0/0/custom_data_0 = true
 0:0/0/custom_data_4 = "red_ore"
 0:0/0/custom_data_5 = true
 

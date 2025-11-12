@@ -36,6 +36,8 @@ public partial class DiscoveredElementsManager : Node
 	private PackedScene blueOreScene;
 	[Export]
 	private PackedScene greenOreScene;
+	[Export]
+	private PackedScene mudScene;
 	private Dictionary<Vector2I, Node2D> tileToDiscoveredElements = new();
 	private Dictionary<Vector2I, DiscoveredElements> tiletoDarkenedElements = new();
 	private Dictionary<Vector2I, string> tiletoTypeElementsString = new();
@@ -115,6 +117,10 @@ public partial class DiscoveredElementsManager : Node
 				elementScene = greenOreScene.Instantiate<Sprite2D>();
 				elementHolder.AddChild(elementScene);
 				break;
+		case "mud":
+			elementScene = mudScene.Instantiate<Sprite2D>();
+			elementHolder.AddChild(elementScene);
+			break;
 		}
 
 		displayedElementTiles.Add(tile);

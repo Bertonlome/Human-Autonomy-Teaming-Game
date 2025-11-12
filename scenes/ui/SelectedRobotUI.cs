@@ -376,10 +376,22 @@ public partial class SelectedRobotUI : CanvasLayer
 		{
 			multiPurposeButton.Pressed -= OnDropRobotButtonPressed;
 		}
-		gradientSearchButton.Pressed -= OnGradientSearchButtonPressed;
-		returnToBaseButton.Pressed -= OnReturnToBaseButtonPressed;
-		explorModeOptionsButton.ItemSelected -= OnOptionsButtonItemSelected;
-		startExplorButton.Pressed -= OnStartExplorButtonSelected;
+		if (gradientSearchButton.IsConnected("pressed", Callable.From(OnGradientSearchButtonPressed)))
+		{
+			gradientSearchButton.Pressed -= OnGradientSearchButtonPressed;
+		}
+		if (returnToBaseButton.IsConnected("pressed", Callable.From(OnReturnToBaseButtonPressed)))
+		{
+			returnToBaseButton.Pressed -= OnReturnToBaseButtonPressed;
+		}
+		if (explorModeOptionsButton.IsConnected("item_selected", Callable.From<long>(OnOptionsButtonItemSelected)))
+		{
+			explorModeOptionsButton.ItemSelected -= OnOptionsButtonItemSelected;
+		}
+		if (startExplorButton.IsConnected("pressed", Callable.From(OnStartExplorButtonSelected)))
+		{
+			startExplorButton.Pressed -= OnStartExplorButtonSelected;
+		}
 		if(placeAntennaButton.IsConnected("pressed", Callable.From(OnPlaceAntennaButtonPressed)))
 		{
 			placeAntennaButton.Pressed -= OnPlaceAntennaButtonPressed;

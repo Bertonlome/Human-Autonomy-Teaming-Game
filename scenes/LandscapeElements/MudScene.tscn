@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://b6cycnj1fd6ut"]
+
+[ext_resource type="Texture2D" uid="uid://4yuf621j10g" path="res://assets/tiles/muddy_grass.png" id="1_wmwmw"]
+
+[node name="Sprite2D" type="Sprite2D"]
+y_sort_enabled = true
+position = Vector2(32, 72)
+texture = ExtResource("1_wmwmw")
+offset = Vector2(0, -40)

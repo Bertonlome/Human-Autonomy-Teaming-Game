@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using Game.API;
 using Game.Autoload;
+using Game.Building;
 using Game.Component;
 using Game.Manager;
 using Game.Resources.Building;
@@ -29,6 +32,7 @@ public partial class GameUI : CanvasLayer
 	private Label timeLeftLabel;
 	private Button stopRobotButton;
 	private Button displayAnomalyMapButton;
+	private Button sendPathToRobotButton;
 	private CheckButton displayTraceButton;
 	private MarginContainer specialFunctionsContainer;
 	private bool isTraceActive = false;
@@ -58,6 +62,7 @@ public partial class GameUI : CanvasLayer
 		displayAnomalyMapButton = GetNode<Button>("%DisplayAnomalyMapButton");
 		displayTraceButton = GetNode<CheckButton>("%DisplayTraceButton");
 		specialFunctionsContainer = GetNode<MarginContainer>("%SpecialFunctionsContainer");
+		sendPathToRobotButton = GetNode<Button>("%SendPathToRobotButton");
 		CreateBuildingSections();
 
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
@@ -67,6 +72,7 @@ public partial class GameUI : CanvasLayer
 		buildingManager.NewMineralAnalyzed += OnNewMineralAnalyzed;
 		buildingManager.ClockIsTicking += OnClockIsTicking;
 		displayTraceButton.Toggled += OnDisplayTraceToggled;
+		sendPathToRobotButton.Pressed += OnSendPathToRobotButtonPressed;
 
 		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
 		buildingManager.BasePlaced += OnBasePlaced;
@@ -292,14 +298,200 @@ public partial class GameUI : CanvasLayer
 					tileDiscoveredByAllRobots.Add(tile);
 				}
 			}
-			
+
 			// First time enabling: send ALL discovered tiles
 			gravitationalAnomalyMap.DisplayTrace(tileDiscoveredByAllRobots);
-			
+
 			// Remember for next update
 			_previouslyDiscoveredTiles = tileDiscoveredByAllRobots;
 		}
 		isTraceActive = buttonPressed;
+	}
+	
+	private void OnSendPathToRobotButtonPressed()
+	{
+		var paintedTiles = buildingManager.GetAllPaintedTiles();
+		
+		// Export current path to JSON
+		string jsonRequest = ExportPathToJson(paintedTiles);
+		GD.Print("=== PATH API REQUEST ===");
+		GD.Print(jsonRequest);
+		GD.Print("========================");
+		
+		// TODO: Send jsonRequest to your LLM API endpoint
+		// Example: await HttpClient.PostAsync("https://your-api.com/optimize-path", jsonRequest);
+		
+		// For now, copy the JSON from console and test with your LLM
+		// Then use ImportPathFromJson() to apply the response
+		TestImportSamplePath();
+	}
+	
+	/// <summary>
+	/// Export painted tiles to JSON format for LLM API
+	/// </summary>
+	private string ExportPathToJson(List<PaintedTile> tiles)
+	{
+		if (tiles == null || tiles.Count == 0)
+		{
+			GD.PrintErr("No painted tiles to export");
+			return "{}";
+		}
+		
+		// Group tiles by robot
+		var robotPaths = new Dictionary<BuildingComponent, List<PaintedTile>>();
+		foreach (var tile in tiles)
+		{
+			if (tile.AssociatedRobot != null)
+			{
+				if (!robotPaths.ContainsKey(tile.AssociatedRobot))
+				{
+					robotPaths[tile.AssociatedRobot] = new List<PaintedTile>();
+				}
+				robotPaths[tile.AssociatedRobot].Add(tile);
+			}
+		}
+		
+		// For now, export the first robot's path (you can extend to handle multiple)
+		var firstRobot = tiles[0].AssociatedRobot;
+		if (firstRobot == null)
+		{
+			GD.PrintErr("Tiles have no associated robot");
+			return "{}";
+		}
+		
+		// Create request DTO
+		var pathData = new PathDataDto
+		{
+			RobotName = firstRobot.BuildingResource.DisplayName,
+			IsAerial = firstRobot.BuildingResource.IsAerial,
+			TotalTiles = tiles.Count
+		};
+		
+		// Convert each tile
+		foreach (var tile in tiles)
+		{
+			pathData.Tiles.Add(new PaintedTileDto
+			{
+				TileNumber = tile.TileNumber,
+				GridX = tile.GridPosition.X,
+				GridY = tile.GridPosition.Y,
+				Annotation = tile.Annotation ?? "",
+				RobotName = tile.AssociatedRobot?.BuildingResource.DisplayName ?? "Unknown",
+				IsAerial = tile.AssociatedRobot?.BuildingResource.IsAerial ?? false
+			});
+		}
+		
+		var request = new PathApiRequest
+		{
+			CurrentPath = pathData,
+			MapWidth = 100, // TODO: Get from GridManager
+			MapHeight = 100, // TODO: Get from GridManager
+			RobotStartX = (int)(firstRobot.GlobalPosition.X / 64),
+			RobotStartY = (int)(firstRobot.GlobalPosition.Y / 64),
+			Context = "Optimize this exploration path for efficiency"
+		};
+		
+		var options = new JsonSerializerOptions { WriteIndented = true };
+		return JsonSerializer.Serialize(request, options);
+	}
+	
+	/// <summary>
+	/// Import LLM response and redraw the path
+	/// </summary>
+	public void ImportPathFromJson(string jsonResponse)
+	{
+		try
+		{
+			var response = JsonSerializer.Deserialize<PathApiResponse>(jsonResponse);
+			
+			if (response == null || !response.Success || response.SuggestedPath == null)
+			{
+				GD.PrintErr($"Invalid response: {response?.Message ?? "Unknown error"}");
+				return;
+			}
+			
+			GD.Print($"LLM Reasoning: {response.Reasoning}");
+			
+			// Clear existing path
+			buildingManager.ClearAllPaintedTiles();
+			
+			// Redraw the new path from LLM
+			foreach (var tileDto in response.SuggestedPath.Tiles)
+			{
+				var gridPos = new Vector2I(tileDto.GridX, tileDto.GridY);
+				buildingManager.CreatePaintedTileAt(gridPos, tileDto.Annotation);
+			}
+			
+			GD.Print($"Successfully imported {response.SuggestedPath.Tiles.Count} tiles from LLM");
+		}
+		catch (JsonException ex)
+		{
+			GD.PrintErr($"Failed to parse JSON response: {ex.Message}");
+		}
+	}
+	
+	/// <summary>
+	/// TEST METHOD: Generate a sample LLM response for testing
+	/// Call this from console to test the import functionality
+	/// </summary>
+	public void TestImportSamplePath()
+	{
+		GD.Print("Testing import with sample path...");
+		string sampleResponse = @"{
+			""success"": true,
+			""message"": ""Path optimized for testing"",
+			""suggestedPath"": {
+				""robotName"": ""TestRobot"",
+				""isAerial"": false,
+				""tiles"": [
+					{
+						""tileNumber"": 1,
+						""gridX"": 10,
+						""gridY"": 10,
+						""annotation"": ""Start here"",
+						""robotName"": ""TestRobot"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 2,
+						""gridX"": 11,
+						""gridY"": 10,
+						""annotation"": ""Move east"",
+						""robotName"": ""TestRobot"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 3,
+						""gridX"": 12,
+						""gridY"": 10,
+						""annotation"": ""Continue east"",
+						""robotName"": ""TestRobot"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 4,
+						""gridX"": 12,
+						""gridY"": 11,
+						""annotation"": ""Turn south"",
+						""robotName"": ""TestRobot"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 5,
+						""gridX"": 12,
+						""gridY"": 12,
+						""annotation"": ""End point"",
+						""robotName"": ""TestRobot"",
+						""isAerial"": false
+					}
+				],
+				""totalTiles"": 5
+			},
+			""reasoning"": ""Created an efficient L-shaped path for testing the import system""
+		}";
+		
+		GD.Print("Testing import with sample path...");
+		ImportPathFromJson(sampleResponse);
 	}
 
 	private void OnDisplayAnomalyMapButtonPressed()
