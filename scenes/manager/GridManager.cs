@@ -68,7 +68,9 @@ public partial class GridManager : Node
 	[Export]
 	private TileMapLayer baseTerrainTilemapLayer;
 	[Export]
-	private TileMapLayer bridgeTileMapLayer;
+	private TileMapLayer bridgeTileMapLayerBase;
+	[Export]
+	private TileMapLayer bridgeTileMapLayerElevation;
 	[Export]
 	private GravitationalAnomalyMap gravitationalAnomalyMap;
 
@@ -130,8 +132,44 @@ public partial class GridManager : Node
 		return (null, false);
 	}
 
-	public void PlaceBridgeTile(Rect2I bridgeArea, string orientation)
+	public (ElevationLayer elevationLayer, bool isElevated) GetElevationLayerForTile(Vector2I tilePosition)
 	{
+		foreach (var layer in allTilemapLayers)
+		{
+			var customData = layer.GetCellTileData(tilePosition);
+			if (customData == null || (bool)customData.GetCustomData(IS_IGNORED)) continue;
+			
+			// Found the first valid layer for this tile
+			var elevationLayer = tileMapLayerToElevationLayer.GetValueOrDefault(layer);
+			bool isElevated = elevationLayer != null && elevationLayer.Name == "ElevationLayer";
+			return (elevationLayer, isElevated);
+		}
+		
+		// Fallback: if no valid tile found, use baseTerrainTilemapLayer's elevation
+		var fallbackElevationLayer = tileMapLayerToElevationLayer.GetValueOrDefault(baseTerrainTilemapLayer);
+		bool fallbackIsElevated = fallbackElevationLayer != null && fallbackElevationLayer.Name == "ElevationLayer";
+		return (fallbackElevationLayer, fallbackIsElevated);
+	}
+
+	public bool TryPlaceBridgeTile(Rect2I robotPosition, Rect2I bridgeArea, string orientation)
+	{
+		var (robotElevation, robotIsElevated) = GetElevationLayerForTile(robotPosition.Position);
+		var (targetElevation, targetIsElevated) = GetElevationLayerForTile(bridgeArea.Position);
+		var bridgeTileMapLayer = bridgeTileMapLayerBase;
+		
+		if (robotElevation == null && targetElevation != null)
+		{
+			GD.PrintErr("Cannot place bridge tile: Robot elevation layer and target elevation layer do not match.");
+			return false;
+		}
+		if (robotIsElevated)
+		{
+			bridgeTileMapLayer = bridgeTileMapLayerElevation;
+		}
+		else
+		{
+			bridgeTileMapLayer = bridgeTileMapLayerBase;
+		}
 		if (orientation == "horizontal")
 		{
 			var position = bridgeArea.Position;
@@ -142,9 +180,7 @@ public partial class GridManager : Node
 			var position = bridgeArea.Position;
 			bridgeTileMapLayer.SetCell(position, 14, new Vector2I(0, 2)); // Assuming 14 is the bridge tile ID
 		}
-
-		//var cellsList = bridgeTileMapLayer.GetUsedCells();
-		//bridgeTileMapLayer.SetCellsTerrainConnect(cellsList, 0, 5); // Assuming 14 is the bridge tile ID
+		return true;
 	}
 
 	public string GetTileDiscoveredElements(Vector2I tilePosition)
@@ -206,7 +242,7 @@ public partial class GridManager : Node
 		return occupiedTiles.Contains(tilePosition);
 	}
 
-	public bool IsBuildingMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea, bool considerWaterCrossing = false)
+	public bool IsBuildingMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea, bool considerBridge = false, bool? bridgeElevationIsElevated = null)
 	{
 		IEnumerable<Vector2I> tileSetToCheckGround;
 		IEnumerable<Vector2I> tileSetToCheckAerial;
@@ -237,16 +273,28 @@ public partial class GridManager : Node
 			(_, bool isBridge) = GetTileCustomData(tilesOrigin[0], IS_BRIDGE);
 			(_, bool isInBridge) = GetTileCustomData(tilePosition, IS_BRIDGE);
 			(_, bool isWater) = GetTileCustomData(tilePosition, IS_WATER);
-			
-			//(tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
+			(_, bool isMud) = GetTileCustomData(tilePosition, IS_MUD);
+			(_, bool isInMud) = GetTileCustomData(tilesOrigin[0], IS_MUD);
+			var (robotElevation, robotIsElevated) = GetElevationLayerForTile(tilesOrigin[0]);
+			var (targetElevation, targetIsElevated) = GetElevationLayerForTile(tilePosition);
+
+			// When considerBridge is true and bridgeElevationIsElevated is set,
+			// we're simulating that the robot is on a bridge at that elevation level
+			bool canCrossWithBridge = false;
+			if (considerBridge && bridgeElevationIsElevated.HasValue)
+			{
+				// Allow movement if the target tile will have a bridge at the same elevation level
+				// This simulates: "pretend there's a bridge here at the path's elevation level"
+				canCrossWithBridge = true;
+			}
+
 
 			//Check for ground vehicle
 			var check1 = tileSetToCheckGround.Contains(tilePosition) ? false : true;
 			var check2 = elevationLayer == targetElevationLayer ? true : false;
-			var check3 = OriginElevationLayer == targetElevationLayer ? true : false || isInWood || isWood || isInBridge || isBridge;
+			var check3 = OriginElevationLayer == targetElevationLayer ? true : false || canCrossWithBridge || isWood || isInWood || isMud || isInMud;
 			var check7 = !isRoulable;
 			var check8 = !buildingComponent.BuildingResource.IsAerial;
-			var check9 = !isWater || considerWaterCrossing;
 			//Check for aerial vehicle
 			var check4 = buildingComponent.BuildingResource.IsAerial;
 			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false : true;
@@ -264,15 +312,26 @@ public partial class GridManager : Node
 			(_, bool isMud) = GetTileCustomData(tilePosition, IS_MUD);
 			(_, bool isInMud) = GetTileCustomData(tilesOrigin[0], IS_MUD);
 			(_, bool isWater) = GetTileCustomData(tilePosition, IS_WATER);
-			//(tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
+			var (robotElevation, robotIsElevated) = GetElevationLayerForTile(tilesOrigin[0]);
+			var (targetElevation, targetIsElevated) = GetElevationLayerForTile(tilePosition);
+
+			// When considerBridge is true and bridgeElevationIsElevated is set,
+			// we're simulating that the robot is on a bridge at that elevation level
+			bool canCrossWithBridge = false;
+			if (considerBridge && bridgeElevationIsElevated.HasValue)
+			{
+				// Allow movement to ANY tile when using bridges - we'll place a bridge there if needed
+				// The bridge will be at the path's elevation level (bridgeElevationIsElevated)
+				canCrossWithBridge = true;
+			}
 
 			//Check for ground vehicle
 			var check1 = tileSetToCheckGround.Contains(tilePosition) ? false : true;
 			var check2 = elevationLayer == targetElevationLayer ? true : false;
-			var check3 = OriginElevationLayer == targetElevationLayer ? true : false || isInWood || isWood || isInBridge || isBridge || isInMud || isMud;
+			var check3 = OriginElevationLayer == targetElevationLayer ? true : false || canCrossWithBridge || isWood || isInWood || isMud || isInMud;
 			var check7 = !isRoulable;
 			var check8 = !buildingComponent.BuildingResource.IsAerial;
-			var check9 = !isWater || considerWaterCrossing;
+			var check9 = !isWater || considerBridge;
 			//Check for aerial vehicle
 			var check4 = buildingComponent.BuildingResource.IsAerial;
 			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false : true;

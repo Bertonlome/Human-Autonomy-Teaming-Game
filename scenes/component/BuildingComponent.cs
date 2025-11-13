@@ -501,8 +501,30 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
-	private List<string> GetMovesWithAStar(Vector2I currentPos, Vector2I targetPos, bool allowWaterCrossing = false)
+	private (List<string> path, HashSet<Vector2I> bridgeTiles) GetMovesWithAStarAndBridges(Vector2I currentPos, Vector2I targetPos, bool allowWaterCrossing = false)
 	{
+		// Determine the elevation level for bridge pathfinding
+		bool? bridgeElevationIsElevated = null;
+		HashSet<Vector2I> bridgeTiles = new HashSet<Vector2I>();
+		
+		if (allowWaterCrossing && !BuildingResource.IsAerial)
+		{
+			// Check if start and target are at the same elevation level
+			var (startElevation, startIsElevated) = gridManager.GetElevationLayerForTile(currentPos);
+			var (targetElevation, targetIsElevated) = gridManager.GetElevationLayerForTile(targetPos);
+			
+			// Only allow bridge crossing if both start and target are at the same elevation level
+			if (startIsElevated == targetIsElevated)
+			{
+				bridgeElevationIsElevated = startIsElevated;
+			}
+			else
+			{
+				// Cannot bridge between different elevation levels
+				return (new List<string> {}, bridgeTiles);
+			}
+		}
+		
 		var open = new List<NodeAStar>();
 		var closed = new HashSet<Vector2I>();
 		open.Add(new NodeAStar(currentPos, null, 0, Heuristic(currentPos, targetPos)));
@@ -519,17 +541,35 @@ public partial class BuildingComponent : Node2D
 
 			if (current.Position == targetPos)
 			{
-				// Reached the target, reconstruct the path
+				// Reached the target, reconstruct the path and identify bridge tiles
 				var path = new List<string>();
+				var pathPositions = new List<Vector2I>();
 				var node = current;
 				while (node.Parent != null)
 				{
 					var direction = GetDirection(node.Parent.Position, node.Position);
 					path.Add(direction);
+					pathPositions.Add(node.Position);
 					node = node.Parent;
 				}
 				path.Reverse();
-				return path;
+				pathPositions.Reverse();
+				
+				// Identify which tiles need bridges
+				if (allowWaterCrossing && bridgeElevationIsElevated.HasValue)
+				{
+					foreach (var pos in pathPositions)
+					{
+						var (tileElevation, tileIsElevated) = gridManager.GetElevationLayerForTile(pos);
+						// If tile elevation doesn't match the path elevation, it needs a bridge
+						if (tileIsElevated != bridgeElevationIsElevated.Value)
+						{
+							bridgeTiles.Add(pos);
+						}
+					}
+				}
+				
+				return (path, bridgeTiles);
 			}
 
 			// Explore neighbors
@@ -544,7 +584,8 @@ public partial class BuildingComponent : Node2D
 				var originArea = GetAreaOccupied(current.Position);
 				var destinationArea = GetAreaOccupied(neighborPos);
 				
-				if (!gridManager.IsBuildingMovable(this, originArea, destinationArea, allowWaterCrossing))
+				// Pass the bridge elevation context to the validation
+				if (!gridManager.IsBuildingMovable(this, originArea, destinationArea, allowWaterCrossing, bridgeElevationIsElevated))
 					continue;
 
 				var gCost = current.G + 1; // Assume cost is 1 for each move
@@ -565,7 +606,7 @@ public partial class BuildingComponent : Node2D
 			}
 			iteration ++;
 		}
-		return new List<string> {}; 
+		return (new List<string> {}, new HashSet<Vector2I>()); 
 	}
 	
 	private int Heuristic(Vector2I a, Vector2I b)
@@ -629,30 +670,42 @@ public partial class BuildingComponent : Node2D
 		if (astar)
 		{
 			// First, try to find a land-only path
-			var path = GetMovesWithAStar(GetGridCellPosition(), targetPosition, false);
+			var (path, _) = GetMovesWithAStarAndBridges(GetGridCellPosition(), targetPosition, false);
 			bool requiresBridge = false;
+			HashSet<Vector2I> bridgeTilesNeeded = new HashSet<Vector2I>();
 			
 			// If no land path found and this is a rover (non-aerial), try allowing water crossing
 			if (path.Count == 0 && !BuildingResource.IsAerial)
 			{
-				path = GetMovesWithAStar(GetGridCellPosition(), targetPosition, true);
+				//Here we need to check if the end point is on the same elevation layer as the start point
+				var (robotElevation, robotIsElevated) = gridManager.GetElevationLayerForTile(GetGridCellPosition());
+				var (targetElevation, targetIsElevated) = gridManager.GetElevationLayerForTile(targetPosition);
+				if (robotIsElevated != targetIsElevated)
+				{
+					FloatingTextManager.ShowMessageAtBuildingPosition("No path found due to elevation difference!", this);
+					currentExplorMode = ExplorMode.None;
+					EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+					return;
+				}
+				(path, bridgeTilesNeeded) = GetMovesWithAStarAndBridges(GetGridCellPosition(), targetPosition, true);
 				
 				if (path.Count > 0)
 				{
 					// Found a path that requires crossing water
 					requiresBridge = true;
 					
-					// Check if we have wood to build bridges
-					if (numberOfWoodCarried == 0)
+					// Check if we have enough wood to build all bridges needed
+					int woodNeeded = bridgeTilesNeeded.Count;
+					if (numberOfWoodCarried < woodNeeded)
 					{
-						FloatingTextManager.ShowMessageAtBuildingPosition("Need wood to build bridges for this path!", this);
+						FloatingTextManager.ShowMessageAtBuildingPosition($"Need {woodNeeded} wood for bridges, but only have {numberOfWoodCarried}!", this);
 						currentExplorMode = ExplorMode.None;
 						EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 						return;
 					}
 					else
 					{
-						FloatingTextManager.ShowMessageAtBuildingPosition("Path requires bridge(s) - will build as needed", this);
+						FloatingTextManager.ShowMessageAtBuildingPosition($"Path requires {woodNeeded} bridge(s) - will build as needed", this);
 					}
 				}
 			}
@@ -684,13 +737,46 @@ public partial class BuildingComponent : Node2D
 				EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 				return;
 			}
+			
+			// Paint the path and pre-build bridges if needed
 			var currentPosition = GetGridCellPosition();
+			int bridgesBuilt = 0;
 			foreach (var move in path)
 			{
 				var nextPosition = GetNextPosFromCurrentPos(currentPosition, move);
 				buildingManager.CreatePaintedTileAt(nextPosition);
+				
+				// If this position needs a bridge, build it now
+				if (bridgeTilesNeeded.Contains(nextPosition) && requiresBridge)
+				{
+					// Double-check we have wood (safety check)
+					if (numberOfWoodCarried <= 0)
+					{
+						FloatingTextManager.ShowMessageAtBuildingPosition("Ran out of wood for bridges!", this);
+						currentExplorMode = ExplorMode.None;
+						EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+						buildingManager.ClearAllPaintedTiles();
+						return;
+					}
+					
+					var robotArea = GetAreaOccupied(GetGridCellPosition()); // Use actual robot position
+					var bridgeArea = GetAreaOccupied(nextPosition);
+					
+					// Determine orientation based on direction
+					var delta = nextPosition - currentPosition;
+					string orientation = (delta.X != 0) ? "horizontal" : "vertical";
+					
+					if (gridManager.TryPlaceBridgeTile(robotArea, bridgeArea, orientation))
+					{
+						RemoveResource("wood"); // Consume wood for bridge
+						bridgesBuilt++;
+						GD.Print($"Built bridge {bridgesBuilt}/{bridgeTilesNeeded.Count} at {nextPosition}");
+					}
+				}
 				currentPosition = nextPosition;
 			}
+			
+			// Now move along the path
 			foreach (var chosenDirection in path)
 			{
 				if (cancelMoveRequested) break;
@@ -1058,7 +1144,7 @@ public partial class BuildingComponent : Node2D
 						continue;
 
 					// Try to get A* path to this candidate
-					var testPath = GetMovesWithAStar(currentPosition, candidate.Tile);
+					var (testPath, _) = GetMovesWithAStarAndBridges(currentPosition, candidate.Tile, false);
 					
 					if (testPath.Count > 0)
 					{

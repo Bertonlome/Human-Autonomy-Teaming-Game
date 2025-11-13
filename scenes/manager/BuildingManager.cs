@@ -582,6 +582,7 @@ public partial class BuildingManager : Node
 
 	private void PlaceBridgeAtHoveredCellPosition(BuildingResource buildingResource)
 	{
+		bool success = false;
 		if (!CanAffordBridge())
 		{
 			FloatingTextManager.ShowMessageAtMousePosition("Need wood!");
@@ -596,13 +597,17 @@ public partial class BuildingManager : Node
 		var robotPosition = selectedBuildingComponent.GetTileArea();
 		if (hoveredGridArea.Position.X == robotPosition.Position.X)
 		{
-			gridManager.PlaceBridgeTile(hoveredGridArea, "vertical");
+			success = gridManager.TryPlaceBridgeTile(robotPosition, hoveredGridArea, "vertical");
 		}
 		else if (hoveredGridArea.Position.Y == robotPosition.Position.Y)
 		{
-			gridManager.PlaceBridgeTile(hoveredGridArea, "horizontal");
+			success = gridManager.TryPlaceBridgeTile(robotPosition, hoveredGridArea, "horizontal");
 		}
-
+		if (!success)
+		{
+			FloatingTextManager.ShowMessageAtMousePosition("Invalid placement!");
+			return;
+		}
 		selectedBuildingComponent.RemoveResource("wood");
 		ChangeState(State.Normal);
 	}
