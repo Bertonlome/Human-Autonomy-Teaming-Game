@@ -47,6 +47,8 @@ Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (
 
 [x] Implémenter un bruit de compteur geiger en plus de anomaly trace toggle.
 
-[ ] Le rover doit pouvoir detecter le monolithe
+[x] Le rover doit pouvoir detecter le monolithe
 
-[ ] gradient descent doit utiliser A* pour eviter d'être bloqué + opérer au rayon du senseur pas juste les cases voisines
+[x] gradient descent doit utiliser A* pour eviter d'être bloqué + opérer au rayon du senseur pas juste les cases voisines
+
+[ ] Il faut finir d'implémenter le auto-bridge mais problème lorsque les altitudes ne fonctionnent pas

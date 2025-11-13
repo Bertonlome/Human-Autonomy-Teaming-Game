@@ -105,7 +105,9 @@ public partial class BuildingManager : Node
 
 
 		Callable.From(() => EmitSignal(SignalName.AvailableResourceCountChanged, AvailableWoodCount)).CallDeferred();
-		IsBasePlaced = false;
+		
+		// Schedule the check after 1 second to ensure scene tree is ready
+		CallDeferred(nameof(CheckAndEmitBasePlaced));
 	}
 
 	public override void _UnhandledInput(InputEvent evt)
@@ -509,6 +511,20 @@ public partial class BuildingManager : Node
 		IsBasePlaced = true;
 		EmitSignal(SignalName.BasePlaced);
 	}
+	
+	private void CheckAndEmitBasePlaced()
+	{
+		var baseBuilding = BuildingComponent.GetBaseBuilding(this);
+		if (baseBuilding.Any())
+		{
+			IsBasePlaced = true;
+			EmitSignal(SignalName.BasePlaced);
+		}
+		else
+		{
+			IsBasePlaced = false;
+		}
+	}
 
 	private void PlaceBuildingAtHoveredCellPosition(BuildingResource buildingResource)
 	{
@@ -720,7 +736,7 @@ public partial class BuildingManager : Node
 			if (chance <= robot.BuildingResource.StuckChancePerMove)
 			{
 				MoveInDirectionAutomated(robot, GetRandomDirection());
-				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck in the mud :-(", robot);
+				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck", robot);
 				robot.SetToStuck();
 			}
 		}
@@ -809,7 +825,7 @@ public partial class BuildingManager : Node
 			if (chance <= robot.BuildingResource.StuckChancePerMove)
 			{
 				MoveInDirectionAutomated(robot, GetRandomDirection());
-				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck in the mud :-(", robot);
+				FloatingTextManager.ShowMessageAtBuildingPosition("Robot is stuck", robot);
 				robot.SetToStuck();
 				return false;
 			}

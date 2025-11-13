@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_y4qqd")
 Id = "cats_are_playing"
-StartingWoodCount = 6
-StartingMaterialCount = 16
+StartingWoodCount = 0
+StartingMaterialCount = 13
 LevelScenePath = "res://scenes/level/Level2.tscn"
 LevelDuration = 300

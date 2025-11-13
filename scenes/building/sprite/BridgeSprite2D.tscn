@@ -14,5 +14,6 @@ animations = [{
 }]
 
 [node name="BridgeSprite2d" type="AnimatedSprite2D"]
+visible = false
 position = Vector2(32, 32)
 sprite_frames = SubResource("SpriteFrames_fjqm7")

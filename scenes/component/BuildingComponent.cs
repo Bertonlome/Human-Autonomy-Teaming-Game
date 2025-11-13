@@ -69,6 +69,7 @@ public partial class BuildingComponent : Node2D
 	private readonly StringName MOVE_LEFT = "move_left";
 	private readonly StringName MOVE_RIGHT = "move_right";
 	private string previousDir = "";
+	private int numberOfWoodCarried => resourceCollected.Count(res => res == "wood");
 
 	private BuildingComponent AttachedRobot;
 
@@ -500,7 +501,7 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
-	private List<string> GetMovesWithAStar(Vector2I currentPos, Vector2I targetPos)
+	private List<string> GetMovesWithAStar(Vector2I currentPos, Vector2I targetPos, bool allowWaterCrossing = false)
 	{
 		var open = new List<NodeAStar>();
 		var closed = new HashSet<Vector2I>();
@@ -536,13 +537,15 @@ public partial class BuildingComponent : Node2D
 			{
 				var neighborPos = GetNextPosFromCurrentPos(current.Position, direction);
 
-				if (this.BuildingResource.IsAerial)
-				{
-					var (_, isWood) = gridManager.GetTileCustomData(neighborPos, "is_wood");
-					if (isWood || closed.Contains(neighborPos) || gridManager.IsTileOccupied(neighborPos)) continue;
-				}
-				else
-				if (!gridManager.IsTileAreaBuildable(new Rect2I(neighborPos, Vector2I.One)) || closed.Contains(neighborPos) || gridManager.IsTileOccupied(neighborPos)) continue;
+				// Skip if already explored
+				if (closed.Contains(neighborPos)) continue;
+
+				// Check if robot can move to this neighbor
+				var originArea = GetAreaOccupied(current.Position);
+				var destinationArea = GetAreaOccupied(neighborPos);
+				
+				if (!gridManager.IsBuildingMovable(this, originArea, destinationArea, allowWaterCrossing))
+					continue;
 
 				var gCost = current.G + 1; // Assume cost is 1 for each move
 				var hCost = Heuristic(neighborPos, targetPos);
@@ -612,7 +615,7 @@ public partial class BuildingComponent : Node2D
 			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot move while stuck", this);
 			return;
 		}
-		if (Battery <= 0)
+		if (Battery <= 15)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Battery depleted!", this);
 			currentExplorMode = ExplorMode.None;
@@ -625,12 +628,56 @@ public partial class BuildingComponent : Node2D
 		}
 		if (astar)
 		{
-			// trying with a*
-			var path = GetMovesWithAStar(GetGridCellPosition(), targetPosition);
+			// First, try to find a land-only path
+			var path = GetMovesWithAStar(GetGridCellPosition(), targetPosition, false);
+			bool requiresBridge = false;
+			
+			// If no land path found and this is a rover (non-aerial), try allowing water crossing
+			if (path.Count == 0 && !BuildingResource.IsAerial)
+			{
+				path = GetMovesWithAStar(GetGridCellPosition(), targetPosition, true);
+				
+				if (path.Count > 0)
+				{
+					// Found a path that requires crossing water
+					requiresBridge = true;
+					
+					// Check if we have wood to build bridges
+					if (numberOfWoodCarried == 0)
+					{
+						FloatingTextManager.ShowMessageAtBuildingPosition("Need wood to build bridges for this path!", this);
+						currentExplorMode = ExplorMode.None;
+						EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+						return;
+					}
+					else
+					{
+						FloatingTextManager.ShowMessageAtBuildingPosition("Path requires bridge(s) - will build as needed", this);
+					}
+				}
+			}
+			
+			// Check if target itself is water (for aerial units this is fine)
+			(_, bool iswater) = gridManager.GetTileCustomData(targetPosition, GridManager.IS_WATER);
+			if (iswater && !BuildingResource.IsAerial)
+			{
+				if (numberOfWoodCarried > 0)
+				{
+					FloatingTextManager.ShowMessageAtBuildingPosition("Building a bridge to cross water!", this);
+					//buildingManager.BuildBridgeAtPosition(targetPosition, this);
+				}
+				else if (!requiresBridge) // Only show this if we haven't already shown the bridge message
+				{
+					FloatingTextManager.ShowMessageAtBuildingPosition("Need wood to build a bridge!", this);
+					currentExplorMode = ExplorMode.None;
+					EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+					return;
+				}
+			}
+			
+			// If still no path found, give up
 			if (path.Count == 0)
 			{
-				//if (currentExplorMode == ExplorMode.Random)
-					//return;
 				FloatingTextManager.ShowMessageAtBuildingPosition("No path found!", this);
 				GD.Print("No path found for " + GetGridCellPosition() + " to " + targetPosition);
 				currentExplorMode = ExplorMode.None;
@@ -654,6 +701,7 @@ public partial class BuildingComponent : Node2D
 				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 			}
 		}
+		/*
 		else
 		{
 			Vector2I currentPos = GetGridCellPosition();
@@ -734,6 +782,7 @@ public partial class BuildingComponent : Node2D
 				steps++;
 			}
 		}
+		*/
 			currentExplorMode = ExplorMode.None;
 		CanMove = true; // Reset in case it wasn't already
 		buildingManager.ClearAllPaintedTiles();
@@ -926,8 +975,6 @@ public partial class BuildingComponent : Node2D
 	private async System.Threading.Tasks.Task MoveAlongPathAsync(Vector2I targetPosition)
 	{
 		var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
-		void OnArrived() { tcs.TrySetResult(true); }
-		// Optionally, you can add a signal for arrival and connect/disconnect here
 		MoveAlongPath(targetPosition, true);
 		// Wait until robot arrives at target (simple polling)
 		while (GetGridCellPosition() != targetPosition || currentExplorMode == ExplorMode.MoveToPos)

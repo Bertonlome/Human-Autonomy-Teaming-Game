@@ -185,6 +185,12 @@ public partial class GameUI : CanvasLayer
 
 	private void CreateBuildingSections()
 	{
+		// Clear existing building sections first
+		foreach (Node child in buildingSectionContainer.GetChildren())
+		{
+			child.QueueFree();
+		}
+		
 		if (buildingManager.IsBasePlaced)
 		{
 			foreach (var buildingResource in buildingResources)

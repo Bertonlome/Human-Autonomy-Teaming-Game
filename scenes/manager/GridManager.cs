@@ -22,11 +22,13 @@ public partial class GridManager : Node
 	}
 	private const string IS_BUILDABLE = "is_buildable";
 	private const string IS_WOOD = "is_wood";
-	private const string IS_MINERAL = "Is_mineral";
+	private const string IS_MINERAL = "is_mineral";
 	private const string IS_IGNORED = "is_ignored";
 	private const string IS_ROUGH_TERRAIN = "is_rough_terrain";
 	private const string WOOD = "wood";
-	private const string IS_MUD = "Is_mud";
+	private const string IS_MUD = "is_mud";
+	private const string IS_BRIDGE = "is_bridge";
+	public const string IS_WATER = "is_water";
 
 	[Signal]
 	public delegate void ResourceTilesUpdatedEventHandler(int collectedTiles, string resourceType);
@@ -204,7 +206,7 @@ public partial class GridManager : Node
 		return occupiedTiles.Contains(tilePosition);
 	}
 
-	public bool IsBuildingMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea)
+	public bool IsBuildingMovable(BuildingComponent buildingComponent, Rect2I originArea, Rect2I destinationArea, bool considerWaterCrossing = false)
 	{
 		IEnumerable<Vector2I> tileSetToCheckGround;
 		IEnumerable<Vector2I> tileSetToCheckAerial;
@@ -226,24 +228,56 @@ public partial class GridManager : Node
 		tileSetToCheckGround = occupiedTiles.ToHashSet();
 		tileSetToCheckAerial = occupiedTiles.ToHashSet(); //UAV can fly over rocks and plants
 
-		return tilesDestination.All((tilePosition) =>
+		foreach (var tilePosition in tilesDestination)
 		{
 			(TileMapLayer tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
 			var elevationLayer = tileMapLayer != null ? tileMapLayerToElevationLayer[tileMapLayer] : null;
 			(tileMapLayer, bool isWood) = GetTileCustomData(tilePosition, IS_WOOD);
+			(_, bool isInWood) = GetTileCustomData(tilesOrigin[0], IS_WOOD);
+			(_, bool isBridge) = GetTileCustomData(tilesOrigin[0], IS_BRIDGE);
+			(_, bool isInBridge) = GetTileCustomData(tilePosition, IS_BRIDGE);
+			(_, bool isWater) = GetTileCustomData(tilePosition, IS_WATER);
+			
 			//(tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
 
 			//Check for ground vehicle
 			var check1 = tileSetToCheckGround.Contains(tilePosition) ? false : true;
 			var check2 = elevationLayer == targetElevationLayer ? true : false;
-			var check3 = OriginElevationLayer == targetElevationLayer ? true : false;
+			var check3 = OriginElevationLayer == targetElevationLayer ? true : false || isInWood || isWood || isInBridge || isBridge;
 			var check7 = !isRoulable;
 			var check8 = !buildingComponent.BuildingResource.IsAerial;
+			var check9 = !isWater || considerWaterCrossing;
 			//Check for aerial vehicle
 			var check4 = buildingComponent.BuildingResource.IsAerial;
 			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false : true;
 			var check6 = !isWood;
-			return (check1 && check2 && check3 && check7 && check8) || (check4 && check5 && check6);
+		}
+
+		return tilesDestination.All((tilePosition) =>
+		{
+			(TileMapLayer tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
+			var elevationLayer = tileMapLayer != null ? tileMapLayerToElevationLayer[tileMapLayer] : null;
+			(tileMapLayer, bool isWood) = GetTileCustomData(tilePosition, IS_WOOD);
+			(_, bool isInWood) = GetTileCustomData(tilesOrigin[0], IS_WOOD);
+			(_, bool isBridge) = GetTileCustomData(tilesOrigin[0], IS_BRIDGE);
+			(_, bool isInBridge) = GetTileCustomData(tilePosition, IS_BRIDGE);
+			(_, bool isMud) = GetTileCustomData(tilePosition, IS_MUD);
+			(_, bool isInMud) = GetTileCustomData(tilesOrigin[0], IS_MUD);
+			(_, bool isWater) = GetTileCustomData(tilePosition, IS_WATER);
+			//(tileMapLayer, bool isRoulable) = GetTileCustomData(tilePosition, IS_ROUGH_TERRAIN);
+
+			//Check for ground vehicle
+			var check1 = tileSetToCheckGround.Contains(tilePosition) ? false : true;
+			var check2 = elevationLayer == targetElevationLayer ? true : false;
+			var check3 = OriginElevationLayer == targetElevationLayer ? true : false || isInWood || isWood || isInBridge || isBridge || isInMud || isMud;
+			var check7 = !isRoulable;
+			var check8 = !buildingComponent.BuildingResource.IsAerial;
+			var check9 = !isWater || considerWaterCrossing;
+			//Check for aerial vehicle
+			var check4 = buildingComponent.BuildingResource.IsAerial;
+			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false : true;
+			var check6 = !isWood;
+			return (check1 && check2 && check3 && check7 && check8 && check9) || (check4 && check5 && check6);
 		});
 	}
 
@@ -605,7 +639,7 @@ public partial class GridManager : Node
 			var baseOccupiedTiles = buildingComponent.GetOccupiedCellPositions();
 			var tileArea = buildingComponent.GetTileArea();
 			var allTiles = GetTilesInRadiusFiltered(tileArea, buildingComponent.BuildingResource.BuildableRadius, (_) => true);
-			var allTilesRestrained = GetTilesInRadiusFiltered(tileArea, 2, (_) => true);
+			var allTilesRestrained = GetTilesInRadiusFiltered(tileArea, 1, (_) => true);
 			baseProximityTiles = allTilesRestrained.ToHashSet();
 			baseAntennaCoveredTiles = allTiles.ToHashSet();
 		}
@@ -706,7 +740,7 @@ public partial class GridManager : Node
 			UpdateDiscoveredTiles(buildingComponent);
 			UpdateTilesToBuilding(buildingComponent);
 			CheckGroundRobotTouchingMonolith(buildingComponent);
-			CheckAerialRobotVisualMonolith(buildingComponent);
+			CheckRobotHasVisualMonolith(buildingComponent);
 		}
 		var aerials = buildingComponents.Where(r => r.BuildingResource.IsAerial).ToList();
 		if (aerials.Count > 0)
@@ -786,17 +820,14 @@ public partial class GridManager : Node
 		}
 	}
 
-	private void CheckAerialRobotVisualMonolith(BuildingComponent buildingComponent)
+	private void CheckRobotHasVisualMonolith(BuildingComponent buildingComponent)
 	{
-		if(buildingComponent.BuildingResource.IsAerial)
+		foreach(var visionTile in GetTilesInRadius(buildingComponent.GetAreaOccupied(ConvertWorldPositionToTilePosition(buildingComponent.GlobalPosition)),buildingComponent.BuildingResource.VisionRadius))
 		{
-			foreach(var visionTile in GetTilesInRadius(buildingComponent.GetAreaOccupied(ConvertWorldPositionToTilePosition(buildingComponent.GlobalPosition)),buildingComponent.BuildingResource.VisionRadius))
+			if (monolithTiles.Contains(visionTile))
 			{
-				if (monolithTiles.Contains(visionTile))
-				{
-					EmitSignal(SignalName.AerialRobotHasVisionOfMonolith);
-					return;
-				}
+				EmitSignal(SignalName.AerialRobotHasVisionOfMonolith);
+				return;
 			}
 		}
 	}
