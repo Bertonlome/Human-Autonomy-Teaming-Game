@@ -61,6 +61,7 @@ public partial class BaseLevel : Node
 		gameCamera.CameraZoom += OnCameraZoom;
 		gridManager.AerialRobotHasVisionOfMonolith += OnAerialRobotHasVisionOfMonolith;
 		gridManager.GroundRobotTouchingMonolith += OnGroundRobotTouchingMonolith;
+		gridManager.BaseTouchingMonolith += OnBaseTouchingMonolith;
 
 		GameEvents.Instance.Connect(GameEvents.SignalName.RobotSelected, Callable.From<BuildingComponent>(OnRobotSelected));
 	}
@@ -129,6 +130,11 @@ public partial class BaseLevel : Node
 	{
 		if (isComplete) return;
 		ShowLevelComplete();
+	}
+
+	private void OnBaseTouchingMonolith()
+	{
+		ShowLevelFailed();
 	}
 
 	private void OnRobotSelected(BuildingComponent buildingComponent)

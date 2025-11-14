@@ -63,6 +63,6 @@ tile_set = ExtResource("3_ffsl0")
 position = Vector2(5824, -2176)
 
 [node name="Base" parent="YSortRoot" index="2" instance=ExtResource("5_3bi2a")]
-position = Vector2(5696, 3584)
+position = Vector2(-5376, -1728)
 
 [editable path="YSortRoot/BaseTerrainTileMapLayer/ElevationLayer"]

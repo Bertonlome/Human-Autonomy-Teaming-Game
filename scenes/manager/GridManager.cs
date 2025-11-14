@@ -41,6 +41,8 @@ public partial class GridManager : Node
 	[Signal]
 	public delegate void GroundRobotTouchingMonolithEventHandler();
 	[Signal]
+	public delegate void BaseTouchingMonolithEventHandler();
+	[Signal]
 	public delegate void AerialRobotHasVisionOfMonolithEventHandler();
 
 	private HashSet<Vector2I> allTilesBuildableOnTheMap = new();
@@ -868,13 +870,39 @@ public partial class GridManager : Node
 
 	private void CheckGroundRobotTouchingMonolith(BuildingComponent buildingComponent)
 	{
-		if (buildingComponent.BuildingResource.IsAerial || buildingComponent.BuildingResource.IsBase) return;
-		foreach (var adjacentTile in buildingComponent.GetTileAndAdjacent())
+		if (buildingComponent.IsLifted) return;
+		if (buildingComponent.BuildingResource.IsAerial)
 		{
-			if (monolithTiles.Contains(adjacentTile))
+			foreach (var adjacentTile in buildingComponent.GetTileAndAdjacent())
 			{
-				EmitSignal(SignalName.GroundRobotTouchingMonolith);
-				return;
+				if (monolithTiles.Contains(adjacentTile))
+				{
+					FloatingTextManager.ShowMessageAtBuildingPosition("Ground robot required to sample the monolith.", buildingComponent);
+					return;
+				}
+			}
+		}
+		else if(buildingComponent.BuildingResource.IsBase)
+        {
+			foreach (var occupiedTile in buildingComponent.GetOccupiedCellPositions())
+			{
+				if (monolithTiles.Contains(occupiedTile))
+				{
+					EmitSignal(SignalName.BaseTouchingMonolith);
+					return;
+				}
+			}
+			return;
+        }
+		else
+		{
+			foreach (var adjacentTile in buildingComponent.GetTileAndAdjacent())
+			{
+				if (monolithTiles.Contains(adjacentTile))
+				{
+					EmitSignal(SignalName.GroundRobotTouchingMonolith);
+					return;
+				}
 			}
 		}
 	}
