@@ -78,6 +78,9 @@ public partial class BuildingComponent : Node2D
 	private float timerRecharge = 0.0f; // Tracks time since last move
 	public const float RECHARGE_INTERVAL = 3.0f;
 
+	private Sprite2D grappleComponent;
+	private Node grappleRoot;
+	private bool IsGrappleExtended = false;
 
 	public enum ExplorMode
 	{
@@ -183,6 +186,7 @@ public partial class BuildingComponent : Node2D
 		if (BuildingResource.IsAerial)
 		{
 			IsLifting = true;
+			ExtendGrapple();
 			EmitSignal(SignalName.ModeChanged, "Lifting");
 		}
 		else
@@ -197,6 +201,7 @@ public partial class BuildingComponent : Node2D
 		AttachedRobot = null;
 		IsLifted = false;
 		IsLifting = false;
+		RetractGrapple();
 		EmitSignal(SignalName.ModeChanged, "Idle");
 	}
 
@@ -561,8 +566,12 @@ public partial class BuildingComponent : Node2D
 					foreach (var pos in pathPositions)
 					{
 						var (tileElevation, tileIsElevated) = gridManager.GetElevationLayerForTile(pos);
-						// If tile elevation doesn't match the path elevation, it needs a bridge
-						if (tileIsElevated != bridgeElevationIsElevated.Value)
+						(_, bool isWater) = gridManager.GetTileCustomData(pos, GridManager.IS_WATER);
+						
+						// A tile needs a bridge if:
+						// 1. It's a water tile, OR
+						// 2. Its elevation doesn't match the path elevation
+						if (isWater || tileIsElevated != bridgeElevationIsElevated.Value)
 						{
 							bridgeTiles.Add(pos);
 						}
@@ -682,7 +691,7 @@ public partial class BuildingComponent : Node2D
 				var (targetElevation, targetIsElevated) = gridManager.GetElevationLayerForTile(targetPosition);
 				if (robotIsElevated != targetIsElevated)
 				{
-					FloatingTextManager.ShowMessageAtBuildingPosition("No path found due to elevation difference!", this);
+					FloatingTextManager.ShowMessageAtBuildingPosition("No path found", this);
 					currentExplorMode = ExplorMode.None;
 					EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 					return;
@@ -705,7 +714,7 @@ public partial class BuildingComponent : Node2D
 					}
 					else
 					{
-						FloatingTextManager.ShowMessageAtBuildingPosition($"Path requires {woodNeeded} bridge(s) - will build as needed", this);
+						FloatingTextManager.ShowMessageAtBuildingPosition($"Path requires {woodNeeded} bridge", this);
 					}
 				}
 			}
@@ -738,16 +747,29 @@ public partial class BuildingComponent : Node2D
 				return;
 			}
 			
-			// Paint the path and pre-build bridges if needed
-			var currentPosition = GetGridCellPosition();
-			int bridgesBuilt = 0;
+			// Paint the path
+			var paintPosition = GetGridCellPosition();
 			foreach (var move in path)
 			{
-				var nextPosition = GetNextPosFromCurrentPos(currentPosition, move);
-				buildingManager.CreatePaintedTileAt(nextPosition);
+				paintPosition = GetNextPosFromCurrentPos(paintPosition, move);
+				buildingManager.CreatePaintedTileAt(paintPosition);
+			}
+			
+			// Move along the path and place bridges as we go
+			int bridgesBuilt = 0;
+			for (int i = 0; i < path.Count; i++)
+			{
+				if (cancelMoveRequested) break;
+				if (currentExplorMode == ExplorMode.None) break;
+				if (IsStuck) break;
+				if (Battery <= 0) break;
 				
-				// If this position needs a bridge, build it now
-				if (bridgeTilesNeeded.Contains(nextPosition) && requiresBridge)
+				var currentDirection = path[i];
+				var currentPos = GetGridCellPosition();
+				var nextPos = GetNextPosFromCurrentPos(currentPos, currentDirection);
+				
+				// Check if next position needs a bridge
+				if (bridgeTilesNeeded.Contains(nextPos) && requiresBridge)
 				{
 					// Double-check we have wood (safety check)
 					if (numberOfWoodCarried <= 0)
@@ -759,31 +781,29 @@ public partial class BuildingComponent : Node2D
 						return;
 					}
 					
-					var robotArea = GetAreaOccupied(GetGridCellPosition()); // Use actual robot position
-					var bridgeArea = GetAreaOccupied(nextPosition);
+					var robotArea = GetAreaOccupied(currentPos);
+					var bridgeArea = GetAreaOccupied(nextPos);
 					
 					// Determine orientation based on direction
-					var delta = nextPosition - currentPosition;
+					var delta = nextPos - currentPos;
 					string orientation = (delta.X != 0) ? "horizontal" : "vertical";
 					
 					if (gridManager.TryPlaceBridgeTile(robotArea, bridgeArea, orientation))
 					{
 						RemoveResource("wood"); // Consume wood for bridge
 						bridgesBuilt++;
-						GD.Print($"Built bridge {bridgesBuilt}/{bridgeTilesNeeded.Count} at {nextPosition}");
+						GD.Print($"Built bridge {bridgesBuilt}/{bridgeTilesNeeded.Count} at {nextPos}");
+						if (orientation == "vertical")
+							FloatingTextManager.ShowMessageAtBuildingPosition($"Built bridge {bridgesBuilt}/{bridgeTilesNeeded.Count}", this);
+						else
+							FloatingTextManager.ShowMessageAtMousePosition($"Built bridge {bridgesBuilt}/{bridgeTilesNeeded.Count}");
+						// Wait a moment after placing bridge
+						await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 					}
 				}
-				currentPosition = nextPosition;
-			}
-			
-			// Now move along the path
-			foreach (var chosenDirection in path)
-			{
-				if (cancelMoveRequested) break;
-				if (currentExplorMode == ExplorMode.None) break;
-				if (IsStuck) break;
-				if (Battery <= 0) break;
-				buildingManager.MoveInDirectionAutomated(this, chosenDirection);
+				
+				// Now move in this direction
+				buildingManager.MoveInDirectionAutomated(this, currentDirection);
 				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 			}
 		}
@@ -1086,7 +1106,7 @@ public partial class BuildingComponent : Node2D
 			
 			// Oscillation detection: track recent positions
 			Queue<Vector2I> recentPositions = new Queue<Vector2I>();
-			int oscillationWindowSize = 6; // Check last 6 positions
+			int oscillationWindowSize = 10; // Check last 10 positions
 			int oscillationThreshold = 2; // If we revisit a position 2+ times in the window, it's oscillating
 
 			while (currentExplorMode == ExplorMode.GradientSearch && !reachedMaxima && Battery > 0)
@@ -1202,6 +1222,100 @@ public partial class BuildingComponent : Node2D
 		currentExplorMode = ExplorMode.None;
 		EmitSignal(SignalName.ModeChanged, "Idle");
 		CanMove = true; // Reset at the end, in case it wasn't already
+	}
+
+	private void ExtendGrapple()
+	{
+	// Only create the grapple if we don't already have one
+	if (grappleComponent == null && !IsGrappleExtended)
+	{
+		var packed = GD.Load<PackedScene>("res://scenes/building/sprite/GrappleSprite2D.tscn");
+		if (packed == null)
+		{
+			GD.PrintErr("Failed to load GrappleSprite2D scene.");
+			return;
+		}
+
+		// Instantiate the scene (root may not be Sprite2D)
+		var root = packed.Instantiate();
+		if (root == null)
+		{
+			GD.PrintErr("Failed to instantiate GrappleSprite2D (root is null).");
+			return;
+		}
+
+		// Add the instantiated root to this node
+		AddChild(root);
+		grappleRoot = root;
+
+		// Try to find a Sprite2D to use as grappleComponent. The scene's root may be a Node2D
+		Sprite2D sprite = null;
+		if (root is Sprite2D rs)
+		{
+			sprite = rs;
+		}
+		else
+		{
+			sprite = FindFirstSprite2D(root);
+		}
+
+		// Position / z-order the instantiated node appropriately
+		if (root is Node2D root2d)
+		{
+			root2d.Position = new Vector2(32, 32);
+			// If the scene root has ZIndex, set it; otherwise try to set sprite ZIndex
+			try { root2d.ZIndex = 1; } catch { }
+		}
+		else if (sprite != null)
+		{
+			sprite.Position = new Vector2(0, 0);
+			try { sprite.ZIndex = 1; } catch { }
+		}
+
+		if (sprite == null)
+		{
+			GD.PrintErr("Grapple instantiated but no Sprite2D found in the scene. The root has been added anyway.");
+		}
+		else
+		{
+			grappleComponent = sprite;
+		}
+
+		IsGrappleExtended = true;
+	}
+}
+
+	// Recursively search a node tree for the first Sprite2D instance
+	private Sprite2D FindFirstSprite2D(Node node)
+	{
+		if (node == null) return null;
+		if (node is Sprite2D s) return s;
+		foreach (var childObj in node.GetChildren())
+		{
+			if (childObj is not Node child) continue;
+			var found = FindFirstSprite2D(child);
+			if (found != null) return found;
+		}
+		return null;
+	}
+
+	private void RetractGrapple()
+	{
+		if (!IsGrappleExtended) return;
+		// Prefer removing the root node if we have it
+		if (grappleRoot != null)
+		{
+			try { RemoveChild(grappleRoot); } catch { }
+			grappleRoot.QueueFree();
+			grappleRoot = null;
+		}
+		else if (grappleComponent != null)
+		{
+			try { RemoveChild(grappleComponent); } catch { }
+			grappleComponent.QueueFree();
+			grappleComponent = null;
+		}
+		IsGrappleExtended = false;
 	}
 
 	private string GetDirectionFromDelta(Vector2I current, Vector2I target)

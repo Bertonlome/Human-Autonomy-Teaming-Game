@@ -26,6 +26,13 @@ public partial class FloatingTextManager : Node
 		instance.AddChild(floatingtext);
 		floatingtext.SetText(message);
 		floatingtext.GlobalPosition = floatingtext.GetGlobalMousePosition();
+		
+		// Scale inversely to camera zoom for consistent visual size
+		var camera = instance.GetViewport().GetCamera2D();
+		if (camera != null)
+		{
+			floatingtext.Scale = Vector2.One / camera.Zoom;
+		}
 	}
 
 	public static void ShowMessageAtBuildingPosition(string message, Node2D buildingNode)
@@ -34,5 +41,12 @@ public partial class FloatingTextManager : Node
 		instance.AddChild(floatingtext);
 		floatingtext.SetText(message);
 		floatingtext.GlobalPosition = buildingNode.GlobalPosition;
+		
+		// Scale inversely to camera zoom for consistent visual size
+		var camera = instance.GetViewport().GetCamera2D();
+		if (camera != null)
+		{
+			floatingtext.Scale = Vector2.One / camera.Zoom;
+		}
 	}
 }

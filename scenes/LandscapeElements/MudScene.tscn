@@ -4,6 +4,6 @@
 
 [node name="Sprite2D" type="Sprite2D"]
 y_sort_enabled = true
-position = Vector2(32, 72)
+position = Vector2(32, -8)
 texture = ExtResource("1_wmwmw")
-offset = Vector2(0, -40)
+offset = Vector2(0, 40)
