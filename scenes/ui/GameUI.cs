@@ -7,6 +7,7 @@ using Game.Building;
 using Game.Component;
 using Game.Manager;
 using Game.Resources.Building;
+using Game.Services;
 using Godot;
 
 namespace Game.UI;
@@ -35,11 +36,14 @@ public partial class GameUI : CanvasLayer
 	private Button stopRobotButton;
 	private Button displayAnomalyMapButton;
 	private Button sendPathToRobotButton;
+	private Button executePathButton;
+	private Button configureApiKeyButton;
 	private CheckButton displayTraceButton;
 	private MarginContainer specialFunctionsContainer;
 	private PanelContainer sendPathButtonPanelContainer;
 	private Label adviceLabel;
 	private Panel rakePanel;
+	private ApiKeyDialog apiKeyDialog;
 	private bool isTraceActive = false;
 	private readonly StringName ACTION_SPACEBAR = "spacebar";
 	private HashSet<Vector2I> _previouslyDiscoveredTiles = new(); // Track to calculate delta
@@ -48,6 +52,8 @@ public partial class GameUI : CanvasLayer
 	private GravitationalAnomalyMap gravitationalAnomalyMap;
 	[Export]
 	private BuildingManager buildingManager;
+	[Export]
+	private GeminiApiService geminiApiService;
 	[Export]
 	private BuildingResource[] buildingResources;
 	[Export]
@@ -68,9 +74,26 @@ public partial class GameUI : CanvasLayer
 		displayTraceButton = GetNode<CheckButton>("%DisplayTraceButton");
 		specialFunctionsContainer = GetNode<MarginContainer>("%SpecialFunctionsContainer");
 		sendPathButtonPanelContainer = GetNode<PanelContainer>("%SendPathButtonPanelContainer");
+		executePathButton = GetNode<Button>("%ExecutePathButton");
 		adviceLabel = GetNode<Label>("%AdviceLabel");
 		rakePanel = GetNode<Panel>("%RakePanel");
 		sendPathToRobotButton = GetNode<Button>("%SendPathToRobotButton");
+		
+		// Create API key dialog
+		apiKeyDialog = new ApiKeyDialog();
+		AddChild(apiKeyDialog);
+		if (geminiApiService != null)
+		{
+			apiKeyDialog.SetGeminiService(geminiApiService);
+		}
+		
+		// Try to get configure API key button if it exists
+		configureApiKeyButton = GetNodeOrNull<Button>("%ConfigureApiKeyButton");
+		if (configureApiKeyButton != null)
+		{
+			configureApiKeyButton.Pressed += OnConfigureApiKeyButtonPressed;
+		}
+		
 		CreateBuildingSections();
 
 		stopRobotButton.Pressed += OnStopRobotButtonPressed;
@@ -81,6 +104,7 @@ public partial class GameUI : CanvasLayer
 		buildingManager.ClockIsTicking += OnClockIsTicking;
 		displayTraceButton.Toggled += OnDisplayTraceToggled;
 		sendPathToRobotButton.Pressed += OnSendPathToRobotButtonPressed;
+		executePathButton.Pressed += OnExecutePathButtonPressed;
 		rakePanel.GuiInput += OnRakePanelGuiInput;
 
 		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
@@ -344,7 +368,7 @@ public partial class GameUI : CanvasLayer
 		}
 	}
 	
-	private void OnSendPathToRobotButtonPressed()
+	private async void OnSendPathToRobotButtonPressed()
 	{
 		var paintedTiles = buildingManager.GetAllPaintedTiles();
 		var contextTiles = buildingManager.GetContextualTilesForPaintedTiles(paintedTiles);
@@ -355,12 +379,38 @@ public partial class GameUI : CanvasLayer
 		GD.Print(jsonRequest);
 		GD.Print("========================");
 		
-		// TODO: Send jsonRequest to your LLM API endpoint
-		// Example: await HttpClient.PostAsync("https://your-api.com/optimize-path", jsonRequest);
+		// Check if Gemini API is configured
+		if (geminiApiService == null || !geminiApiService.IsConfigured())
+		{
+			GD.PrintErr("Gemini API service not configured. Using test path instead.");
+			adviceLabel.Text = "Gemini API not configured. Set your API key first.";
+			await ToSignal(GetTree().CreateTimer(3.0), SceneTreeTimer.SignalName.Timeout);
+			return;
+		}
 		
-		// For now, copy the JSON from console and test with your LLM
-		// Then use ImportPathFromJson() to apply the response
-		TestImportSamplePath();
+		// Show loading feedback
+		adviceLabel.Text = "Request sent to Gemini API. Waiting for response...";
+		
+		try
+		{
+			// Call Gemini API
+			string llmResponse = await geminiApiService.OptimizePathAsync(jsonRequest);
+			GD.Print("=== LLM RESPONSE ===");
+			GD.Print(llmResponse);
+			GD.Print("====================");
+			
+			// Import the optimized path
+			ImportPathFromJson(llmResponse);
+			
+			// Success feedback
+			adviceLabel.Text = "Proposed path available!";
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"Error calling Gemini API: {ex.Message}");
+			adviceLabel.Text = $"Error: {ex.Message}";
+			await ToSignal(GetTree().CreateTimer(5.0), SceneTreeTimer.SignalName.Timeout);
+		}
 	}
 	
 	/// <summary>
@@ -502,192 +552,60 @@ public partial class GameUI : CanvasLayer
 		}
 	}
 	
-	/// <summary>
-	/// TEST METHOD: Generate a sample LLM response for testing
-	/// Call this from console to test the import functionality
-	/// </summary>
-	public void TestImportSamplePath()
-	{
-		GD.Print("Testing import with sample path...");
-		string llmResponse = @"{
-			""success"": true,
-			""message"": ""Path optimized successfully"",
-			""suggestedPath"": {
-				""robotName"": ""Rover"",
-				""isAerial"": false,
-				""tiles"": [
-					{
-						""tileNumber"": 1,
-						""gridX"": 33,
-						""gridY"": 4,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 2,
-						""gridX"": 32,
-						""gridY"": 3,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 3,
-						""gridX"": 31,
-						""gridY"": 2,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 4,
-						""gridX"": 30,
-						""gridY"": 1,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 5,
-						""gridX"": 29,
-						""gridY"": 0,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 6,
-						""gridX"": 28,
-						""gridY"": 0,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 7,
-						""gridX"": 27,
-						""gridY"": 0,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 8,
-						""gridX"": 26,
-						""gridY"": 0,
-						""annotation"": ""explore around"",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 9,
-						""gridX"": 25,
-						""gridY"": 0,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 10,
-						""gridX"": 25,
-						""gridY"": 1,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 11,
-						""gridX"": 26,
-						""gridY"": 1,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 12,
-						""gridX"": 27,
-						""gridY"": 1,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 13,
-						""gridX"": 27,
-						""gridY"": 0,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 14,
-						""gridX"": 26,
-						""gridY"": 0,
-						""annotation"": ""explore around"",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 15,
-						""gridX"": 25,
-						""gridY"": 1,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 16,
-						""gridX"": 25,
-						""gridY"": 2,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 17,
-						""gridX"": 25,
-						""gridY"": 3,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 18,
-						""gridX"": 25,
-						""gridY"": 4,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 19,
-						""gridX"": 25,
-						""gridY"": 5,
-						""annotation"": """",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					},
-					{
-						""tileNumber"": 20,
-						""gridX"": 24,
-						""gridY"": 6,
-						""annotation"": ""collect"",
-						""robotName"": ""Rover"",
-						""isAerial"": false
-					}
-				],
-				""totalTiles"": 20
-			},
-			""reasoning"": ""Optimized path based on reachability analysis from context tiles""
-		}";
-		
-		ImportPathFromJson(llmResponse);
-	}
-
 	private void OnDisplayAnomalyMapButtonPressed()
 	{
 		gravitationalAnomalyMap.DisplayAnomalyMap();
+	}
+	
+	private void OnConfigureApiKeyButtonPressed()
+	{
+		if (apiKeyDialog != null)
+		{
+			apiKeyDialog.PopupCentered();
+		}
+	}
+	
+	private void OnExecutePathButtonPressed()
+	{
+		// Get all painted tiles
+		var paintedTiles = buildingManager.GetAllPaintedTiles();
+		
+		if (paintedTiles == null || paintedTiles.Count == 0)
+		{
+			adviceLabel.Text = "No path to execute!";
+			GD.PrintErr("No painted tiles to execute");
+			return;
+		}
+		
+		// Get the robot associated with these tiles
+		var robot = paintedTiles[0].AssociatedRobot;
+		
+		if (robot == null)
+		{
+			adviceLabel.Text = "No robot associated with path!";
+			GD.PrintErr("Painted tiles have no associated robot");
+			return;
+		}
+		
+		// Check if there are any painted tiles
+		if (paintedTiles.Count == 0)
+		{
+			adviceLabel.Text = "Path is empty!";
+			return;
+		}
+		
+		// Get the target position (last tile in the path)
+		var targetTile = paintedTiles[paintedTiles.Count - 1];
+		var targetPosition = targetTile.GridPosition;
+		
+		// Clear the painted tiles before execution
+		buildingManager.ClearAllPaintedTiles();
+		
+		//GD.Print($"Executing path to {targetPosition} with {paintedTiles.Count} tiles");
+		//adviceLabel.Text = $"Robot executing path to ({targetPosition.X}, {targetPosition.Y})...";
+		
+		// Command the robot to follow the path using A* pathfinding
+		robot.MoveAlongPath(targetPosition, astar: true);
 	}
 
 	private void OnAvailableResourceCountChanged(int availableResourceCount)
