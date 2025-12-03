@@ -53,8 +53,12 @@ Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (
 
 [x] Il faut finir d'implémenter le auto-bridge mais problème lorsque les altitudes ne fonctionnent pas
 
-[ ] Il faut fixer les alertes intempestives
+[x] Il faut fixer les alertes intempestives
 
 [ ] Il faut faire un vrai brouillard de guerre
 
-[ ] Il faut instrumenter l'interaction avec le path
+[ ] Il faut un tooltip manager 
+
+[ ] Il faut un main objective panel
+
+[x] Il faut instrumenter l'interaction avec le path

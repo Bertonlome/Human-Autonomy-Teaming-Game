@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://dqoljijx36x6a"]
+[gd_scene load_steps=11 format=3 uid="uid://dqoljijx36x6a"]
 
 [ext_resource type="Script" path="res://scenes/ui/GameUI.cs" id="1_ig7ao"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="2_2jsg4"]
@@ -9,9 +9,11 @@
 [ext_resource type="Texture2D" uid="uid://bhebwhpdwalvc" path="res://assets/ui/wood_icon_cropped.png" id="7_yyrf8"]
 [ext_resource type="Texture2D" uid="uid://lcjpfgcwel8q" path="res://assets/ui/material_icon.png" id="8_783ri"]
 [ext_resource type="PackedScene" uid="uid://dqtmd1oy0b3m2" path="res://scenes/building/Rake.tscn" id="9_4ecoi"]
+[ext_resource type="Script" path="res://scenes/services/GeminiApiService.cs" id="10_y0kjh"]
 
-[node name="GameUI" type="CanvasLayer"]
+[node name="GameUI" type="CanvasLayer" node_paths=PackedStringArray("geminiApiService")]
 script = ExtResource("1_ig7ao")
+geminiApiService = NodePath("GeminiApiService")
 buildingResources = Array[Object]([ExtResource("3_7ve0q"), ExtResource("2_2jsg4")])
 buildingSectionScene = ExtResource("4_bv77p")
 UnitSectionScene = ExtResource("5_ds8w2")
@@ -273,7 +275,14 @@ unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 40
-text = "SEND PATH TO ROBOT"
+text = "SEND PATH TO AI"
+
+[node name="ExecutePathButton" type="Button" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer/VBoxContainer/HBoxContainer4"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 40
+text = "EXECUTE PATH"
 
 [node name="MarginContainer3" type="MarginContainer" parent="."]
 anchors_preset = 6
@@ -326,3 +335,6 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+
+[node name="GeminiApiService" type="Node" parent="."]
+script = ExtResource("10_y0kjh")

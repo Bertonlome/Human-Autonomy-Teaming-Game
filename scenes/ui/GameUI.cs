@@ -577,35 +577,51 @@ public partial class GameUI : CanvasLayer
 			return;
 		}
 		
-		// Get the robot associated with these tiles
-		var robot = paintedTiles[0].AssociatedRobot;
+		// Group tiles by robot
+		var robotPaths = new Dictionary<BuildingComponent, List<PaintedTile>>();
+		foreach (var tile in paintedTiles)
+		{
+			if (tile.AssociatedRobot != null)
+			{
+				if (!robotPaths.ContainsKey(tile.AssociatedRobot))
+				{
+					robotPaths[tile.AssociatedRobot] = new List<PaintedTile>();
+				}
+				robotPaths[tile.AssociatedRobot].Add(tile);
+			}
+		}
 		
-		if (robot == null)
+		if (robotPaths.Count == 0)
 		{
 			adviceLabel.Text = "No robot associated with path!";
 			GD.PrintErr("Painted tiles have no associated robot");
 			return;
 		}
 		
-		// Check if there are any painted tiles
-		if (paintedTiles.Count == 0)
-		{
-			adviceLabel.Text = "Path is empty!";
-			return;
-		}
-		
-		// Get the target position (last tile in the path)
-		var targetTile = paintedTiles[paintedTiles.Count - 1];
-		var targetPosition = targetTile.GridPosition;
-		
 		// Clear the painted tiles before execution
 		buildingManager.ClearAllPaintedTiles();
 		
-		//GD.Print($"Executing path to {targetPosition} with {paintedTiles.Count} tiles");
-		//adviceLabel.Text = $"Robot executing path to ({targetPosition.X}, {targetPosition.Y})...";
+		// Execute path for each robot
+		int robotCount = 0;
+		foreach (var kvp in robotPaths)
+		{
+			var robot = kvp.Key;
+			var tiles = kvp.Value;
+			
+			if (tiles.Count > 0)
+			{
+				// Get the target position (last tile in the robot's path)
+				var targetPosition = tiles[tiles.Count - 1].GridPosition;
+				
+				GD.Print($"Executing path for robot {robot.BuildingResource.DisplayName} to {targetPosition} with {tiles.Count} tiles");
+				
+				// Command the robot to follow the path using A* pathfinding
+				robot.MoveAlongPath(targetPosition, astar: true);
+				robotCount++;
+			}
+		}
 		
-		// Command the robot to follow the path using A* pathfinding
-		robot.MoveAlongPath(targetPosition, astar: true);
+		adviceLabel.Text = $"Executing paths for {robotCount} robot(s)...";
 	}
 
 	private void OnAvailableResourceCountChanged(int availableResourceCount)

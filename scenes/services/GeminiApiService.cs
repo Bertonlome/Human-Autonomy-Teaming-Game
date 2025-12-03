@@ -12,7 +12,7 @@ namespace Game.Services;
 public partial class GeminiApiService : Node
 {
 	private Client geminiClient;
-	private string apiKey = "";
+	private string apiKey;
 	private const string MODEL_NAME = "gemini-2.0-flash-exp";
 	
 	public override void _Ready()
