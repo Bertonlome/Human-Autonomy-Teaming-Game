@@ -82,7 +82,7 @@ public partial class UnitSection : PanelContainer
 			"GradientSearch" => "Gradient Search",
 			"RewindMoves" => "Rewind Moves",
 			"ReturnToBase" => "Returning to Base",
-			"MoveToPos" => "Moving to Position",
+			"MoveToPos" => "Moving",
 			"None" => "Idle",
 			_ => !string.IsNullOrEmpty(mode) ? mode : "Idle"
 		};

@@ -371,6 +371,16 @@ public partial class GameUI : CanvasLayer
 	private async void OnSendPathToRobotButtonPressed()
 	{
 		var paintedTiles = buildingManager.GetAllPaintedTiles();
+		
+		// Check if there are painted tiles before proceeding
+		if (paintedTiles == null || paintedTiles.Count == 0)
+		{
+			adviceLabel.Text = "No path to optimize! Paint a path first.";
+			GD.PrintErr("No painted tiles to send to API");
+			await ToSignal(GetTree().CreateTimer(3.0), SceneTreeTimer.SignalName.Timeout);
+			return;
+		}
+		
 		var contextTiles = buildingManager.GetContextualTilesForPaintedTiles(paintedTiles);
 		
 		// Export current path to JSON
@@ -601,30 +611,82 @@ public partial class GameUI : CanvasLayer
 		// Clear the painted tiles before execution
 		buildingManager.ClearAllPaintedTiles();
 		
-		// Execute path for each robot
-		int robotCount = 0;
-		foreach (var kvp in robotPaths)
+	// Execute path for each robot
+	int robotCount = 0;
+	foreach (var kvp in robotPaths)
+	{
+		var robot = kvp.Key;
+		var tiles = kvp.Value;
+		
+		if (tiles.Count > 0)
 		{
-			var robot = kvp.Key;
-			var tiles = kvp.Value;
+			// Sort tiles by tile number to follow correct order
+			tiles.Sort((a, b) => a.TileNumber.CompareTo(b.TileNumber));
 			
-			if (tiles.Count > 0)
-			{
-				// Get the target position (last tile in the robot's path)
-				var targetPosition = tiles[tiles.Count - 1].GridPosition;
-				
-				GD.Print($"Executing path for robot {robot.BuildingResource.DisplayName} to {targetPosition} with {tiles.Count} tiles");
-				
-				// Command the robot to follow the path using A* pathfinding
-				robot.MoveAlongPath(targetPosition, astar: true);
-				robotCount++;
-			}
+			GD.Print($"Executing custom path for robot {robot.BuildingResource.DisplayName} with {tiles.Count} waypoints");
+			
+			// Execute the path by visiting each waypoint in sequence
+			ExecuteCustomPath(robot, tiles);
+			robotCount++;
+		}
+	}
+	
+	adviceLabel.Text = $"Executing paths for {robotCount} robot(s)...";
+}
+
+/// <summary>
+/// Execute a custom path by following each waypoint in sequence
+/// </summary>
+private async void ExecuteCustomPath(BuildingComponent robot, List<PaintedTile> waypoints)
+{
+	for (int i = 0; i < waypoints.Count; i++)
+	{
+		var waypoint = waypoints[i];
+		//GD.Print($"[ExecuteCustomPath] Moving to waypoint {waypoint.TileNumber}/{waypoints.Count} at {waypoint.GridPosition}");
+		
+		// Use A* to reach each waypoint (allows obstacle avoidance between waypoints)
+		robot.MoveAlongPath(waypoint.GridPosition, astar: true);
+		
+		// Wait for movement to actually start (mode changes to MoveToPos)
+		int startTimeout = 0;
+		while (robot.currentExplorMode != BuildingComponent.ExplorMode.MoveToPos && startTimeout < 50)
+		{
+			await ToSignal(GetTree().CreateTimer(0.1f), SceneTreeTimer.SignalName.Timeout);
+			startTimeout++;
 		}
 		
-		adviceLabel.Text = $"Executing paths for {robotCount} robot(s)...";
+		if (startTimeout >= 50)
+		{
+			//adviceLabel.Text = $"Robot failed to start moving to waypoint {waypoint.TileNumber}!";
+			//GD.PrintErr($"Robot failed to start moving to waypoint {waypoint.TileNumber}");
+			return;
+		}
+		
+		// Wait until robot finishes moving (mode changes back to None)
+		int moveTimeout = 0;
+		while (robot.currentExplorMode == BuildingComponent.ExplorMode.MoveToPos && moveTimeout < 1000)
+		{
+			await ToSignal(GetTree().CreateTimer(0.1f), SceneTreeTimer.SignalName.Timeout);
+			moveTimeout++;
+		}
+		
+		// Check if movement completed successfully or was interrupted
+		if (robot.GetGridCellPosition() != waypoint.GridPosition)
+		{
+			//adviceLabel.Text = $"Robot stopped at waypoint {waypoint.TileNumber}!";
+			//GD.PrintErr($"Robot failed to reach waypoint {waypoint.TileNumber}. Expected {waypoint.GridPosition}, got {robot.GetGridCellPosition()}");
+			return;
+		}
+		
+		//GD.Print($"[ExecuteCustomPath] Reached waypoint {waypoint.TileNumber} at {waypoint.GridPosition}");
+		
+		// Small delay between waypoints
+		await ToSignal(GetTree().CreateTimer(0.2f), SceneTreeTimer.SignalName.Timeout);
 	}
-
-	private void OnAvailableResourceCountChanged(int availableResourceCount)
+	
+	adviceLabel.Text = "Path execution complete!";
+	GD.Print($"Robot {robot.BuildingResource.DisplayName} completed custom path with {waypoints.Count} waypoints");
+}	private void OnAvailableResourceCountChanged(int availableResourceCount)
 	{
 		resourceLabel.Text = availableResourceCount.ToString();
 	}
