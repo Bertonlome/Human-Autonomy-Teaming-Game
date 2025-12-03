@@ -14,6 +14,7 @@ public partial class PaintedTile : Node2D
 	public int TileNumber { get; private set; }
 	public string Annotation => labelEdit?.Text ?? "";
 	public Vector2I GridPosition { get; set; }
+	public bool IsReachable { get; set; } = true;
 
 	public override void _Ready()
 	{

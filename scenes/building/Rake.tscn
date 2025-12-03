@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://dqtmd1oy0b3m2"]
+
+[ext_resource type="Script" path="res://scenes/building/Rake.cs" id="1_g4034"]
+[ext_resource type="Texture2D" uid="uid://bjcit7ufjgbtn" path="res://assets/buildings/rake_middair.png" id="3_u3qnq"]
+
+[node name="Rake" type="Control"]
+z_index = 1
+y_sort_enabled = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 3
+anchor_right = 0.033
+anchor_bottom = 0.059
+offset_right = 0.639999
+offset_bottom = 0.279995
+script = ExtResource("1_g4034")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("3_u3qnq")
+offset = Vector2(32, 32)

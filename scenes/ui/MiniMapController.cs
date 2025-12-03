@@ -35,7 +35,7 @@ public partial class MiniMapController : Node
         _mini.GridW = windowTiles;
         _mini.GridH = windowTiles;
         
-        GD.Print($"MiniMap configured for sensor radius {sensorRadius}: {windowTiles}x{windowTiles} tiles = {windowTiles * windowTiles} bars");
+        //GD.Print($"MiniMap configured for sensor radius {sensorRadius}: {windowTiles}x{windowTiles} tiles = {windowTiles * windowTiles} bars");
         
         // NOW initialize the MultiMesh with the correct grid size
         _mini.InitFullMap(mapSize);

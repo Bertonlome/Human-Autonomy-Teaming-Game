@@ -29,6 +29,27 @@ public class PaintedTileDto
 }
 
 /// <summary>
+/// Data Transfer Object for contextual tiles surrounding the painted path
+/// </summary>
+public class ContextTileDto
+{
+	[JsonPropertyName("gridX")]
+	public int GridX { get; set; }
+	
+	[JsonPropertyName("gridY")]
+	public int GridY { get; set; }
+	
+	[JsonPropertyName("isReachable")]
+	public bool IsReachable { get; set; }
+	
+	[JsonPropertyName("isPaintedTile")]
+	public bool IsPaintedTile { get; set; }
+	
+	[JsonPropertyName("tileNumber")]
+	public int? TileNumber { get; set; }
+}
+
+/// <summary>
 /// Complete path data for API communication with LLM
 /// </summary>
 public class PathDataDto
@@ -54,6 +75,12 @@ public class PathApiRequest
 	[JsonPropertyName("currentPath")]
 	public PathDataDto CurrentPath { get; set; }
 	
+	[JsonPropertyName("contextTiles")]
+	public List<ContextTileDto> ContextTiles { get; set; } = new();
+	
+	[JsonPropertyName("boundingBox")]
+	public BoundingBoxDto BoundingBox { get; set; }
+	
 	[JsonPropertyName("mapWidth")]
 	public int MapWidth { get; set; }
 	
@@ -68,6 +95,30 @@ public class PathApiRequest
 	
 	[JsonPropertyName("context")]
 	public string Context { get; set; }
+}
+
+/// <summary>
+/// Bounding box information for the context area
+/// </summary>
+public class BoundingBoxDto
+{
+	[JsonPropertyName("minX")]
+	public int MinX { get; set; }
+	
+	[JsonPropertyName("minY")]
+	public int MinY { get; set; }
+	
+	[JsonPropertyName("maxX")]
+	public int MaxX { get; set; }
+	
+	[JsonPropertyName("maxY")]
+	public int MaxY { get; set; }
+	
+	[JsonPropertyName("width")]
+	public int Width { get; set; }
+	
+	[JsonPropertyName("height")]
+	public int Height { get; set; }
 }
 
 /// <summary>

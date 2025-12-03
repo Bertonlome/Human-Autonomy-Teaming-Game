@@ -13,6 +13,7 @@ public partial class AnomalyMiniMap : Node3D
     [Export] public int GridH = 32;                  // Display resolution (reduce for robot window mode)
     [Export] public float CellSize = 0.15f;          // spacing in minimap world units (wider bars)
     [Export] public float HeightScale = 0.01f;       // height multiplier for better visibility
+    [Export] public float MaxBarHeight = 2.0f;       // Maximum bar height in world units (tallest bar)
     [Export] public float MaxValue = 500f;
     [Export] public float Gamma = 0.6f;
     [Export] public bool UsePerspective = true;      // false = ortho
@@ -266,20 +267,35 @@ public partial class AnomalyMiniMap : Node3D
 
     private void ApplyGridToBars(float[,] grid)
     {
+        // First pass: find the maximum value in the current grid
+        float maxGridValue = 0f;
+        for (int gy = 0; gy < GridH; gy++)
+        for (int gx = 0; gx < GridW; gx++)
+        {
+            float v = grid[gx, gy];
+            if (v > maxGridValue) maxGridValue = v;
+        }
+        
+        // Prevent division by zero
+        if (maxGridValue < 0.001f) maxGridValue = 1f;
+        
         int idx = 0;
         int visibleBars = 0;
         float maxHeight = 0f;
         float minHeight = float.MaxValue;
         
+        // Second pass: apply normalized heights but keep absolute color gradient
         for (int gy = 0; gy < GridH; gy++)
         for (int gx = 0; gx < GridW; gx++, idx++)
         {
             float v = grid[gx, gy];
-            float n = Mathf.Pow(Mathf.Clamp(v / MaxValue, 0f, 1f), Gamma);
             
-            // Height based on the actual anomaly value (v), scaled for visibility
-            // Using raw value gives better height variation
-            float h = MathF.Max(v * HeightScale, 0.01f);
+            // Color based on ABSOLUTE anomaly value (for gradient)
+            float nColor = Mathf.Pow(Mathf.Clamp(v / MaxValue, 0f, 1f), Gamma);
+            
+            // Height NORMALIZED to current max (tallest bar = MaxBarHeight)
+            float normalizedHeight = (v / maxGridValue) * MaxBarHeight;
+            float h = MathF.Max(normalizedHeight, 0.01f);
 
             // Track statistics
             if (v > 0.01f) visibleBars++;
@@ -300,10 +316,10 @@ public partial class AnomalyMiniMap : Node3D
             origin.Y = h * 0.5f;
 
             _mm.SetInstanceTransform(idx, new Transform3D(basis, origin));
-            _mm.SetInstanceColor(idx, HeatColor(n));
+            _mm.SetInstanceColor(idx, HeatColor(nColor)); // Use absolute value for color
         }
         
-        //GD.Print($"Bars painted: {visibleBars}/{GridW * GridH} | Height range: {minHeight:F2} to {maxHeight:F2} units");
+        //GD.Print($"Bars painted: {visibleBars}/{GridW * GridH} | Height range: {minHeight:F2} to {maxHeight:F2} units | Max grid value: {maxGridValue:F2}");
     }
 
     private void UpdateRobotMarker()

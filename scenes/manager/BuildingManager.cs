@@ -18,6 +18,9 @@ public partial class BuildingManager : Node
 	private readonly StringName ACTION_ANNOTATE_PATH = "n_stroke";
 	private readonly StringName ACTION_CANCEL = "cancel";
 	private readonly StringName ACTION_RIGHT_CLICK = "right_click";
+	private readonly StringName ACTION_PLUS_CLICK = "plus";
+	private readonly StringName ACTION_MINUS_CLICK = "minus";
+	private readonly StringName ACTION_ENTER_CLICK = "enter";
 	private readonly StringName MOVE_UP = "move_up";
 	private readonly StringName MOVE_DOWN = "move_down";
 	private readonly StringName MOVE_LEFT = "move_left";
@@ -57,7 +60,13 @@ public partial class BuildingManager : Node
 	private PackedScene tileGhostScene;
 	[Export]
 	private PackedScene paintedTileScene;
+	[Export]
+	private PackedScene rakeScene;
 	private List<PaintedTile> paintedTiles = new();
+	// Track avoided tile positions for each robot (for path recalculation when erasing tiles)
+	private Dictionary<BuildingComponent, HashSet<Vector2I>> robotAvoidedPositions = new();
+	// Track required waypoint positions for each robot (for path recalculation when pushing tiles)
+	private Dictionary<BuildingComponent, List<Vector2I>> robotRequiredWaypoints = new();
 
 	private enum State
 	{
@@ -66,7 +75,10 @@ public partial class BuildingManager : Node
 		RobotSelected,
 		PaintingPath,
 		AnnotatingPath,
-		PlacingBridge
+		PlacingBridge,
+		DragRake,
+		PressRake,
+		DroppedRake,
 	}
 
 	private int currentWoodCount;
@@ -75,6 +87,8 @@ public partial class BuildingManager : Node
 	public Rect2I hoveredGridArea = new(Vector2I.Zero, Vector2I.One);
 	private BuildingGhost buildingGhost;
 	private TileGhost tileGhost;
+	private Rake selectedRake;
+	private List<Rake> placedRakes = new();
 	private Vector2I buildingGhostDimensions;
 	private Vector2I tileGhostDimensions;
 	private State currentState;
@@ -99,10 +113,12 @@ public partial class BuildingManager : Node
 		ClearAllRobots();
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
 		gameUI.BuildingResourceSelected += OnBuildingResourceSelected;
+		gameUI.TouchedRakePanel += OnTouchedRakePanel;
 		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceBridgeButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceBridgeButtonPressed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceAntennaButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceAntennaButtonPressed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
 
+		currentState = State.Normal;
 
 		Callable.From(() => EmitSignal(SignalName.AvailableResourceCountChanged, AvailableWoodCount)).CallDeferred();
 		
@@ -209,6 +225,15 @@ public partial class BuildingManager : Node
 					{
 						ChangeState(State.PaintingPath);
 						selectedBuildingComponent.paintedTiles.Clear();
+						// Clear avoided positions and waypoints when starting a new path
+						if (robotAvoidedPositions.ContainsKey(selectedBuildingComponent))
+						{
+							robotAvoidedPositions[selectedBuildingComponent].Clear();
+						}
+						if (robotRequiredWaypoints.ContainsKey(selectedBuildingComponent))
+						{
+							robotRequiredWaypoints[selectedBuildingComponent].Clear();
+						}
 						GetViewport().SetInputAsHandled();
 					}
 				}
@@ -276,7 +301,20 @@ public partial class BuildingManager : Node
 					{
 						if (mouseButton.Pressed)
 						{
-							if (selectedBuildingComponent != null)
+							// First check if there's a rake at this position
+							Vector2I clickedGridCell = gridManager.GetMouseGridCellPosition();
+							Rake rakeAtPosition = GetRakeAtPosition(clickedGridCell);
+							
+							if (rakeAtPosition != null)
+							{
+								// Found a rake - pick it up
+								placedRakes.Remove(rakeAtPosition);
+								selectedRake = rakeAtPosition;
+								selectedRake.PickUp();
+								ChangeState(State.DragRake);
+								GetViewport().SetInputAsHandled();
+							}
+							else if (selectedBuildingComponent != null)
 							{
 								if (selectedBuildingComponent != null //Switch to another robot
 									&& SelectBuildingAtHoveredCellPosition() != selectedBuildingComponent
@@ -334,6 +372,105 @@ public partial class BuildingManager : Node
 						GetViewport().SetInputAsHandled();
 					}
                 }
+				break;
+			case State.DragRake:
+				if(evt.IsActionPressed(ACTION_CANCEL))
+				{
+					ChangeState(State.PaintingPath);
+					if (selectedRake != null)
+					{
+						selectedRake.QueueFree(); // Remove the rake entirely
+						selectedRake = null;
+					}
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_LEFT_CLICK))
+				{
+					ChangeState(State.PressRake);
+					selectedRake.Press();
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_RIGHT_CLICK))
+				{
+					if (selectedRake != null)
+					{
+						placedRakes.Add(selectedRake); // Leave rake on map in PickedUp state
+						selectedRake = null;
+					}
+					ChangeState(State.PaintingPath);
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_PLUS_CLICK))
+				{
+					selectedRake.SetSize(selectedRake.RakeDimension + 1);
+					//selectedBuildingComponent.AdjustRakeSize(1);
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_MINUS_CLICK))
+				{
+					selectedRake.SetSize(selectedRake.RakeDimension - 1);
+					//selectedBuildingComponent.AdjustRakeSize(-1);
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_ENTER_CLICK))
+				{
+					// Rotate rake
+					selectedRake.ToggleOrientation();
+					GetViewport().SetInputAsHandled();
+				}
+				break;
+			case State.PressRake:
+				if(evt.IsActionPressed(ACTION_CANCEL))
+				{
+					ChangeState(State.PaintingPath);
+					if (selectedRake != null)
+					{
+						selectedRake.QueueFree(); // Remove the rake entirely
+						selectedRake = null;
+					}
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_LEFT_CLICK))
+				{
+					ChangeState(State.DragRake);
+					selectedRake.PickUp();
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_RIGHT_CLICK))
+				{
+					ChangeState(State.DroppedRake);
+					if (selectedRake != null)
+					{
+						placedRakes.Add(selectedRake); // Leave rake on map in Pressed state
+						selectedRake = null;
+					}
+					GetViewport().SetInputAsHandled();
+				}
+				break;
+				case State.DroppedRake:
+				if(evt.IsActionPressed(ACTION_CANCEL))
+				{
+					ChangeState(State.PaintingPath);
+				}
+				else if (evt.IsActionPressed(ACTION_LEFT_CLICK))
+				{
+					Vector2I clickedGridCell = gridManager.GetMouseGridCellPosition();
+					Rake rakeAtPosition = GetRakeAtPosition(clickedGridCell);
+					if (rakeAtPosition != null)
+					{
+						// Found a rake - pick it up
+						placedRakes.Remove(rakeAtPosition);
+						selectedRake = rakeAtPosition;
+					}
+					ChangeState(State.DragRake);
+					selectedRake.PickUp();
+					GetViewport().SetInputAsHandled();
+				}
+				else if (evt.IsActionPressed(ACTION_RIGHT_CLICK))
+				{
+					//delete rake underneath
+					GetViewport().SetInputAsHandled();
+				}
 				break;
 			default:
 				break;
@@ -419,6 +556,34 @@ public partial class BuildingManager : Node
 			case State.AnnotatingPath:
 				mouseGridPosition = gridManager.GetMouseGridCellPosition();
 				break;
+			case State.DragRake:
+				mouseGridPosition = gridManager.GetMouseGridCellPosition();
+				if (selectedRake != null)
+				{
+					selectedRake.SetCenteredPosition(mouseGridPosition * 64);
+					hoveredGridArea.Position = mouseGridPosition;
+					UpdateGridDisplay();
+				}
+				else
+				{
+					// No rake selected, go back to painting
+					ChangeState(State.PaintingPath);
+				}
+				break;
+			case State.PressRake:
+				mouseGridPosition = gridManager.GetMouseGridCellPosition();
+				if (selectedRake != null)
+				{
+					selectedRake.SetCenteredPosition(mouseGridPosition * 64);
+					hoveredGridArea.Position = mouseGridPosition;
+					UpdateGridDisplay();
+				}
+				else
+				{
+					// No rake selected, go back to painting
+					ChangeState(State.PaintingPath);
+				}
+				break;
 		}
 
 		var rootCell = hoveredGridArea.Position;
@@ -466,6 +631,12 @@ public partial class BuildingManager : Node
 
 	private void UpdateGridDisplay()
 	{
+		// Only update grid display if we're placing a building (not in DragRake or other states)
+		if (toPlaceBuildingResource == null || buildingGhost == null)
+		{
+			return;
+		}
+		
 		gridManager.ClearHighlightedTiles();
 
 		if (toPlaceBuildingResource.IsBase)
@@ -616,13 +787,91 @@ public partial class BuildingManager : Node
 	{
 		if (selectedBuildingComponent == null) return;
 
+		// Check if there are already painted tiles for this robot
+		var currentRobotTiles = selectedBuildingComponent.paintedTiles;
+		
+		if (currentRobotTiles.Count > 0)
+		{
+			// Get the last painted tile position
+			Vector2I lastTilePos = currentRobotTiles[currentRobotTiles.Count - 1].GridPosition;
+			
+			// Check if the new tile is adjacent (Manhattan distance = 1)
+			int manhattanDistance = Math.Abs(targetGridCell.X - lastTilePos.X) + Math.Abs(targetGridCell.Y - lastTilePos.Y);
+			
+			if (manhattanDistance > 1)
+			{
+				// Not adjacent - auto-complete the path using A*
+				var pathPositions = FindPathBetweenTiles(selectedBuildingComponent, lastTilePos, targetGridCell);
+				
+				if (pathPositions == null || pathPositions.Count == 0)
+				{
+					FloatingTextManager.ShowMessageAtMousePosition("Cannot reach that tile!");
+					return;
+				}
+				
+				// Paint all intermediate tiles
+				foreach (var pos in pathPositions)
+				{
+					// Skip if already painted at this position
+					if (GetPaintedTileAtPosition(pos) != null)
+					{
+						continue;
+					}
+					
+					CreateAndAddPaintedTile(pos);
+				}
+				
+				return; // Exit since we've already painted the target tile in the path
+			}
+		}
+		else
+		{
+			// First tile - check if robot can reach it from current position
+			Vector2I robotPos = selectedBuildingComponent.GetGridCellPosition();
+			int distanceToRobot = Math.Abs(targetGridCell.X - robotPos.X) + Math.Abs(targetGridCell.Y - robotPos.Y);
+			
+			if (distanceToRobot > 1)
+			{
+				// Auto-complete path from robot to target
+				var pathPositions = FindPathBetweenTiles(selectedBuildingComponent, robotPos, targetGridCell);
+				
+				if (pathPositions == null || pathPositions.Count == 0)
+				{
+					FloatingTextManager.ShowMessageAtMousePosition("Cannot reach that tile from robot!");
+					return;
+				}
+				
+				// Paint all tiles in the path (excluding robot's current position)
+				foreach (var pos in pathPositions)
+				{
+					if (pos != robotPos) // Don't paint where robot is standing
+					{
+						CreateAndAddPaintedTile(pos);
+					}
+				}
+				
+				return;
+			}
+		}
+
+		// Paint the single tile (either adjacent or first tile next to robot)
+		CreateAndAddPaintedTile(targetGridCell);
+	}
+
+	/// <summary>
+	/// Creates and adds a painted tile at the specified position
+	/// </summary>
+	private void CreateAndAddPaintedTile(Vector2I gridPosition)
+	{
+		if (selectedBuildingComponent == null) return;
+
 		var paintedTile = paintedTileScene.Instantiate<PaintedTile>();
-		paintedTile.GlobalPosition = targetGridCell * 64;
+		paintedTile.GlobalPosition = gridPosition * 64;
 		ySortRoot.AddChild(paintedTile);
 
 		// Set properties for centralized access
 		paintedTile.AssociatedRobot = selectedBuildingComponent;
-		paintedTile.GridPosition = targetGridCell;
+		paintedTile.GridPosition = gridPosition;
 
 		if (selectedBuildingComponent.BuildingResource.IsAerial) paintedTile.SetColor(Colors.Cyan);
 		else paintedTile.SetColor(Colors.Yellow);
@@ -632,9 +881,240 @@ public partial class BuildingManager : Node
 		paintedTiles.Add(paintedTile);
 	}
 
+	/// <summary>
+	/// Finds a path between two tiles using A* pathfinding.
+	/// Returns list of positions including the target position.
+	/// </summary>
+	/// <param name="excludedPositions">Optional set of positions to exclude from the path (e.g., erased tiles)</param>
+	private List<Vector2I> FindPathBetweenTiles(BuildingComponent robot, Vector2I startPos, Vector2I targetPos, HashSet<Vector2I> excludedPositions = null)
+	{
+		var open = new List<PathNode>();
+		var closed = new HashSet<Vector2I>();
+		
+		open.Add(new PathNode(startPos, null, 0, Heuristic(startPos, targetPos)));
+		
+		int maxIterations = 1000;
+		int iteration = 0;
+		
+		while (open.Count > 0 && iteration < maxIterations)
+		{
+			iteration++;
+			
+			// Get node with lowest F cost
+			open.Sort((a, b) => a.F.CompareTo(b.F));
+			var current = open[0];
+			open.RemoveAt(0);
+			closed.Add(current.Position);
+			
+			// Check if we reached the target
+			if (current.Position == targetPos)
+			{
+				// Reconstruct path
+				var path = new List<Vector2I>();
+				var node = current;
+				while (node != null)
+				{
+					path.Add(node.Position);
+					node = node.Parent;
+				}
+				path.Reverse();
+				return path;
+			}
+			
+			// Explore neighbors
+			var neighbors = new[]
+			{
+				new Vector2I(current.Position.X, current.Position.Y - 1), // Up
+				new Vector2I(current.Position.X, current.Position.Y + 1), // Down
+				new Vector2I(current.Position.X - 1, current.Position.Y), // Left
+				new Vector2I(current.Position.X + 1, current.Position.Y)  // Right
+			};
+			
+			foreach (var neighborPos in neighbors)
+			{
+				if (closed.Contains(neighborPos))
+				{
+					continue;
+				}
+				
+				// Skip excluded positions
+				if (excludedPositions != null && excludedPositions.Contains(neighborPos))
+				{
+					continue;
+				}
+				
+				// Check if this move is valid
+				Rect2I originArea = new Rect2I(current.Position, Vector2I.One);
+				Rect2I destinationArea = new Rect2I(neighborPos, Vector2I.One);
+				
+				if (!gridManager.IsBuildingMovable(robot, originArea, destinationArea))
+				{
+					continue;
+				}
+				
+				int gCost = current.G + 1;
+				int hCost = Heuristic(neighborPos, targetPos);
+				
+				// Check if this neighbor is already in open list
+				var existingNode = open.FirstOrDefault(n => n.Position == neighborPos);
+				if (existingNode != null)
+				{
+					// If we found a better path, update it
+					if (gCost < existingNode.G)
+					{
+						existingNode.G = gCost;
+						existingNode.Parent = current;
+					}
+				}
+				else
+				{
+					// Add new node to open list
+					open.Add(new PathNode(neighborPos, current, gCost, hCost));
+				}
+			}
+		}
+		
+		// No path found
+		return null;
+	}
+
 	public List<PaintedTile> GetAllPaintedTiles()
 	{
+		// Validate reachability for each painted tile using its associated robot
+		foreach (var paintedTile in paintedTiles)
+		{
+			if (paintedTile.AssociatedRobot != null)
+			{
+				Rect2I robotArea = paintedTile.AssociatedRobot.GetTileArea();
+				
+				// Create destination area from painted tile position
+				Rect2I destinationArea = new Rect2I(paintedTile.GridPosition, Vector2I.One);
+				
+				// Check if the associated robot can move to this tile
+				bool isReachable = gridManager.IsBuildingMovable(paintedTile.AssociatedRobot, robotArea, destinationArea);
+				
+				// Set the reachability status on the painted tile
+				paintedTile.IsReachable = isReachable;
+			}
+			else
+			{
+				// No associated robot, mark as not reachable
+				paintedTile.IsReachable = false;
+			}
+		}
 		return paintedTiles;
+	}
+
+	/// <summary>
+	/// Gets all placed rakes (excluding the currently selected rake)
+	/// </summary>
+	public List<Rake> GetAllPlacedRakes()
+	{
+		return new List<Rake>(placedRakes);
+	}
+
+	/// <summary>
+	/// Get contextual tiles for a list of painted tiles. Creates a minimum bounding rectangle
+	/// that contains all painted tiles and checks reachability for each tile in that area.
+	/// This provides the LLM with surrounding context for better path understanding.
+	/// </summary>
+	public List<ContextTile> GetContextualTilesForPaintedTiles(List<PaintedTile> paintedTilesList)
+	{
+		List<ContextTile> contextTiles = new();
+		
+		if (paintedTilesList == null || paintedTilesList.Count == 0)
+		{
+			return contextTiles;
+		}
+		
+		// Find the bounding rectangle that contains all painted tiles
+		int minX = int.MaxValue;
+		int minY = int.MaxValue;
+		int maxX = int.MinValue;
+		int maxY = int.MinValue;
+		
+		foreach (var paintedTile in paintedTilesList)
+		{
+			minX = Math.Min(minX, paintedTile.GridPosition.X);
+			minY = Math.Min(minY, paintedTile.GridPosition.Y);
+			maxX = Math.Max(maxX, paintedTile.GridPosition.X);
+			maxY = Math.Max(maxY, paintedTile.GridPosition.Y);
+		}
+		
+		// Get the robot from the first painted tile (assuming all tiles belong to same robot)
+		BuildingComponent robot = paintedTilesList[0].AssociatedRobot;
+		if (robot == null)
+		{
+			GD.PrintErr("Cannot create context tiles: painted tiles have no associated robot");
+			return contextTiles;
+		}
+		
+		Rect2I robotArea = robot.GetTileArea();
+		
+		// Create a dictionary for quick lookup of painted tiles by position
+		Dictionary<Vector2I, PaintedTile> paintedTilePositions = new();
+		foreach (var paintedTile in paintedTilesList)
+		{
+			paintedTilePositions[paintedTile.GridPosition] = paintedTile;
+		}
+		
+		// Iterate through the bounding rectangle and create context tiles
+		for (int x = minX; x <= maxX; x++)
+		{
+			for (int y = minY; y <= maxY; y++)
+			{
+				Vector2I gridPos = new Vector2I(x, y);
+				ContextTile contextTile = new ContextTile(gridPos, robot);
+				
+				// Check if this position has a painted tile
+				if (paintedTilePositions.TryGetValue(gridPos, out PaintedTile existingPaintedTile))
+				{
+					contextTile.IsPaintedTile = true;
+					contextTile.PaintedTileReference = existingPaintedTile;
+					contextTile.IsReachable = existingPaintedTile.IsReachable;
+				}
+				else
+				{
+					// Not a painted tile, check if it's reachable
+					Rect2I destinationArea = new Rect2I(gridPos, Vector2I.One);
+					contextTile.IsReachable = gridManager.IsBuildingMovable(robot, robotArea, destinationArea);
+				}
+				
+				contextTiles.Add(contextTile);
+			}
+		}
+		
+		GD.Print($"Created {contextTiles.Count} context tiles ({paintedTilesList.Count} painted) in bounding box ({minX},{minY}) to ({maxX},{maxY})");
+		
+		return contextTiles;
+	}
+
+	/// <summary>
+	/// Manhattan distance heuristic for A* pathfinding.
+	/// </summary>
+	private int Heuristic(Vector2I from, Vector2I to)
+	{
+		return Math.Abs(to.X - from.X) + Math.Abs(to.Y - from.Y);
+	}
+
+	/// <summary>
+	/// Simple node class for A* pathfinding.
+	/// </summary>
+	private class PathNode
+	{
+		public Vector2I Position;
+		public PathNode Parent;
+		public int G; // Cost from start
+		public int H; // Heuristic cost to target
+		public int F => G + H; // Total cost
+
+		public PathNode(Vector2I position, PathNode parent, int g, int h)
+		{
+			Position = position;
+			Parent = parent;
+			G = g;
+			H = h;
+		}
 	}
 
 	public void LiftInDirection(BuildingComponent liftedRobot, StringName direction)
@@ -966,21 +1446,164 @@ public partial class BuildingManager : Node
 	private void ErasePaintedTileAtPosition(Vector2I gridPosition)
 	{
 		PaintedTile tileToRemove = GetPaintedTileAtPosition(gridPosition);
-		if (tileToRemove != null)
+		if (tileToRemove == null) return;
+		
+		var associatedRobot = tileToRemove.AssociatedRobot;
+		if (associatedRobot == null || selectedBuildingComponent == null) 
 		{
-			// Remove from both lists
+			// No robot associated, just remove the tile
 			paintedTiles.Remove(tileToRemove);
-			if (selectedBuildingComponent != null)
+			tileToRemove.QueueFree();
+			RenumberPaintedTiles();
+			return;
+		}
+		
+		// Get all tiles for this robot
+		var robotTiles = associatedRobot.paintedTiles;
+		int tileIndex = robotTiles.IndexOf(tileToRemove);
+		
+		// Check if this is the first tile (start of path)
+		if (tileIndex == 0)
+		{
+			// Erasing first tile - need to recalculate from robot position to second tile
+			if (robotTiles.Count > 1)
 			{
-				selectedBuildingComponent.paintedTiles.Remove(tileToRemove);
+				// Get robot's current position
+				Vector2I robotPos = associatedRobot.GetGridCellPosition();
+				// The new start should be the second tile (what was after the one we're deleting)
+				Vector2I newStartPos = robotTiles[1].GridPosition;
+				Vector2I endPos = robotTiles[robotTiles.Count - 1].GridPosition;
+				
+				// Get or create the avoided positions set for this robot
+				if (!robotAvoidedPositions.ContainsKey(associatedRobot))
+				{
+					robotAvoidedPositions[associatedRobot] = new HashSet<Vector2I>();
+				}
+				
+				var avoidedPositions = robotAvoidedPositions[associatedRobot];
+				
+				// Add the erased position to avoided positions
+				avoidedPositions.Add(gridPosition);
+				
+				// Find new path from robot to the second tile, then continue to end
+				var pathToSecondTile = FindPathBetweenTiles(associatedRobot, robotPos, newStartPos, avoidedPositions);
+				
+				if (pathToSecondTile != null && pathToSecondTile.Count > 0)
+				{
+					// Clear all current tiles
+					foreach (var tile in robotTiles.ToList())
+					{
+						paintedTiles.Remove(tile);
+						tile.QueueFree();
+					}
+					robotTiles.Clear();
+					
+					// Create tiles from robot to second tile
+					foreach (var pos in pathToSecondTile)
+					{
+						if (pos != robotPos) // Don't paint where robot is standing
+						{
+							CreateAndAddPaintedTile(pos);
+						}
+					}
+					
+					// Now continue from second tile to end
+					var pathToEnd = FindPathBetweenTiles(associatedRobot, newStartPos, endPos, avoidedPositions);
+					
+					if (pathToEnd != null && pathToEnd.Count > 1)
+					{
+						// Skip first position (already added) and add the rest
+						for (int i = 1; i < pathToEnd.Count; i++)
+						{
+							CreateAndAddPaintedTile(pathToEnd[i]);
+						}
+					}
+					
+					GD.Print($"Recalculated path after erasing first tile at {gridPosition}: path now connects robot to remaining waypoints");
+					return;
+				}
+				else
+				{
+					FloatingTextManager.ShowMessageAtMousePosition("Cannot find path from robot!");
+					return;
+				}
+			}
+			else
+			{
+				// Only one tile in path, just remove it
+				paintedTiles.Remove(tileToRemove);
+				robotTiles.Remove(tileToRemove);
+				tileToRemove.QueueFree();
+				return;
+			}
+		}
+		// Check if this is a middle tile (not first or last)
+		else if (tileIndex > 0 && tileIndex < robotTiles.Count - 1)
+		{
+			// Get the start and end of the path
+			Vector2I startPos = robotTiles[0].GridPosition;
+			Vector2I endPos = robotTiles[robotTiles.Count - 1].GridPosition;
+			
+			// Get or create the avoided positions set for this robot
+			if (!robotAvoidedPositions.ContainsKey(associatedRobot))
+			{
+				robotAvoidedPositions[associatedRobot] = new HashSet<Vector2I>();
 			}
 			
-			// Destroy the tile
-			tileToRemove.QueueFree();
+			var avoidedPositions = robotAvoidedPositions[associatedRobot];
 			
-			// Renumber remaining tiles
-			RenumberPaintedTiles();
+			// Add the current tile being erased to avoided positions
+			avoidedPositions.Add(gridPosition);
+			
+			// Collect all current tile positions
+			var currentPathPositions = new HashSet<Vector2I>();
+			foreach (var tile in robotTiles)
+			{
+				currentPathPositions.Add(tile.GridPosition);
+			}
+			
+			// Find new path excluding ALL avoided positions (accumulated across multiple erasures)
+			var newPath = FindPathBetweenTiles(associatedRobot, startPos, endPos, avoidedPositions);
+			
+			if (newPath != null && newPath.Count > 0)
+			{
+				// Clear all current tiles
+				foreach (var tile in robotTiles.ToList())
+				{
+					paintedTiles.Remove(tile);
+					tile.QueueFree();
+				}
+				robotTiles.Clear();
+				
+				// Create new tiles along the recalculated path
+				foreach (var pos in newPath)
+				{
+					CreateAndAddPaintedTile(pos);
+				}
+				
+				GD.Print($"Recalculated path after erasing tile at {gridPosition}: {newPath.Count} tiles, avoiding {avoidedPositions.Count} positions total");
+				return;
+			}
+			else
+			{
+				FloatingTextManager.ShowMessageAtMousePosition("Cannot find alternative path!");
+				// Don't erase if no alternative path exists
+				return;
+			}
 		}
+		
+		// If it's the first or last tile, or if path recalculation didn't apply, just remove it
+		paintedTiles.Remove(tileToRemove);
+		if (selectedBuildingComponent != null)
+		{
+			selectedBuildingComponent.paintedTiles.Remove(tileToRemove);
+		}
+		
+		// Destroy the tile
+		tileToRemove.QueueFree();
+		
+		// Renumber remaining tiles
+		RenumberPaintedTiles();
 	}
 
 	private PaintedTile GetPaintedTileAtPosition(Vector2I gridPosition)
@@ -992,6 +1615,23 @@ public partial class BuildingManager : Node
 			if (tileGridPos == gridPosition)
 			{
 				return paintedTile;
+			}
+		}
+		return null;
+	}
+	
+	/// <summary>
+	/// Finds a placed rake at the given grid position
+	/// </summary>
+	private Rake GetRakeAtPosition(Vector2I gridPosition)
+	{
+		foreach (var rake in placedRakes)
+		{
+			// Get all grid positions covered by this rake
+			var rakePositions = rake.GetRakeGridPositionsFromPosition(rake.GlobalPosition);
+			if (rakePositions.Contains(gridPosition))
+			{
+				return rake;
 			}
 		}
 		return null;
@@ -1170,6 +1810,36 @@ public partial class BuildingManager : Node
 				ClearTileGhost();
 				ClearBuildingGhost();
 				break;
+			case State.DragRake:
+				// Clear constraints when exiting rake mode
+				if (toState == State.PaintingPath && selectedBuildingComponent != null)
+				{
+					if (robotAvoidedPositions.ContainsKey(selectedBuildingComponent))
+					{
+						robotAvoidedPositions[selectedBuildingComponent].Clear();
+					}
+					if (robotRequiredWaypoints.ContainsKey(selectedBuildingComponent))
+					{
+						robotRequiredWaypoints[selectedBuildingComponent].Clear();
+					}
+				}
+				ClearTileGhost();
+				break;
+			case State.PressRake:
+				// Clear constraints when exiting rake mode
+				if (toState == State.PaintingPath && selectedBuildingComponent != null)
+				{
+					if (robotAvoidedPositions.ContainsKey(selectedBuildingComponent))
+					{
+						robotAvoidedPositions[selectedBuildingComponent].Clear();
+					}
+					if (robotRequiredWaypoints.ContainsKey(selectedBuildingComponent))
+					{
+						robotRequiredWaypoints[selectedBuildingComponent].Clear();
+					}
+				}
+				ClearTileGhost();
+				break;
 		}
 
 		currentState = toState;
@@ -1198,6 +1868,12 @@ public partial class BuildingManager : Node
 				if (selectedBuildingComponent.BuildingResource.IsAerial) tileGhost.SetColor(Colors.Cyan);
 				else tileGhost.SetColor(Colors.Yellow);
 				break;
+			case State.DragRake:
+				//
+				break;
+			case State.PressRake:
+				//
+				break;
 		}
 	}
 
@@ -1207,6 +1883,25 @@ public partial class BuildingManager : Node
 		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
 	}
 
+	private void OnTouchedRakePanel()
+	{
+		if (currentState == State.PaintingPath)
+		{
+			ChangeState(State.DragRake);
+			hoveredGridArea.Size = new Vector2I(1, 1);
+			var rake = rakeScene.Instantiate<Rake>();
+			selectedRake = rake;
+			selectedRake.SetBuildingManager(this);
+			selectedRake.CallDeferred("PickUp");
+			ySortRoot.AddChild(rake);
+		}
+		else if (currentState == State.DragRake || currentState == State.PressRake)
+		{
+			selectedRake.QueueFree();
+			selectedRake = null;
+			ChangeState(State.PaintingPath);
+		}
+	}
 	private void OnBuildingResourceSelected(BuildingResource buildingResource)
 	{
 		ChangeState(State.PlacingBuilding);
@@ -1304,5 +1999,327 @@ public partial class BuildingManager : Node
 		}
 		AliveRobots.Clear();
 		selectedBuildingComponent = null;
+	}
+	
+	/// <summary>
+	/// Fills a gap at the specified position to maintain path continuity
+	/// Called when a tile is pushed, leaving a gap in the path
+	/// </summary>
+	public void FillGapAtPosition(Vector2I gapPosition, BuildingComponent robot)
+	{
+		// Check if there's already a tile at this position
+		if (GetPaintedTileAtPosition(gapPosition) != null)
+		{
+			return; // Gap already filled
+		}
+		
+		// Create a new painted tile to fill the gap
+		var paintedTile = paintedTileScene.Instantiate<PaintedTile>();
+		paintedTile.GlobalPosition = gapPosition * 64;
+		ySortRoot.AddChild(paintedTile);
+		
+		// Set properties for centralized access
+		paintedTile.AssociatedRobot = robot;
+		paintedTile.GridPosition = gapPosition;
+		
+		if (robot.BuildingResource.IsAerial) 
+			paintedTile.SetColor(Colors.Cyan);
+		else 
+			paintedTile.SetColor(Colors.Yellow);
+			
+		paintedTile.SetNumberLabel(robot.GetNextPaintedTileNumber());
+		
+		// Add to robot's painted tiles list
+		robot.paintedTiles.Add(paintedTile);
+		paintedTiles.Add(paintedTile);
+		
+		GD.Print($"Filled gap at position {gapPosition}");
+	}
+	
+	/// <summary>
+	/// Recalculates the path after a tile has been pushed by the rake
+	/// The path MUST pass through ALL pushed tile positions (waypoints) in order
+	/// </summary>
+	public void RecalculatePathAfterPush(BuildingComponent robot, Vector2I oldPosition, Vector2I requiredPosition, Vector2I startPos, Vector2I endPos)
+	{
+		// Get or create the required waypoints list for this robot
+		if (!robotRequiredWaypoints.ContainsKey(robot))
+		{
+			robotRequiredWaypoints[robot] = new List<Vector2I>();
+		}
+		
+		var waypoints = robotRequiredWaypoints[robot];
+		
+		// Remove the old position from waypoints if it exists there
+		// (it might be there if this tile was previously pushed)
+		if (waypoints.Contains(oldPosition))
+		{
+			// Replace it with the new position at the same index to maintain order
+			int oldIndex = waypoints.IndexOf(oldPosition);
+			waypoints[oldIndex] = requiredPosition;
+		}
+		else
+		{
+			// Add the new position to waypoints if not already present
+			if (!waypoints.Contains(requiredPosition))
+			{
+				waypoints.Add(requiredPosition);
+			}
+		}
+		
+		// Clear all current tiles for this robot
+		var robotTiles = robot.paintedTiles;
+		foreach (var tile in robotTiles.ToList())
+		{
+			paintedTiles.Remove(tile);
+			tile.QueueFree();
+		}
+		robotTiles.Clear();
+		
+		// Build the full path by connecting start → waypoints (in order) → end
+		var fullPath = new List<Vector2I>();
+		Vector2I currentPos = startPos;
+		
+		// Get avoided positions for this robot (from erase operations only)
+		HashSet<Vector2I> avoidedPositions = null;
+		if (robotAvoidedPositions.ContainsKey(robot))
+		{
+			avoidedPositions = robotAvoidedPositions[robot];
+		}
+		
+		// Add path from start to first waypoint, then between all waypoints
+		foreach (var waypoint in waypoints)
+		{
+			var segmentPath = FindPathBetweenTiles(robot, currentPos, waypoint, avoidedPositions);
+			
+			if (segmentPath == null || segmentPath.Count == 0)
+			{
+				GD.PrintErr($"Cannot find path from {currentPos} to waypoint at {waypoint}");
+				return;
+			}
+			
+			// Add segment, avoiding duplicates at connection points
+			if (fullPath.Count == 0)
+			{
+				fullPath.AddRange(segmentPath);
+			}
+			else
+			{
+				for (int i = 1; i < segmentPath.Count; i++) // Skip first (duplicate)
+				{
+					fullPath.Add(segmentPath[i]);
+				}
+			}
+			
+			currentPos = waypoint;
+		}
+		
+		// Finally, add path from last waypoint (or start if no waypoints) to end
+		var finalSegment = FindPathBetweenTiles(robot, currentPos, endPos, avoidedPositions);
+		
+		if (finalSegment == null || finalSegment.Count == 0)
+		{
+			GD.PrintErr($"Cannot find path from {currentPos} to end at {endPos}");
+			return;
+		}
+		
+		// Add final segment
+		if (fullPath.Count > 0 && fullPath[fullPath.Count - 1] == finalSegment[0])
+		{
+			for (int i = 1; i < finalSegment.Count; i++)
+			{
+				fullPath.Add(finalSegment[i]);
+			}
+		}
+		else
+		{
+			fullPath.AddRange(finalSegment);
+		}
+		
+		// Create tiles along the new path
+		foreach (var pos in fullPath)
+		{
+			var paintedTile = paintedTileScene.Instantiate<PaintedTile>();
+			paintedTile.GlobalPosition = pos * 64;
+			ySortRoot.AddChild(paintedTile);
+			
+			paintedTile.AssociatedRobot = robot;
+			paintedTile.GridPosition = pos;
+			
+			if (robot.BuildingResource.IsAerial) 
+				paintedTile.SetColor(Colors.Cyan);
+			else 
+				paintedTile.SetColor(Colors.Yellow);
+				
+			paintedTile.SetNumberLabel(robot.GetNextPaintedTileNumber());
+			
+			robot.paintedTiles.Add(paintedTile);
+			paintedTiles.Add(paintedTile);
+		}
+		
+		int avoidedCount = avoidedPositions != null ? avoidedPositions.Count : 0;
+		GD.Print($"Recalculated path after push: {fullPath.Count} tiles, passing through {waypoints.Count} waypoints, avoiding {avoidedCount} positions");
+	}
+	
+	/// <summary>
+	/// Recalculates the path after a tile has been erased/cleared by the rake
+	/// Similar to the erase logic but called from Rake
+	/// </summary>
+	public void RecalculatePathAfterErase(BuildingComponent robot, Vector2I erasedPosition, Vector2I startPos, Vector2I endPos)
+	{
+		// Check if startPos is the robot's current position (not a tile)
+		Vector2I robotPos = robot.GetGridCellPosition();
+		bool startIsRobotPosition = (startPos == robotPos);
+		
+		// Get or create the avoided positions set for this robot
+		if (!robotAvoidedPositions.ContainsKey(robot))
+		{
+			robotAvoidedPositions[robot] = new HashSet<Vector2I>();
+		}
+		
+		var avoidedPositions = robotAvoidedPositions[robot];
+		
+		// Add the erased position to avoided positions
+		avoidedPositions.Add(erasedPosition);
+		
+		// Clear all current tiles for this robot
+		var robotTiles = robot.paintedTiles;
+		foreach (var tile in robotTiles.ToList())
+		{
+			paintedTiles.Remove(tile);
+			tile.QueueFree();
+		}
+		robotTiles.Clear();
+		
+		// Get waypoints for this robot if any exist
+		HashSet<Vector2I> waypointsSet = null;
+		if (robotRequiredWaypoints.ContainsKey(robot))
+		{
+			waypointsSet = new HashSet<Vector2I>(robotRequiredWaypoints[robot]);
+		}
+		
+		// If we have waypoints, we need to route through them
+		if (waypointsSet != null && waypointsSet.Count > 0)
+		{
+			// Build the full path by connecting start → waypoints (in order) → end
+			var fullPath = new List<Vector2I>();
+			Vector2I currentPos = startPos;
+			
+			// Add path from start to first waypoint, then between all waypoints
+			foreach (var waypoint in robotRequiredWaypoints[robot])
+			{
+				var segmentPath = FindPathBetweenTiles(robot, currentPos, waypoint, avoidedPositions);
+				
+				if (segmentPath == null || segmentPath.Count == 0)
+				{
+					GD.PrintErr($"Cannot find path from {currentPos} to waypoint at {waypoint} while avoiding erased position");
+					return;
+				}
+				
+				// Add segment, avoiding duplicates at connection points
+				if (fullPath.Count == 0)
+				{
+					fullPath.AddRange(segmentPath);
+				}
+				else
+				{
+					for (int i = 1; i < segmentPath.Count; i++) // Skip first (duplicate)
+					{
+						fullPath.Add(segmentPath[i]);
+					}
+				}
+				
+				currentPos = waypoint;
+			}
+			
+			// Finally, add path from last waypoint to end
+			var finalSegment = FindPathBetweenTiles(robot, currentPos, endPos, avoidedPositions);
+			
+			if (finalSegment == null || finalSegment.Count == 0)
+			{
+				GD.PrintErr($"Cannot find path from {currentPos} to end at {endPos} while avoiding erased position");
+				return;
+			}
+			
+			// Add final segment
+			if (fullPath.Count > 0 && fullPath[fullPath.Count - 1] == finalSegment[0])
+			{
+				for (int i = 1; i < finalSegment.Count; i++)
+				{
+					fullPath.Add(finalSegment[i]);
+				}
+			}
+			else
+			{
+				fullPath.AddRange(finalSegment);
+			}
+			
+			// Create tiles along the new path (skip robot position if that's where we're starting)
+			foreach (var pos in fullPath)
+			{
+				if (startIsRobotPosition && pos == robotPos)
+				{
+					continue; // Don't paint where robot is standing
+				}
+				
+				var paintedTile = paintedTileScene.Instantiate<PaintedTile>();
+				paintedTile.GlobalPosition = pos * 64;
+				ySortRoot.AddChild(paintedTile);
+				
+				paintedTile.AssociatedRobot = robot;
+				paintedTile.GridPosition = pos;
+				
+				if (robot.BuildingResource.IsAerial) 
+					paintedTile.SetColor(Colors.Cyan);
+				else 
+					paintedTile.SetColor(Colors.Yellow);
+					
+				paintedTile.SetNumberLabel(robot.GetNextPaintedTileNumber());
+				
+				robot.paintedTiles.Add(paintedTile);
+				paintedTiles.Add(paintedTile);
+			}
+			
+			GD.Print($"Recalculated path after rake erase: {fullPath.Count} tiles, passing through {waypointsSet.Count} waypoints, avoiding {avoidedPositions.Count} positions");
+		}
+		else
+		{
+			// No waypoints, simple direct path avoiding erased positions
+			var newPath = FindPathBetweenTiles(robot, startPos, endPos, avoidedPositions);
+			
+			if (newPath == null || newPath.Count == 0)
+			{
+				GD.PrintErr($"Cannot find path from {startPos} to {endPos} while avoiding erased position at {erasedPosition}");
+				return;
+			}
+			
+			// Create new tiles along the recalculated path (skip robot position if that's where we're starting)
+			foreach (var pos in newPath)
+			{
+				if (startIsRobotPosition && pos == robotPos)
+				{
+					continue; // Don't paint where robot is standing
+				}
+				
+				var paintedTile = paintedTileScene.Instantiate<PaintedTile>();
+				paintedTile.GlobalPosition = pos * 64;
+				ySortRoot.AddChild(paintedTile);
+				
+				paintedTile.AssociatedRobot = robot;
+				paintedTile.GridPosition = pos;
+				
+				if (robot.BuildingResource.IsAerial) 
+					paintedTile.SetColor(Colors.Cyan);
+				else 
+					paintedTile.SetColor(Colors.Yellow);
+					
+				paintedTile.SetNumberLabel(robot.GetNextPaintedTileNumber());
+				
+				robot.paintedTiles.Add(paintedTile);
+				paintedTiles.Add(paintedTile);
+			}
+			
+			GD.Print($"Recalculated path after rake erase: {newPath.Count} tiles, avoiding {avoidedPositions.Count} positions");
+		}
 	}
 }

@@ -51,4 +51,10 @@ Cinquièmement, les étudiants pourraient utiliser un chemin généré du dash (
 
 [x] gradient descent doit utiliser A* pour eviter d'être bloqué + opérer au rayon du senseur pas juste les cases voisines
 
-[ ] Il faut finir d'implémenter le auto-bridge mais problème lorsque les altitudes ne fonctionnent pas
+[x] Il faut finir d'implémenter le auto-bridge mais problème lorsque les altitudes ne fonctionnent pas
+
+[ ] Il faut fixer les alertes intempestives
+
+[ ] Il faut faire un vrai brouillard de guerre
+
+[ ] Il faut instrumenter l'interaction avec le path

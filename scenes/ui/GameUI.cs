@@ -21,6 +21,8 @@ public partial class GameUI : CanvasLayer
 	public delegate void SelectRobotButtonPressedEventHandler(Node2D robot);
 	[Signal]
 	public delegate void TimeIsUpEventHandler();
+	[Signal]
+	public delegate void TouchedRakePanelEventHandler();
 	private bool isTimeIsUp = false;
 	public int TimeToCompleteLevel;
 
@@ -35,6 +37,9 @@ public partial class GameUI : CanvasLayer
 	private Button sendPathToRobotButton;
 	private CheckButton displayTraceButton;
 	private MarginContainer specialFunctionsContainer;
+	private PanelContainer sendPathButtonPanelContainer;
+	private Label adviceLabel;
+	private Panel rakePanel;
 	private bool isTraceActive = false;
 	private readonly StringName ACTION_SPACEBAR = "spacebar";
 	private HashSet<Vector2I> _previouslyDiscoveredTiles = new(); // Track to calculate delta
@@ -62,6 +67,9 @@ public partial class GameUI : CanvasLayer
 		displayAnomalyMapButton = GetNode<Button>("%DisplayAnomalyMapButton");
 		displayTraceButton = GetNode<CheckButton>("%DisplayTraceButton");
 		specialFunctionsContainer = GetNode<MarginContainer>("%SpecialFunctionsContainer");
+		sendPathButtonPanelContainer = GetNode<PanelContainer>("%SendPathButtonPanelContainer");
+		adviceLabel = GetNode<Label>("%AdviceLabel");
+		rakePanel = GetNode<Panel>("%RakePanel");
 		sendPathToRobotButton = GetNode<Button>("%SendPathToRobotButton");
 		CreateBuildingSections();
 
@@ -73,6 +81,7 @@ public partial class GameUI : CanvasLayer
 		buildingManager.ClockIsTicking += OnClockIsTicking;
 		displayTraceButton.Toggled += OnDisplayTraceToggled;
 		sendPathToRobotButton.Pressed += OnSendPathToRobotButtonPressed;
+		rakePanel.GuiInput += OnRakePanelGuiInput;
 
 		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
 		buildingManager.BasePlaced += OnBasePlaced;
@@ -175,12 +184,17 @@ public partial class GameUI : CanvasLayer
 
 	public void DisplaySpecialFunctions()
 	{
-		specialFunctionsContainer.Visible = true;
+		//specialFunctionsContainer.Visible = true;
+		sendPathButtonPanelContainer.Visible = true;
+		adviceLabel.Text = "ESC to quit painting path.\n 'N' to add annotation.";
+
 	}
 
 	public void HideSpecialFunctions()
 	{
-		specialFunctionsContainer.Visible = false;
+		//specialFunctionsContainer.Visible = false;
+		sendPathButtonPanelContainer.Visible = false;
+		adviceLabel.Text = "Press 'B' to enter painting path mode.";
 	}
 
 	private void CreateBuildingSections()
@@ -313,10 +327,27 @@ public partial class GameUI : CanvasLayer
 		}
 		isTraceActive = buttonPressed;
 	}
+
+	private void OnRakePanelGuiInput(InputEvent evt)
+	{
+		if (evt is InputEventMouseButton mouseEvent)
+		{
+			if (mouseEvent.ButtonIndex == MouseButton.Left)
+			{
+				if (mouseEvent.Pressed)
+				{
+					// Start dragging
+					EmitSignal(nameof(TouchedRakePanel));
+					GetViewport().SetInputAsHandled();
+				}
+			}
+		}
+	}
 	
 	private void OnSendPathToRobotButtonPressed()
 	{
 		var paintedTiles = buildingManager.GetAllPaintedTiles();
+		var contextTiles = buildingManager.GetContextualTilesForPaintedTiles(paintedTiles);
 		
 		// Export current path to JSON
 		string jsonRequest = ExportPathToJson(paintedTiles);
@@ -373,7 +404,7 @@ public partial class GameUI : CanvasLayer
 			TotalTiles = tiles.Count
 		};
 		
-		// Convert each tile
+		// Convert each painted tile
 		foreach (var tile in tiles)
 		{
 			pathData.Tiles.Add(new PaintedTileDto
@@ -387,14 +418,49 @@ public partial class GameUI : CanvasLayer
 			});
 		}
 		
+		// Get contextual tiles for surrounding area
+		var contextTiles = buildingManager.GetContextualTilesForPaintedTiles(tiles);
+		var contextTileDtos = new List<ContextTileDto>();
+		
+		// Calculate bounding box from context tiles
+		int minX = int.MaxValue, minY = int.MaxValue;
+		int maxX = int.MinValue, maxY = int.MinValue;
+		
+		foreach (var contextTile in contextTiles)
+		{
+			minX = Math.Min(minX, contextTile.GridPosition.X);
+			minY = Math.Min(minY, contextTile.GridPosition.Y);
+			maxX = Math.Max(maxX, contextTile.GridPosition.X);
+			maxY = Math.Max(maxY, contextTile.GridPosition.Y);
+			
+			contextTileDtos.Add(new ContextTileDto
+			{
+				GridX = contextTile.GridPosition.X,
+				GridY = contextTile.GridPosition.Y,
+				IsReachable = contextTile.IsReachable,
+				IsPaintedTile = contextTile.IsPaintedTile,
+				TileNumber = contextTile.PaintedTileReference?.TileNumber
+			});
+		}
+		
 		var request = new PathApiRequest
 		{
 			CurrentPath = pathData,
+			ContextTiles = contextTileDtos,
+			BoundingBox = new BoundingBoxDto
+			{
+				MinX = minX,
+				MinY = minY,
+				MaxX = maxX,
+				MaxY = maxY,
+				Width = maxX - minX + 1,
+				Height = maxY - minY + 1
+			},
 			MapWidth = 100, // TODO: Get from GridManager
 			MapHeight = 100, // TODO: Get from GridManager
 			RobotStartX = (int)(firstRobot.GlobalPosition.X / 64),
 			RobotStartY = (int)(firstRobot.GlobalPosition.Y / 64),
-			Context = "Optimize this exploration path for efficiency"
+			Context = "Optimize this exploration path for efficiency. Use contextTiles to understand terrain reachability and obstacles around the painted path."
 		};
 		
 		var options = new JsonSerializerOptions { WriteIndented = true };
@@ -443,61 +509,180 @@ public partial class GameUI : CanvasLayer
 	public void TestImportSamplePath()
 	{
 		GD.Print("Testing import with sample path...");
-		string sampleResponse = @"{
+		string llmResponse = @"{
 			""success"": true,
-			""message"": ""Path optimized for testing"",
+			""message"": ""Path optimized successfully"",
 			""suggestedPath"": {
-				""robotName"": ""TestRobot"",
+				""robotName"": ""Rover"",
 				""isAerial"": false,
 				""tiles"": [
 					{
 						""tileNumber"": 1,
-						""gridX"": 10,
-						""gridY"": 10,
-						""annotation"": ""Start here"",
-						""robotName"": ""TestRobot"",
+						""gridX"": 33,
+						""gridY"": 4,
+						""annotation"": """",
+						""robotName"": ""Rover"",
 						""isAerial"": false
 					},
 					{
 						""tileNumber"": 2,
-						""gridX"": 11,
-						""gridY"": 10,
-						""annotation"": ""Move east"",
-						""robotName"": ""TestRobot"",
+						""gridX"": 32,
+						""gridY"": 3,
+						""annotation"": """",
+						""robotName"": ""Rover"",
 						""isAerial"": false
 					},
 					{
 						""tileNumber"": 3,
-						""gridX"": 12,
-						""gridY"": 10,
-						""annotation"": ""Continue east"",
-						""robotName"": ""TestRobot"",
+						""gridX"": 31,
+						""gridY"": 2,
+						""annotation"": """",
+						""robotName"": ""Rover"",
 						""isAerial"": false
 					},
 					{
 						""tileNumber"": 4,
-						""gridX"": 12,
-						""gridY"": 11,
-						""annotation"": ""Turn south"",
-						""robotName"": ""TestRobot"",
+						""gridX"": 30,
+						""gridY"": 1,
+						""annotation"": """",
+						""robotName"": ""Rover"",
 						""isAerial"": false
 					},
 					{
 						""tileNumber"": 5,
-						""gridX"": 12,
-						""gridY"": 12,
-						""annotation"": ""End point"",
-						""robotName"": ""TestRobot"",
+						""gridX"": 29,
+						""gridY"": 0,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 6,
+						""gridX"": 28,
+						""gridY"": 0,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 7,
+						""gridX"": 27,
+						""gridY"": 0,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 8,
+						""gridX"": 26,
+						""gridY"": 0,
+						""annotation"": ""explore around"",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 9,
+						""gridX"": 25,
+						""gridY"": 0,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 10,
+						""gridX"": 25,
+						""gridY"": 1,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 11,
+						""gridX"": 26,
+						""gridY"": 1,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 12,
+						""gridX"": 27,
+						""gridY"": 1,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 13,
+						""gridX"": 27,
+						""gridY"": 0,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 14,
+						""gridX"": 26,
+						""gridY"": 0,
+						""annotation"": ""explore around"",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 15,
+						""gridX"": 25,
+						""gridY"": 1,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 16,
+						""gridX"": 25,
+						""gridY"": 2,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 17,
+						""gridX"": 25,
+						""gridY"": 3,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 18,
+						""gridX"": 25,
+						""gridY"": 4,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 19,
+						""gridX"": 25,
+						""gridY"": 5,
+						""annotation"": """",
+						""robotName"": ""Rover"",
+						""isAerial"": false
+					},
+					{
+						""tileNumber"": 20,
+						""gridX"": 24,
+						""gridY"": 6,
+						""annotation"": ""collect"",
+						""robotName"": ""Rover"",
 						""isAerial"": false
 					}
 				],
-				""totalTiles"": 5
+				""totalTiles"": 20
 			},
-			""reasoning"": ""Created an efficient L-shaped path for testing the import system""
+			""reasoning"": ""Optimized path based on reachability analysis from context tiles""
 		}";
 		
-		GD.Print("Testing import with sample path...");
-		ImportPathFromJson(sampleResponse);
+		ImportPathFromJson(llmResponse);
 	}
 
 	private void OnDisplayAnomalyMapButtonPressed()

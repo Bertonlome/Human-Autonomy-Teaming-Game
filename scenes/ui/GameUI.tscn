@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://dqoljijx36x6a"]
+[gd_scene load_steps=10 format=3 uid="uid://dqoljijx36x6a"]
 
 [ext_resource type="Script" path="res://scenes/ui/GameUI.cs" id="1_ig7ao"]
 [ext_resource type="Resource" uid="uid://0b7icpp7al8y" path="res://resources/building/aerial_robot.tres" id="2_2jsg4"]
@@ -8,6 +8,7 @@
 [ext_resource type="Theme" uid="uid://lrxwuh3o4l5k" path="res://resources/sci-fi-theme.tres" id="5_to3pn"]
 [ext_resource type="Texture2D" uid="uid://bhebwhpdwalvc" path="res://assets/ui/wood_icon_cropped.png" id="7_yyrf8"]
 [ext_resource type="Texture2D" uid="uid://lcjpfgcwel8q" path="res://assets/ui/material_icon.png" id="8_783ri"]
+[ext_resource type="PackedScene" uid="uid://dqtmd1oy0b3m2" path="res://scenes/building/Rake.tscn" id="9_4ecoi"]
 
 [node name="GameUI" type="CanvasLayer"]
 script = ExtResource("1_ig7ao")
@@ -162,7 +163,6 @@ text = "Stop all robots"
 
 [node name="SpecialFunctionsContainer" type="MarginContainer" parent="."]
 unique_name_in_owner = true
-visible = false
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -176,6 +176,7 @@ theme_override_constants/margin_bottom = 16
 
 [node name="HBoxContainer" type="HBoxContainer" parent="SpecialFunctionsContainer"]
 layout_mode = 2
+theme_override_constants/separation = 20
 
 [node name="PanelContainer2" type="PanelContainer" parent="SpecialFunctionsContainer/HBoxContainer"]
 layout_mode = 2
@@ -200,59 +201,74 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Label" type="Label" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="AdviceLabel" type="Label" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "ESC to quit painting path
-'N' to annotate tiles"
+text = "Press 'B' to enter painting path mode"
 
 [node name="PanelContainer" type="PanelContainer" parent="SpecialFunctionsContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Rake" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer" instance=ExtResource("9_4ecoi")]
+layout_mode = 2
+
+[node name="RakePanel" type="Panel" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/Rake"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 72.0
+offset_bottom = 64.0
+
+[node name="SendPathButtonPanelContainer" type="PanelContainer" parent="SpecialFunctionsContainer/HBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 0
 theme = ExtResource("5_to3pn")
 
-[node name="Panel" type="Panel" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer"]
+[node name="Panel" type="Panel" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer"]
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="VBoxContainer" type="VBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer"]
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer/VBoxContainer"]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Label" type="Label" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "<CHEAT DEV FUNCTION>"
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer/VBoxContainer"]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
-[node name="DisplayAnomalyMapButton" type="Button" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+[node name="DisplayAnomalyMapButton" type="Button" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
 unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 text = "DISPLAY ANOMALY MAP"
 
-[node name="HBoxContainer4" type="HBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer4" type="HBoxContainer" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
-[node name="SendPathToRobotButton" type="Button" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer4"]
+[node name="SendPathToRobotButton" type="Button" parent="SpecialFunctionsContainer/HBoxContainer/SendPathButtonPanelContainer/MarginContainer/VBoxContainer/HBoxContainer4"]
 unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
