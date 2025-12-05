@@ -3,7 +3,5 @@
 [ext_resource type="Texture2D" uid="uid://4yuf621j10g" path="res://assets/tiles/muddy_grass.png" id="1_wmwmw"]
 
 [node name="Sprite2D" type="Sprite2D"]
-y_sort_enabled = true
-position = Vector2(32, -8)
+position = Vector2(32, 32)
 texture = ExtResource("1_wmwmw")
-offset = Vector2(0, 40)

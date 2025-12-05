@@ -909,7 +909,7 @@ public partial class GridManager : Node
 
 	private void CheckRobotHasVisualMonolith(BuildingComponent buildingComponent)
 	{
-		foreach(var visionTile in GetTilesInRadius(buildingComponent.GetAreaOccupied(ConvertWorldPositionToTilePosition(buildingComponent.GlobalPosition)),buildingComponent.BuildingResource.VisionRadius))
+		foreach(var visionTile in GetTilesInRadiusInternal(buildingComponent.GetAreaOccupied(ConvertWorldPositionToTilePosition(buildingComponent.GlobalPosition)),buildingComponent.BuildingResource.VisionRadius))
 		{
 			if (monolithTiles.Contains(visionTile))
 			{
@@ -946,7 +946,16 @@ public partial class GridManager : Node
 		return result;
 	}
 
-		private List<Vector2I> GetTilesInRadius(Rect2I tileArea, int radius)
+	/// <summary>
+	/// Public wrapper to get all tiles within a radius of a building area
+	/// Used for fog of war clearing and vision calculations
+	/// </summary>
+	public List<Vector2I> GetTilesInRadius(Rect2I tileArea, int radius)
+	{
+		return GetTilesInRadiusInternal(tileArea, radius);
+	}
+
+	private List<Vector2I> GetTilesInRadiusInternal(Rect2I tileArea, int radius)
 	{
 		var result = new List<Vector2I>();
 		var tileAreaF = tileArea.ToRect2F();
@@ -1010,7 +1019,7 @@ public partial class GridManager : Node
 	private Dictionary<Vector2I, string> GetDiscoveredTilesInRadius(Rect2I tileArea, int radius)
 	{
 		Dictionary<Vector2I, string> tileToLandscapeType = new();
-		var tilesInRadius  = GetTilesInRadius(tileArea, radius);
+		var tilesInRadius  = GetTilesInRadiusInternal(tileArea, radius);
 		string type;
 		foreach (var tile in tilesInRadius)
 		{

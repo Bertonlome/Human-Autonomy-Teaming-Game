@@ -68,12 +68,63 @@ public class PathDataDto
 }
 
 /// <summary>
-/// Request sent to LLM containing game state and path
+/// Strategic waypoint that robot must visit (A* will connect them)
+/// </summary>
+public class WaypointDto
+{
+	[JsonPropertyName("gridX")]
+	public int GridX { get; set; }
+	
+	[JsonPropertyName("gridY")]
+	public int GridY { get; set; }
+	
+	[JsonPropertyName("priority")]
+	public int Priority { get; set; } // Lower number = visit first
+	
+	[JsonPropertyName("reason")]
+	public string Reason { get; set; } = string.Empty; // Why this waypoint is important
+}
+
+/// <summary>
+/// Tile to avoid during pathfinding
+/// </summary>
+public class ExclusionZoneDto
+{
+	[JsonPropertyName("gridX")]
+	public int GridX { get; set; }
+	
+	[JsonPropertyName("gridY")]
+	public int GridY { get; set; }
+	
+	[JsonPropertyName("reason")]
+	public string Reason { get; set; } = string.Empty; // Why to avoid this tile
+}
+
+/// <summary>
+/// Strategic plan with waypoints and exclusions (instead of full path)
+/// </summary>
+public class StrategicPlanDto
+{
+	[JsonPropertyName("robotName")]
+	public string RobotName { get; set; } = string.Empty;
+	
+	[JsonPropertyName("waypoints")]
+	public List<WaypointDto> Waypoints { get; set; } = new();
+	
+	[JsonPropertyName("exclusionZones")]
+	public List<ExclusionZoneDto> ExclusionZones { get; set; } = new();
+}
+
+/// <summary>
+/// Request sent to LLM containing game state and path(s)
 /// </summary>
 public class PathApiRequest
 {
 	[JsonPropertyName("currentPath")]
 	public PathDataDto CurrentPath { get; set; }
+	
+	[JsonPropertyName("robotPaths")]
+	public List<PathDataDto> RobotPaths { get; set; } = new();
 	
 	[JsonPropertyName("contextTiles")]
 	public List<ContextTileDto> ContextTiles { get; set; } = new();
@@ -122,7 +173,7 @@ public class BoundingBoxDto
 }
 
 /// <summary>
-/// Response from LLM with optimized/alternative path
+/// Response from LLM with optimized/alternative path(s)
 /// </summary>
 public class PathApiResponse
 {
@@ -134,6 +185,16 @@ public class PathApiResponse
 	
 	[JsonPropertyName("suggestedPath")]
 	public PathDataDto SuggestedPath { get; set; }
+	
+	[JsonPropertyName("suggestedPaths")]
+	public List<PathDataDto> SuggestedPaths { get; set; } = new();
+	
+	// Strategic planning (new approach with waypoints + exclusions)
+	[JsonPropertyName("strategicPlan")]
+	public StrategicPlanDto StrategicPlan { get; set; }
+	
+	[JsonPropertyName("strategicPlans")]
+	public List<StrategicPlanDto> StrategicPlans { get; set; } = new();
 	
 	[JsonPropertyName("reasoning")]
 	public string Reasoning { get; set; }

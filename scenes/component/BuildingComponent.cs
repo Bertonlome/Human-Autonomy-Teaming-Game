@@ -506,6 +506,22 @@ public partial class BuildingComponent : Node2D
 		}
 	}
 
+	/// <summary>
+	/// Public wrapper for path preview - generates A* path from start to end
+	/// </summary>
+	public (List<string> moves, HashSet<Vector2I> bridgeTiles) ComputeAStarPath(Vector2I fromPos, Vector2I toPos, bool allowWaterCrossing = false)
+	{
+		return GetMovesWithAStarAndBridges(fromPos, toPos, allowWaterCrossing);
+	}
+	
+	/// <summary>
+	/// Public helper to get next position from a move direction
+	/// </summary>
+	public Vector2I ComputeNextPosition(Vector2I currentPos, string moveDirection)
+	{
+		return GetNextPosFromCurrentPos(currentPos, moveDirection);
+	}
+
 	private (List<string> path, HashSet<Vector2I> bridgeTiles) GetMovesWithAStarAndBridges(Vector2I currentPos, Vector2I targetPos, bool allowWaterCrossing = false)
 	{
 		// Determine the elevation level for bridge pathfinding
@@ -588,6 +604,12 @@ public partial class BuildingComponent : Node2D
 
 				// Skip if already explored
 				if (closed.Contains(neighborPos)) continue;
+				
+				// Skip if this tile is in the global exclusion zones (LLM-specified avoid list)
+				if (BuildingManager.GlobalExclusionZones.Contains(neighborPos))
+				{
+					continue;
+				}
 
 				// Check if robot can move to this neighbor
 				var originArea = GetAreaOccupied(current.Position);

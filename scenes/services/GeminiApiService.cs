@@ -122,8 +122,9 @@ public partial class GeminiApiService : Node
 	/// Send a request to Gemini API to optimize a path
 	/// </summary>
 	/// <param name="pathJson">The JSON representation of the current path and context</param>
+	/// <param name="isMultiRobot">Whether this is a multi-robot request</param>
 	/// <returns>The LLM's response as JSON string</returns>
-	public async Task<string> OptimizePathAsync(string pathJson)
+	public async Task<string> OptimizePathAsync(string pathJson, bool isMultiRobot = false)
 	{
 		if (string.IsNullOrEmpty(apiKey) || geminiClient == null)
 		{
@@ -134,7 +135,7 @@ public partial class GeminiApiService : Node
 		try
 		{
 			// Construct the prompt for Gemini
-			string prompt = ConstructOptimizationPrompt(pathJson);
+			string prompt = ConstructOptimizationPrompt(pathJson, isMultiRobot);
 			
 			GD.Print("Sending request to Gemini API...");
 			
@@ -186,43 +187,94 @@ public partial class GeminiApiService : Node
 	/// <summary>
 	/// Construct the optimization prompt for the LLM
 	/// </summary>
-	private string ConstructOptimizationPrompt(string pathJson)
+	private string ConstructOptimizationPrompt(string pathJson, bool isMultiRobot)
 	{
-		return $@"You are an AI assistant helping to optimize robot paths in a strategy game. 
+		if (isMultiRobot)
+		{
+			return $@"You are a strategic exploration planner for autonomous robots.
 
-The user has painted a path for their robot, and you need to analyze it and suggest an optimized version.
+Your role is NOT to generate complete paths (A* pathfinding will handle that automatically).
+Instead, provide STRATEGIC GUIDANCE:
 
-Here is the current path data (includes painted tiles, robot info, and contextual tiles showing reachability):
+1. **Waypoints**: Mandatory checkpoints the robot(s) must visit (e.g., high-value targets, bottlenecks, resource locations)
+2. **Exclusion Zones**: Tiles to completely avoid during pathfinding (e.g., dangerous areas, redundant zones, collision risks)
+
+The A* algorithm will automatically find the optimal path connecting these waypoints while avoiding exclusion zones.
+
+Current painted paths show the general exploration area:
 {pathJson}
 
-Your task:
-1. Analyze the current path for inefficiencies (unnecessary detours, zigzags, etc.)
-2. Consider the reachability information from contextTiles
-3. Keep the start and end points the same
-4. Optimize the middle of the path for efficiency
-5. Preserve any important annotations
+Consider:
+- Which tiles are CRITICAL checkpoints that must be visited?
+- Are there tiles that should be AVOIDED entirely?
+- For multiple robots: coordinate to prevent collisions and maximize coverage
+- Prioritize waypoints (lower priority number = visit first)
 
-Respond with ONLY a JSON object in this exact format (no markdown, no extra text):
+Respond with ONLY a JSON object (no markdown, no extra text):
 {{
-	""success"": true,
-	""message"": ""Path optimized successfully"",
-	""suggestedPath"": {{
-		""robotName"": ""string"",
-		""isAerial"": boolean,
-		""tiles"": [
-			{{
-				""tileNumber"": 1,
-				""gridX"": number,
-				""gridY"": number,
-				""annotation"": ""string"",
-				""robotName"": ""string"",
-				""isAerial"": boolean
-			}}
-		],
-		""totalTiles"": number
-	}},
-	""reasoning"": ""Brief explanation of optimizations made""
+  ""success"": true,
+  ""message"": ""Strategic plan generated"",
+  ""reasoning"": ""Explanation of your strategic decisions"",
+  ""strategicPlans"": [
+    {{
+      ""robotName"": ""Rover"",
+      ""waypoints"": [
+        {{""gridX"": 10, ""gridY"": 5, ""priority"": 1, ""reason"": ""Resource deposit location""}},
+        {{""gridX"": 15, ""gridY"": 8, ""priority"": 2, ""reason"": ""Survey point""}}
+      ],
+      ""exclusionZones"": [
+        {{""gridX"": 12, ""gridY"": 6, ""reason"": ""Hazardous terrain""}}
+      ]
+    }},
+    {{
+      ""robotName"": ""Drone"",
+      ""waypoints"": [
+        {{""gridX"": 20, ""gridY"": 10, ""priority"": 1, ""reason"": ""Aerial survey point""}}
+      ],
+      ""exclusionZones"": [
+        {{""gridX"": 10, ""gridY"": 5, ""reason"": ""Rover territory - avoid collision""}}
+      ]
+    }}
+  ]
 }}";
+		}
+		else
+		{
+			return $@"You are a strategic exploration planner for an autonomous robot.
+
+Your role is NOT to generate a complete path (A* pathfinding will handle that automatically).
+Instead, provide STRATEGIC GUIDANCE:
+
+1. **Waypoints**: Mandatory checkpoints the robot must visit (e.g., high-value targets, key locations)
+2. **Exclusion Zones**: Tiles to completely avoid during pathfinding (e.g., dangerous areas, inefficient routes)
+
+The A* algorithm will automatically find the optimal path connecting these waypoints while avoiding exclusion zones.
+
+Current painted path shows the general exploration area:
+{pathJson}
+
+Consider:
+- Which tiles are CRITICAL checkpoints that must be visited?
+- Are there tiles that should be AVOIDED entirely?
+- Prioritize waypoints (lower priority number = visit first)
+
+Respond with ONLY a JSON object (no markdown, no extra text):
+{{
+  ""success"": true,
+  ""message"": ""Strategic plan generated"",
+  ""reasoning"": ""Explanation of your strategic decisions"",
+  ""strategicPlan"": {{
+    ""robotName"": ""Rover"",
+    ""waypoints"": [
+      {{""gridX"": 10, ""gridY"": 5, ""priority"": 1, ""reason"": ""Resource location""}},
+      {{""gridX"": 15, ""gridY"": 8, ""priority"": 2, ""reason"": ""Survey checkpoint""}}
+    ],
+    ""exclusionZones"": [
+      {{""gridX"": 12, ""gridY"": 6, ""reason"": ""Hazardous area""}}
+    ]
+  }}
+}}";
+		}
 	}
 	
 	/// <summary>

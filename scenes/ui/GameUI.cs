@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using Game.API;
 using Game.Autoload;
@@ -24,6 +25,8 @@ public partial class GameUI : CanvasLayer
 	public delegate void TimeIsUpEventHandler();
 	[Signal]
 	public delegate void TouchedRakePanelEventHandler();
+	[Signal]
+	public delegate void SendPathToRobotButtonPressedEventHandler();
 	private bool isTimeIsUp = false;
 	public int TimeToCompleteLevel;
 
@@ -37,6 +40,7 @@ public partial class GameUI : CanvasLayer
 	private Button displayAnomalyMapButton;
 	private Button sendPathToRobotButton;
 	private Button executePathButton;
+	private Button previewPathButton;
 	private Button configureApiKeyButton;
 	private CheckButton displayTraceButton;
 	private MarginContainer specialFunctionsContainer;
@@ -79,6 +83,9 @@ public partial class GameUI : CanvasLayer
 		rakePanel = GetNode<Panel>("%RakePanel");
 		sendPathToRobotButton = GetNode<Button>("%SendPathToRobotButton");
 		
+		// Try to get preview button (may not exist in older scenes)
+		previewPathButton = GetNodeOrNull<Button>("%PreviewPathButton");
+		
 		// Create API key dialog
 		apiKeyDialog = new ApiKeyDialog();
 		AddChild(apiKeyDialog);
@@ -105,6 +112,10 @@ public partial class GameUI : CanvasLayer
 		displayTraceButton.Toggled += OnDisplayTraceToggled;
 		sendPathToRobotButton.Pressed += OnSendPathToRobotButtonPressed;
 		executePathButton.Pressed += OnExecutePathButtonPressed;
+		if (previewPathButton != null)
+		{
+			previewPathButton.Pressed += OnPreviewPathButtonPressed;
+		}
 		rakePanel.GuiInput += OnRakePanelGuiInput;
 
 		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
@@ -401,10 +412,19 @@ public partial class GameUI : CanvasLayer
 		// Show loading feedback
 		adviceLabel.Text = "Request sent to Gemini API. Waiting for response...";
 		
+		// Detect if this is multi-robot request
+		var robotCount = paintedTiles.GroupBy(t => t.AssociatedRobot).Count();
+		bool isMultiRobot = robotCount > 1;
+		
+		if (isMultiRobot)
+		{
+			GD.Print($"Multi-robot request detected: {robotCount} robots");
+		}
+		
 		try
 		{
-			// Call Gemini API
-			string llmResponse = await geminiApiService.OptimizePathAsync(jsonRequest);
+			// Call Gemini API with multi-robot flag
+			string llmResponse = await geminiApiService.OptimizePathAsync(jsonRequest, isMultiRobot);
 			GD.Print("=== LLM RESPONSE ===");
 			GD.Print(llmResponse);
 			GD.Print("====================");
@@ -448,34 +468,10 @@ public partial class GameUI : CanvasLayer
 			}
 		}
 		
-		// For now, export the first robot's path (you can extend to handle multiple)
-		var firstRobot = tiles[0].AssociatedRobot;
-		if (firstRobot == null)
+		if (robotPaths.Count == 0)
 		{
 			GD.PrintErr("Tiles have no associated robot");
 			return "{}";
-		}
-		
-		// Create request DTO
-		var pathData = new PathDataDto
-		{
-			RobotName = firstRobot.BuildingResource.DisplayName,
-			IsAerial = firstRobot.BuildingResource.IsAerial,
-			TotalTiles = tiles.Count
-		};
-		
-		// Convert each painted tile
-		foreach (var tile in tiles)
-		{
-			pathData.Tiles.Add(new PaintedTileDto
-			{
-				TileNumber = tile.TileNumber,
-				GridX = tile.GridPosition.X,
-				GridY = tile.GridPosition.Y,
-				Annotation = tile.Annotation ?? "",
-				RobotName = tile.AssociatedRobot?.BuildingResource.DisplayName ?? "Unknown",
-				IsAerial = tile.AssociatedRobot?.BuildingResource.IsAerial ?? false
-			});
 		}
 		
 		// Get contextual tiles for surrounding area
@@ -505,7 +501,6 @@ public partial class GameUI : CanvasLayer
 		
 		var request = new PathApiRequest
 		{
-			CurrentPath = pathData,
 			ContextTiles = contextTileDtos,
 			BoundingBox = new BoundingBoxDto
 			{
@@ -518,17 +513,83 @@ public partial class GameUI : CanvasLayer
 			},
 			MapWidth = 100, // TODO: Get from GridManager
 			MapHeight = 100, // TODO: Get from GridManager
-			RobotStartX = (int)(firstRobot.GlobalPosition.X / 64),
-			RobotStartY = (int)(firstRobot.GlobalPosition.Y / 64),
-			Context = "Optimize this exploration path for efficiency. Use contextTiles to understand terrain reachability and obstacles around the painted path."
 		};
+		
+		// If single robot, use legacy CurrentPath for backward compatibility
+		if (robotPaths.Count == 1)
+		{
+			var kvp = robotPaths.First();
+			var robot = kvp.Key;
+			var robotTiles = kvp.Value;
+			
+			var pathData = new PathDataDto
+			{
+				RobotName = robot.BuildingResource.DisplayName,
+				IsAerial = robot.BuildingResource.IsAerial,
+				TotalTiles = robotTiles.Count
+			};
+			
+			foreach (var tile in robotTiles)
+			{
+				pathData.Tiles.Add(new PaintedTileDto
+				{
+					TileNumber = tile.TileNumber,
+					GridX = tile.GridPosition.X,
+					GridY = tile.GridPosition.Y,
+					Annotation = tile.Annotation ?? "",
+					RobotName = robot.BuildingResource.DisplayName,
+					IsAerial = robot.BuildingResource.IsAerial
+				});
+			}
+			
+			request.CurrentPath = pathData;
+			request.RobotStartX = (int)(robot.GlobalPosition.X / 64);
+			request.RobotStartY = (int)(robot.GlobalPosition.Y / 64);
+			request.Context = "Optimize this exploration path for efficiency. Use contextTiles to understand terrain reachability and obstacles around the painted path.";
+		}
+		else // Multiple robots - use RobotPaths array
+		{
+			foreach (var kvp in robotPaths)
+			{
+				var robot = kvp.Key;
+				var robotTiles = kvp.Value;
+				
+				var pathData = new PathDataDto
+				{
+					RobotName = robot.BuildingResource.DisplayName,
+					IsAerial = robot.BuildingResource.IsAerial,
+					TotalTiles = robotTiles.Count
+				};
+				
+				foreach (var tile in robotTiles)
+				{
+					pathData.Tiles.Add(new PaintedTileDto
+					{
+						TileNumber = tile.TileNumber,
+						GridX = tile.GridPosition.X,
+						GridY = tile.GridPosition.Y,
+						Annotation = tile.Annotation ?? "",
+						RobotName = robot.BuildingResource.DisplayName,
+						IsAerial = robot.BuildingResource.IsAerial
+					});
+				}
+				
+				request.RobotPaths.Add(pathData);
+			}
+			
+			// Use first robot's position as reference
+			var firstRobot = robotPaths.Keys.First();
+			request.RobotStartX = (int)(firstRobot.GlobalPosition.X / 64);
+			request.RobotStartY = (int)(firstRobot.GlobalPosition.Y / 64);
+			request.Context = $"Optimize paths for {robotPaths.Count} robots. Consider inter-robot coordination to avoid collisions and maximize exploration efficiency. Use contextTiles to understand terrain reachability and obstacles.";
+		}
 		
 		var options = new JsonSerializerOptions { WriteIndented = true };
 		return JsonSerializer.Serialize(request, options);
 	}
 	
 	/// <summary>
-	/// Import LLM response and redraw the path
+	/// Import LLM response and redraw the path(s)
 	/// </summary>
 	public void ImportPathFromJson(string jsonResponse)
 	{
@@ -536,7 +597,7 @@ public partial class GameUI : CanvasLayer
 		{
 			var response = JsonSerializer.Deserialize<PathApiResponse>(jsonResponse);
 			
-			if (response == null || !response.Success || response.SuggestedPath == null)
+			if (response == null || !response.Success)
 			{
 				GD.PrintErr($"Invalid response: {response?.Message ?? "Unknown error"}");
 				return;
@@ -547,14 +608,163 @@ public partial class GameUI : CanvasLayer
 			// Clear existing path
 			buildingManager.ClearAllPaintedTiles();
 			
-			// Redraw the new path from LLM
-			foreach (var tileDto in response.SuggestedPath.Tiles)
-			{
-				var gridPos = new Vector2I(tileDto.GridX, tileDto.GridY);
-				buildingManager.CreatePaintedTileAt(gridPos, tileDto.Annotation);
-			}
+			// Clear previous exclusion zones
+			BuildingManager.ClearExclusionZones();
 			
-			GD.Print($"Successfully imported {response.SuggestedPath.Tiles.Count} tiles from LLM");
+			// Get all available robots for mapping
+			var allRobots = BuildingComponent.GetValidBuildingComponents(this);
+			var robotsByName = allRobots.ToDictionary(r => r.BuildingResource.DisplayName, r => r);
+			
+			// Collect all exclusion zones from all plans
+			var allExclusionZones = new HashSet<Vector2I>();
+			
+			// Check for new strategic plan format (waypoints + exclusions)
+			bool hasMultipleStrategicPlans = response.StrategicPlans != null && response.StrategicPlans.Count > 0;
+			bool hasSingleStrategicPlan = response.StrategicPlan != null;
+			
+			if (hasMultipleStrategicPlans)
+			{
+				// Multi-robot strategic plan
+				GD.Print($"Importing strategic plans for {response.StrategicPlans.Count} robots");
+				
+				int totalWaypoints = 0;
+				foreach (var plan in response.StrategicPlans)
+				{
+					if (!robotsByName.TryGetValue(plan.RobotName, out var robot))
+					{
+						GD.PrintErr($"Robot '{plan.RobotName}' not found in scene!");
+						continue;
+					}
+					
+					buildingManager.SelectBuilding(robot);
+					
+					GD.Print($"  - {plan.RobotName}: {plan.Waypoints.Count} waypoints, {plan.ExclusionZones.Count} exclusions");
+					
+					// Create painted tiles for waypoints (sorted by priority)
+					var sortedWaypoints = plan.Waypoints.OrderBy(w => w.Priority).ToList();
+					foreach (var waypoint in sortedWaypoints)
+					{
+						var gridPos = new Vector2I(waypoint.GridX, waypoint.GridY);
+						string annotation = $"P{waypoint.Priority}: {waypoint.Reason}";
+						buildingManager.CreatePaintedTileAt(gridPos, annotation);
+						totalWaypoints++;
+					}
+					
+					// Collect exclusion zones from this plan
+					foreach (var exclusion in plan.ExclusionZones)
+					{
+						var gridPos = new Vector2I(exclusion.GridX, exclusion.GridY);
+						allExclusionZones.Add(gridPos);
+						GD.Print($"    Exclusion ({exclusion.GridX}, {exclusion.GridY}): {exclusion.Reason}");
+					}
+				}
+				
+				GD.Print($"Successfully imported {totalWaypoints} waypoints. Use Execute to let A* connect them.");
+				
+				// Set global exclusion zones for A* pathfinding
+				if (allExclusionZones.Count > 0)
+				{
+					BuildingManager.SetExclusionZones(allExclusionZones);
+				}
+				
+				// Automatically generate preview of the full path
+				GeneratePathPreview(response.StrategicPlans);
+			}
+			else if (hasSingleStrategicPlan)
+			{
+				// Single robot strategic plan
+				var plan = response.StrategicPlan;
+				
+				if (robotsByName.TryGetValue(plan.RobotName, out var robot))
+				{
+					buildingManager.SelectBuilding(robot);
+					
+					GD.Print($"Importing strategic plan for {plan.RobotName}: {plan.Waypoints.Count} waypoints, {plan.ExclusionZones.Count} exclusions");
+					
+					// Create painted tiles for waypoints (sorted by priority)
+					var sortedWaypoints = plan.Waypoints.OrderBy(w => w.Priority).ToList();
+					foreach (var waypoint in sortedWaypoints)
+					{
+						var gridPos = new Vector2I(waypoint.GridX, waypoint.GridY);
+						string annotation = $"P{waypoint.Priority}: {waypoint.Reason}";
+						buildingManager.CreatePaintedTileAt(gridPos, annotation);
+					}
+					
+					// Collect exclusion zones from this plan
+					foreach (var exclusion in plan.ExclusionZones)
+					{
+						var gridPos = new Vector2I(exclusion.GridX, exclusion.GridY);
+						allExclusionZones.Add(gridPos);
+						GD.Print($"  Exclusion ({exclusion.GridX}, {exclusion.GridY}): {exclusion.Reason}");
+					}
+					
+					GD.Print($"Successfully imported {sortedWaypoints.Count} waypoints. Use Execute to let A* connect them.");
+					
+					// Set global exclusion zones for A* pathfinding
+					if (allExclusionZones.Count > 0)
+					{
+						BuildingManager.SetExclusionZones(allExclusionZones);
+					}
+					
+					// Automatically generate preview of the full path
+					GeneratePathPreview(new List<Game.API.StrategicPlanDto> { plan });
+				}
+				else
+				{
+					GD.PrintErr($"Robot '{plan.RobotName}' not found in scene!");
+				}
+			}
+			// Backward compatibility: Check for old full-path format
+			else if (response.SuggestedPaths != null && response.SuggestedPaths.Count > 0)
+			{
+				// Multi-robot full path response (old format)
+				GD.Print($"Importing FULL paths for {response.SuggestedPaths.Count} robots (old format)");
+				
+				int totalTiles = 0;
+				foreach (var pathData in response.SuggestedPaths)
+				{
+					if (!robotsByName.TryGetValue(pathData.RobotName, out var robot))
+					{
+						GD.PrintErr($"Robot '{pathData.RobotName}' not found in scene!");
+						continue;
+					}
+					
+					buildingManager.SelectBuilding(robot);
+					
+					foreach (var tileDto in pathData.Tiles)
+					{
+						var gridPos = new Vector2I(tileDto.GridX, tileDto.GridY);
+						buildingManager.CreatePaintedTileAt(gridPos, tileDto.Annotation);
+						totalTiles++;
+					}
+				}
+				
+				GD.Print($"Successfully imported {totalTiles} tiles");
+			}
+			else if (response.SuggestedPath != null)
+			{
+				// Single robot full path (old format - backward compatibility)
+				if (robotsByName.TryGetValue(response.SuggestedPath.RobotName, out var robot))
+				{
+					buildingManager.SelectBuilding(robot);
+					
+					foreach (var tileDto in response.SuggestedPath.Tiles)
+					{
+						var gridPos = new Vector2I(tileDto.GridX, tileDto.GridY);
+						buildingManager.CreatePaintedTileAt(gridPos, tileDto.Annotation);
+					}
+					
+					GD.Print($"Successfully imported {response.SuggestedPath.Tiles.Count} tiles (old format)");
+				}
+				else
+				{
+					GD.PrintErr($"Robot '{response.SuggestedPath.RobotName}' not found in scene!");
+				}
+			}
+			else
+			{
+				GD.PrintErr("Response contains no recognized path or plan data");
+			}
 		}
 		catch (JsonException ex)
 		{
@@ -575,8 +785,184 @@ public partial class GameUI : CanvasLayer
 		}
 	}
 	
+	/// <summary>
+	/// Preview the complete A* path through all waypoints before execution
+	/// </summary>
+	private void OnPreviewPathButtonPressed()
+	{
+		var paintedTiles = buildingManager.GetAllPaintedTiles();
+		
+		if (paintedTiles == null || paintedTiles.Count == 0)
+		{
+			adviceLabel.Text = "No waypoints to preview!";
+			GD.PrintErr("No painted tiles to preview");
+			return;
+		}
+		
+		// Group waypoints by robot
+		var robotWaypoints = new Dictionary<BuildingComponent, List<PaintedTile>>();
+		foreach (var tile in paintedTiles)
+		{
+			if (tile.AssociatedRobot != null)
+			{
+				if (!robotWaypoints.ContainsKey(tile.AssociatedRobot))
+				{
+					robotWaypoints[tile.AssociatedRobot] = new List<PaintedTile>();
+				}
+				robotWaypoints[tile.AssociatedRobot].Add(tile);
+			}
+		}
+		
+		if (robotWaypoints.Count == 0)
+		{
+			adviceLabel.Text = "No robot associated with waypoints!";
+			GD.PrintErr("Waypoints have no associated robot");
+			return;
+		}
+		
+		// Clear existing tiles first
+		buildingManager.ClearAllPaintedTiles();
+		
+		GD.Print($"Generating preview for {robotWaypoints.Count} robot(s)...");
+		
+		// Generate full A* path for each robot
+		int totalPathTiles = 0;
+		foreach (var kvp in robotWaypoints)
+		{
+			var robot = kvp.Key;
+			var waypoints = kvp.Value.OrderBy(t => t.TileNumber).ToList();
+			
+			buildingManager.SelectBuilding(robot);
+			
+			GD.Print($"  {robot.BuildingResource.DisplayName}: Connecting {waypoints.Count} waypoints");
+			
+			// Start from robot's current position
+			var currentPos = robot.GetGridCellPosition();
+			int segmentNum = 0;
+			
+			foreach (var waypoint in waypoints)
+			{
+				// Use A* to find path from current position to this waypoint
+				var (moves, bridgeTiles) = robot.ComputeAStarPath(currentPos, waypoint.GridPosition);
+				
+				if (moves.Count == 0)
+				{
+					GD.PrintErr($"    Failed to find path to waypoint at ({waypoint.GridPosition.X}, {waypoint.GridPosition.Y})");
+					adviceLabel.Text = $"Cannot reach waypoint for {robot.BuildingResource.DisplayName}!";
+					continue;
+				}
+				
+				// Create painted tiles for this path segment
+				var pathPos = currentPos;
+				foreach (var move in moves)
+				{
+					pathPos = robot.ComputeNextPosition(pathPos, move);
+					
+					// Create painted tile at this position (no annotation to avoid clutter)
+					buildingManager.CreatePaintedTileAt(pathPos, string.Empty);
+					totalPathTiles++;
+				}
+				
+				// Move to next segment
+				currentPos = waypoint.GridPosition;
+				segmentNum++;
+			}
+			
+			GD.Print($"    Generated {totalPathTiles} path tiles");
+		}
+		
+		adviceLabel.Text = $"Preview: {totalPathTiles} tiles. Press Execute to start.";
+		GD.Print($"Preview complete: {totalPathTiles} total path tiles generated");
+	}
+	
+	/// <summary>
+	/// Generate A* path preview from strategic plans (waypoints + exclusions)
+	/// </summary>
+	private void GeneratePathPreview(List<Game.API.StrategicPlanDto> plans)
+	{
+		if (plans == null || plans.Count == 0)
+		{
+			return;
+		}
+		
+		// Get all available robots for mapping
+		var allRobots = BuildingComponent.GetValidBuildingComponents(this);
+		var robotsByName = allRobots.ToDictionary(r => r.BuildingResource.DisplayName, r => r);
+		
+		GD.Print($"Generating path preview for {plans.Count} robot(s)...");
+		
+		int totalPathTiles = 0;
+		foreach (var plan in plans)
+		{
+			if (!robotsByName.TryGetValue(plan.RobotName, out var robot))
+			{
+				GD.PrintErr($"Cannot preview: Robot '{plan.RobotName}' not found!");
+				continue;
+			}
+			
+			if (plan.Waypoints.Count == 0)
+			{
+				GD.Print($"  {plan.RobotName}: No waypoints to connect");
+				continue;
+			}
+			
+			buildingManager.SelectBuilding(robot);
+			
+			// Sort waypoints by priority
+			var sortedWaypoints = plan.Waypoints.OrderBy(w => w.Priority).ToList();
+			GD.Print($"  {plan.RobotName}: Connecting {sortedWaypoints.Count} waypoints");
+			
+			// Start from robot's current position
+			var currentPos = robot.GetGridCellPosition();
+			int segmentNum = 0;
+			
+			foreach (var waypoint in sortedWaypoints)
+			{
+				var targetPos = new Vector2I(waypoint.GridX, waypoint.GridY);
+				
+				// Use A* to find path from current position to this waypoint
+				var (moves, bridgeTiles) = robot.ComputeAStarPath(currentPos, targetPos);
+				
+				if (moves.Count == 0)
+				{
+					GD.PrintErr($"    Cannot reach waypoint P{waypoint.Priority} at ({targetPos.X}, {targetPos.Y})");
+					adviceLabel.Text = $"Unreachable waypoint for {robot.BuildingResource.DisplayName}!";
+					break; // Stop trying this robot's path
+				}
+				
+				// Create painted tiles for this path segment
+				var pathPos = currentPos;
+				foreach (var move in moves)
+				{
+					pathPos = robot.ComputeNextPosition(pathPos, move);
+					
+					// Create painted tile at this position (no annotation to avoid clutter)
+					buildingManager.CreatePaintedTileAt(pathPos, string.Empty);
+					totalPathTiles++;
+				}
+				
+				// Move to next segment
+				currentPos = targetPos;
+				segmentNum++;
+			}
+			
+			GD.Print($"    {robot.BuildingResource.DisplayName}: Generated {totalPathTiles} path tiles");
+		}
+		
+		if (totalPathTiles > 0)
+		{
+			adviceLabel.Text = $"Path preview: {totalPathTiles} tiles through waypoints";
+			GD.Print($"Path preview complete: {totalPathTiles} total tiles");
+		}
+		else
+		{
+			adviceLabel.Text = "Failed to generate path preview";
+		}
+	}
+	
 	private void OnExecutePathButtonPressed()
 	{
+		EmitSignal(nameof(SendPathToRobotButtonPressed));
 		// Get all painted tiles
 		var paintedTiles = buildingManager.GetAllPaintedTiles();
 		
@@ -609,6 +995,8 @@ public partial class GameUI : CanvasLayer
 		}
 		
 		// Clear the painted tiles before execution
+		// Note: Exclusion zones remain active during path execution
+		// They will be cleared when a new strategic plan is imported
 		buildingManager.ClearAllPaintedTiles();
 		
 	// Execute path for each robot

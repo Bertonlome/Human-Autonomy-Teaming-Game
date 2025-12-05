@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dk6jcdpulagol"
-path="res://.godot/imported/tower_blue.png-32a940f861e08166ad7899c2f6a0caa4.ctex"
+uid="uid://coc5g1k51wkbb"
+path="res://.godot/imported/cloud_tilemap.png-49daafced55e9f2d3af9d451a7b74187.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/buildings/tower_blue.png"
-dest_files=["res://.godot/imported/tower_blue.png-32a940f861e08166ad7899c2f6a0caa4.ctex"]
+source_file="res://assets/tiles/cloud_tilemap.png"
+dest_files=["res://.godot/imported/cloud_tilemap.png-49daafced55e9f2d3af9d451a7b74187.ctex"]
 
 [params]
 

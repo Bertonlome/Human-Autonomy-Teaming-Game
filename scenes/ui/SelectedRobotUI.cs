@@ -360,10 +360,19 @@ public partial class SelectedRobotUI : CanvasLayer
 
 	private void DisconnectSignals()
 	{
-		// Safely disconnect signals before the object is freed
-		randomExplorButton.Pressed -= OnRandomExplorButtonPressed;
-		stopExplorbutton.Pressed -= OnStopExplorButtonPressed;
-		trackRobotButton.Pressed -= OnTrackRobotButtonPressed;
+		// Safely disconnect signals before the object is freed - check connection first
+		if (randomExplorButton.IsConnected("pressed", Callable.From(OnRandomExplorButtonPressed)))
+		{
+			randomExplorButton.Pressed -= OnRandomExplorButtonPressed;
+		}
+		if (stopExplorbutton.IsConnected("pressed", Callable.From(OnStopExplorButtonPressed)))
+		{
+			stopExplorbutton.Pressed -= OnStopExplorButtonPressed;
+		}
+		if (trackRobotButton.IsConnected("pressed", Callable.From(OnTrackRobotButtonPressed)))
+		{
+			trackRobotButton.Pressed -= OnTrackRobotButtonPressed;
+		}
 		if (multiPurposeButton.IsConnected("pressed", Callable.From(OnPlaceBridgeButtonPressed)))
 		{
 			multiPurposeButton.Pressed -= OnPlaceBridgeButtonPressed;

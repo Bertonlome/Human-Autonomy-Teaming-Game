@@ -38,20 +38,72 @@ public partial class DiscoveredElementsManager : Node
 	private PackedScene greenOreScene;
 	[Export]
 	private PackedScene mudScene;
+	[Export]
+	private TileMapLayer cloudLayer;
 	private Dictionary<Vector2I, Node2D> tileToDiscoveredElements = new();
 	private Dictionary<Vector2I, DiscoveredElements> tiletoDarkenedElements = new();
 	private Dictionary<Vector2I, string> tiletoTypeElementsString = new();
 
 	private HashSet<Vector2I> discoveredTiles = new();
 	private HashSet<Vector2I> displayedElementTiles = new();
+	private HashSet<Vector2I> clearedCloudTiles = new(); // Track tiles where fog has been cleared
 	DiscoveredElements discoveredElements;
 
 
 	public override void _Ready()
 	{
 		gridManager.DiscoveredTileUpdated += OnDiscoveredTileUpdated;
+		gridManager.GridStateUpdated += OnGridStateUpdated;
 		discoveredElements = DiscoveredElementsScene.Instantiate<DiscoveredElements>();
 		AddChild(discoveredElements);
+		cloudLayer = GetNode<TileMapLayer>("%CloudLayer");
+	}
+	
+	/// <summary>
+	/// Clear fog of war (cloud tiles) in the vision radius when grid state updates
+	/// </summary>
+	private void OnGridStateUpdated()
+	{
+		// Get all buildings with vision
+		var allBuildings = Game.Component.BuildingComponent.GetValidBuildingComponents(this);
+		
+		HashSet<Vector2I> tilesToClear = new HashSet<Vector2I>();
+		
+		foreach (var building in allBuildings)
+		{
+			int visionRadius = building.BuildingResource.VisionRadius;
+			if (visionRadius <= 0) continue;
+			
+			// Get all tiles in vision radius
+			var tileArea = building.GetTileArea();
+			var tilesInVision = gridManager.GetTilesInRadius(tileArea, visionRadius);
+			
+			// Collect tiles to clear
+			foreach (var tile in tilesInVision)
+			{
+				if (!clearedCloudTiles.Contains(tile))
+				{
+					tilesToClear.Add(tile);
+				}
+			}
+		}
+		
+		// Clear all tiles at once
+		if (tilesToClear.Count > 0)
+		{
+			// Convert HashSet to Godot array for batch operation
+			var tilesToClearArray = new Godot.Collections.Array<Vector2I>();
+			foreach (var tile in tilesToClear)
+			{
+				tilesToClearArray.Add(tile);
+				clearedCloudTiles.Add(tile);
+			}
+			
+			// Use SetCellsTerrainConnect with terrain ID -1 to properly clear tiles
+			// while maintaining terrain patterns on adjacent tiles
+			// Args: cells array, terrain set (0), terrain ID (-1 for empty/clear)
+			cloudLayer.SetCellsTerrainConnect(tilesToClearArray, 0, -1);
+		}
 	}
 
 	private void UpdateIndicators(Vector2I tile, string type)
@@ -117,10 +169,10 @@ public partial class DiscoveredElementsManager : Node
 				elementScene = greenOreScene.Instantiate<Sprite2D>();
 				elementHolder.AddChild(elementScene);
 				break;
-		case "mud":
-			elementScene = mudScene.Instantiate<Sprite2D>();
-			elementHolder.AddChild(elementScene);
-			break;
+			case "mud":
+				elementScene = mudScene.Instantiate<Sprite2D>();
+				elementHolder.AddChild(elementScene);
+				break;
 		}
 
 		displayedElementTiles.Add(tile);

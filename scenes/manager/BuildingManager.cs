@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Game.Autoload;
@@ -47,6 +48,27 @@ public partial class BuildingManager : Node
 	public List<Node2D> AliveRobots { get; private set; } = new();
 	private HashSet<string> analyzedMineralTypes = new();
 	private double clockTickTimer = 0.0;
+	
+	// Global exclusion zones for A* pathfinding (LLM-specified tiles to avoid)
+	public static HashSet<Vector2I> GlobalExclusionZones { get; private set; } = new();
+	
+	/// <summary>
+	/// Set exclusion zones that A* pathfinding should avoid
+	/// </summary>
+	public static void SetExclusionZones(HashSet<Vector2I> exclusionZones)
+	{
+		GlobalExclusionZones = exclusionZones ?? new HashSet<Vector2I>();
+		GD.Print($"BuildingManager: Set {GlobalExclusionZones.Count} exclusion zones for pathfinding");
+	}
+	
+	/// <summary>
+	/// Clear all exclusion zones
+	/// </summary>
+	public static void ClearExclusionZones()
+	{
+		GlobalExclusionZones.Clear();
+		GD.Print("BuildingManager: Cleared all exclusion zones");
+	}
 
 	[Export]
 	public GridManager gridManager;
@@ -114,6 +136,7 @@ public partial class BuildingManager : Node
 		gridManager.ResourceTilesUpdated += OnResourceTilesUpdated;
 		gameUI.BuildingResourceSelected += OnBuildingResourceSelected;
 		gameUI.TouchedRakePanel += OnTouchedRakePanel;
+		gameUI.SendPathToRobotButtonPressed += OnSendPathToRobotButtonPressed;
 		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceBridgeButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceBridgeButtonPressed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.PlaceAntennaButtonPressed, Callable.From<BuildingComponent, BuildingResource>(OnPlaceAntennaButtonPressed));
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingStuck, Callable.From<BuildingComponent>(OnBuildingStuck));
@@ -1881,6 +1904,12 @@ public partial class BuildingManager : Node
 	{
 		//currentResourceCount = resourceCount;
 		//EmitSignal(SignalName.AvailableResourceCountChanged, AvailableResourceCount);
+	}
+
+	private void OnSendPathToRobotButtonPressed()
+	{
+		if (selectedBuildingComponent == null) return;
+		ChangeState(State.Normal);
 	}
 
 	private void OnTouchedRakePanel()
