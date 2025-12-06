@@ -209,13 +209,13 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Press 'B' to enter painting path mode"
 
-[node name="PanelContainer" type="PanelContainer" parent="SpecialFunctionsContainer/HBoxContainer"]
+[node name="RakePanelContainer" type="PanelContainer" parent="SpecialFunctionsContainer/HBoxContainer"]
 layout_mode = 2
 
-[node name="Rake" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer" instance=ExtResource("9_4ecoi")]
+[node name="Rake" parent="SpecialFunctionsContainer/HBoxContainer/RakePanelContainer" instance=ExtResource("9_4ecoi")]
 layout_mode = 2
 
-[node name="RakePanel" type="Panel" parent="SpecialFunctionsContainer/HBoxContainer/PanelContainer/Rake"]
+[node name="RakePanel" type="Panel" parent="SpecialFunctionsContainer/HBoxContainer/RakePanelContainer/Rake"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = -8.0

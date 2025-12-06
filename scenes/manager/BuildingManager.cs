@@ -1870,6 +1870,7 @@ public partial class BuildingManager : Node
 		switch (currentState)
 		{
 			case State.Normal:
+				DeleteAllRakes();
 				gameUI.HideSpecialFunctions();
 				break;
 			case State.PlacingBuilding:
@@ -2350,5 +2351,70 @@ public partial class BuildingManager : Node
 			
 			GD.Print($"Recalculated path after rake erase: {newPath.Count} tiles, avoiding {avoidedPositions.Count} positions");
 		}
+	}
+	
+	/// <summary>
+	/// Deletes a rake from the game (removes it from placedRakes and destroys it)
+	/// </summary>
+	public void DeleteRake(Rake rake)
+	{
+		if (rake == null)
+		{
+			GD.PrintErr("Cannot delete null rake");
+			return;
+		}
+		
+		// Remove from placed rakes list if it's there
+		if (placedRakes.Contains(rake))
+		{
+			placedRakes.Remove(rake);
+		}
+		
+		// If this is the currently selected rake, clear the selection
+		if (selectedRake == rake)
+		{
+			selectedRake = null;
+		}
+		
+		// Destroy the rake
+		rake.QueueFree();
+		
+		GD.Print($"Deleted rake at position {rake.GridPosition}");
+	}
+	
+	/// <summary>
+	/// Deletes a rake at the specified grid position
+	/// </summary>
+	public void DeleteRakeAt(Vector2I gridPosition)
+	{
+		Rake rakeAtPosition = GetRakeAtPosition(gridPosition);
+		if (rakeAtPosition != null)
+		{
+			DeleteRake(rakeAtPosition);
+		}
+	}
+	
+	/// <summary>
+	/// Deletes all rakes from the game
+	/// </summary>
+	public void DeleteAllRakes()
+	{
+		// Create a copy of the list to avoid modification during iteration
+		var rakesToDelete = new List<Rake>(placedRakes);
+		
+		foreach (var rake in rakesToDelete)
+		{
+			rake.QueueFree();
+		}
+		
+		placedRakes.Clear();
+		
+		// Clear selected rake if any
+		if (selectedRake != null)
+		{
+			selectedRake = null;
+		}
+		
+		GD.Print($"Deleted all rakes ({rakesToDelete.Count} total)");
 	}
 }

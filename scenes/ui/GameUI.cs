@@ -219,7 +219,6 @@ public partial class GameUI : CanvasLayer
 
 	public void DisplaySpecialFunctions()
 	{
-		//specialFunctionsContainer.Visible = true;
 		sendPathButtonPanelContainer.Visible = true;
 		adviceLabel.Text = "ESC to quit painting path.\n 'N' to add annotation.";
 
@@ -227,7 +226,6 @@ public partial class GameUI : CanvasLayer
 
 	public void HideSpecialFunctions()
 	{
-		//specialFunctionsContainer.Visible = false;
 		sendPathButtonPanelContainer.Visible = false;
 		adviceLabel.Text = "Press 'B' to enter painting path mode.";
 	}

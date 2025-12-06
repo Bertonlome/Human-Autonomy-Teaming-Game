@@ -614,7 +614,7 @@ public partial class Rake : Control
 		// Check if this is the last tile (destination)
 		if (tileIndex == robotTiles.Count - 1)
 		{
-			// This is the destination tile - PUSH it instead of clearing it
+			// This is the destination tile - PUSH it directly without using A*
 			Vector2I oldGridPos = tile.GridPosition;
 			Vector2I newGridPos = oldGridPos + direction;
 			
@@ -656,17 +656,31 @@ public partial class Rake : Control
 				PushTile(existingTile, direction, newGridPos);
 			}
 			
-			// Move the destination tile to the new position
+			// Simply move the destination tile to the new position directly
 			tile.GridPosition = newGridPos;
 			tile.GlobalPosition = new Vector2(newGridPos.X * tileSize, newGridPos.Y * tileSize);
 			
-			// Get the start position
-			Vector2I startPos = robotTiles[0].GridPosition;
+			// Add a new tile to extend the path directly in the push direction
+			// Create the new tile at the old position to maintain path continuity
+			var paintedTileScene = GD.Load<PackedScene>("res://scenes/component/PaintedTile.tscn");
+			var newTile = paintedTileScene.Instantiate<PaintedTile>();
+			newTile.GlobalPosition = new Vector2(oldGridPos.X * tileSize, oldGridPos.Y * tileSize);
+			buildingManager.AddChild(newTile);
 			
-			// Recalculate path with the new end position as a waypoint
-			buildingManager.CallDeferred("RecalculatePathAfterPush", associatedRobot, oldGridPos, newGridPos, startPos, newGridPos);
+			newTile.AssociatedRobot = associatedRobot;
+			newTile.GridPosition = oldGridPos;
 			
-			GD.Print($"Rake pushed destination tile from {oldGridPos} to {newGridPos}, recalculating path");
+			if (associatedRobot.BuildingResource.IsAerial)
+				newTile.SetColor(Colors.Cyan);
+			else
+				newTile.SetColor(Colors.Yellow);
+			
+			// Insert the new tile just before the destination tile
+			robotTiles.Insert(robotTiles.Count - 1, newTile);
+			var allTiles = buildingManager.GetAllPaintedTiles();
+			allTiles.Add(newTile);
+			
+			GD.Print($"Rake pushed destination tile from {oldGridPos} to {newGridPos} (direct push)");
 		}
 		// Check if this is a middle tile (not first or last)
 		else if (tileIndex > 0 && tileIndex < robotTiles.Count - 1)
