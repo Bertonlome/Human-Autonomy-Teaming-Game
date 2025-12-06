@@ -636,19 +636,9 @@ public partial class GameUI : CanvasLayer
 						continue;
 					}
 					
-					buildingManager.SelectBuilding(robot);
-					
 					GD.Print($"  - {plan.RobotName}: {plan.Waypoints.Count} waypoints, {plan.ExclusionZones.Count} exclusions");
 					
-					// Create painted tiles for waypoints (sorted by priority)
-					var sortedWaypoints = plan.Waypoints.OrderBy(w => w.Priority).ToList();
-					foreach (var waypoint in sortedWaypoints)
-					{
-						var gridPos = new Vector2I(waypoint.GridX, waypoint.GridY);
-						string annotation = $"P{waypoint.Priority}: {waypoint.Reason}";
-						buildingManager.CreatePaintedTileAt(gridPos, annotation);
-						totalWaypoints++;
-					}
+					totalWaypoints += plan.Waypoints.Count;
 					
 					// Collect exclusion zones from this plan
 					foreach (var exclusion in plan.ExclusionZones)
@@ -659,7 +649,7 @@ public partial class GameUI : CanvasLayer
 					}
 				}
 				
-				GD.Print($"Successfully imported {totalWaypoints} waypoints. Use Execute to let A* connect them.");
+				GD.Print($"Successfully imported {totalWaypoints} waypoints. Generating full path preview...");
 				
 				// Set global exclusion zones for A* pathfinding
 				if (allExclusionZones.Count > 0)
@@ -667,7 +657,8 @@ public partial class GameUI : CanvasLayer
 					BuildingManager.SetExclusionZones(allExclusionZones);
 				}
 				
-				// Automatically generate preview of the full path
+				// Generate preview of the full path (this creates the actual painted tiles to execute)
+				// Note: We don't create waypoint tiles separately since the preview generates the complete path
 				GeneratePathPreview(response.StrategicPlans);
 			}
 			else if (hasSingleStrategicPlan)
@@ -677,18 +668,7 @@ public partial class GameUI : CanvasLayer
 				
 				if (robotsByName.TryGetValue(plan.RobotName, out var robot))
 				{
-					buildingManager.SelectBuilding(robot);
-					
 					GD.Print($"Importing strategic plan for {plan.RobotName}: {plan.Waypoints.Count} waypoints, {plan.ExclusionZones.Count} exclusions");
-					
-					// Create painted tiles for waypoints (sorted by priority)
-					var sortedWaypoints = plan.Waypoints.OrderBy(w => w.Priority).ToList();
-					foreach (var waypoint in sortedWaypoints)
-					{
-						var gridPos = new Vector2I(waypoint.GridX, waypoint.GridY);
-						string annotation = $"P{waypoint.Priority}: {waypoint.Reason}";
-						buildingManager.CreatePaintedTileAt(gridPos, annotation);
-					}
 					
 					// Collect exclusion zones from this plan
 					foreach (var exclusion in plan.ExclusionZones)
@@ -698,7 +678,7 @@ public partial class GameUI : CanvasLayer
 						GD.Print($"  Exclusion ({exclusion.GridX}, {exclusion.GridY}): {exclusion.Reason}");
 					}
 					
-					GD.Print($"Successfully imported {sortedWaypoints.Count} waypoints. Use Execute to let A* connect them.");
+					GD.Print($"Successfully imported {plan.Waypoints.Count} waypoints. Generating full path preview...");
 					
 					// Set global exclusion zones for A* pathfinding
 					if (allExclusionZones.Count > 0)
@@ -706,7 +686,8 @@ public partial class GameUI : CanvasLayer
 						BuildingManager.SetExclusionZones(allExclusionZones);
 					}
 					
-					// Automatically generate preview of the full path
+					// Generate preview of the full path (this creates the actual painted tiles to execute)
+					// Note: We don't create waypoint tiles separately since the preview generates the complete path
 					GeneratePathPreview(new List<Game.API.StrategicPlanDto> { plan });
 				}
 				else
@@ -1025,55 +1006,20 @@ public partial class GameUI : CanvasLayer
 /// <summary>
 /// Execute a custom path by following each waypoint in sequence
 /// </summary>
-private async void ExecuteCustomPath(BuildingComponent robot, List<PaintedTile> waypoints)
+private void ExecuteCustomPath(BuildingComponent robot, List<PaintedTile> waypoints)
 {
-	for (int i = 0; i < waypoints.Count; i++)
-	{
-		var waypoint = waypoints[i];
-		//GD.Print($"[ExecuteCustomPath] Moving to waypoint {waypoint.TileNumber}/{waypoints.Count} at {waypoint.GridPosition}");
-		
-		// Use A* to reach each waypoint (allows obstacle avoidance between waypoints)
-		robot.MoveAlongPath(waypoint.GridPosition, astar: true);
-		
-		// Wait for movement to actually start (mode changes to MoveToPos)
-		int startTimeout = 0;
-		while (robot.currentExplorMode != BuildingComponent.ExplorMode.MoveToPos && startTimeout < 50)
-		{
-			await ToSignal(GetTree().CreateTimer(0.1f), SceneTreeTimer.SignalName.Timeout);
-			startTimeout++;
-		}
-		
-		if (startTimeout >= 50)
-		{
-			//adviceLabel.Text = $"Robot failed to start moving to waypoint {waypoint.TileNumber}!";
-			//GD.PrintErr($"Robot failed to start moving to waypoint {waypoint.TileNumber}");
-			return;
-		}
-		
-		// Wait until robot finishes moving (mode changes back to None)
-		int moveTimeout = 0;
-		while (robot.currentExplorMode == BuildingComponent.ExplorMode.MoveToPos && moveTimeout < 1000)
-		{
-			await ToSignal(GetTree().CreateTimer(0.1f), SceneTreeTimer.SignalName.Timeout);
-			moveTimeout++;
-		}
-		
-		// Check if movement completed successfully or was interrupted
-		if (robot.GetGridCellPosition() != waypoint.GridPosition)
-		{
-			//adviceLabel.Text = $"Robot stopped at waypoint {waypoint.TileNumber}!";
-			//GD.PrintErr($"Robot failed to reach waypoint {waypoint.TileNumber}. Expected {waypoint.GridPosition}, got {robot.GetGridCellPosition()}");
-			return;
-		}
-		
-		//GD.Print($"[ExecuteCustomPath] Reached waypoint {waypoint.TileNumber} at {waypoint.GridPosition}");
-		
-		// Small delay between waypoints
-		await ToSignal(GetTree().CreateTimer(0.2f), SceneTreeTimer.SignalName.Timeout);
-	}
+	// Extract just the grid positions from the painted tiles
+	List<Vector2I> waypointPositions = waypoints
+		.OrderBy(tile => tile.TileNumber)
+		.Select(tile => tile.GridPosition)
+		.ToList();
 	
-	adviceLabel.Text = "Path execution complete!";
-	GD.Print($"Robot {robot.BuildingResource.DisplayName} completed custom path with {waypoints.Count} waypoints");
+	GD.Print($"Executing path with {waypointPositions.Count} waypoints for {robot.BuildingResource.DisplayName}");
+	
+	// Let the robot handle the entire path smoothly
+	robot.ExecuteWaypointPath(waypointPositions);
+	
+	adviceLabel.Text = $"Executing path for {robot.BuildingResource.DisplayName}...";
 }	private void OnAvailableResourceCountChanged(int availableResourceCount)
 	{
 		resourceLabel.Text = availableResourceCount.ToString();

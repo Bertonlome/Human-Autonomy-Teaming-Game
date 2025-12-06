@@ -196,7 +196,7 @@ public partial class GeminiApiService : Node
 Your role is NOT to generate complete paths (A* pathfinding will handle that automatically).
 Instead, provide STRATEGIC GUIDANCE:
 
-1. **Waypoints**: Mandatory checkpoints the robot(s) must visit (e.g., high-value targets, bottlenecks, resource locations)
+1. **Waypoints**: Mandatory checkpoints the robot(s) must visit 
 2. **Exclusion Zones**: Tiles to completely avoid during pathfinding (e.g., dangerous areas, redundant zones, collision risks)
 
 The A* algorithm will automatically find the optimal path connecting these waypoints while avoiding exclusion zones.
@@ -207,8 +207,9 @@ Current painted paths show the general exploration area:
 Consider:
 - Which tiles are CRITICAL checkpoints that must be visited?
 - Are there tiles that should be AVOIDED entirely?
-- For multiple robots: coordinate to prevent collisions and maximize coverage
+- For multiple robots: coordinate to prevent collisions 
 - Prioritize waypoints (lower priority number = visit first)
+- If and only if the user is interested in exploration around a tile, place waypoints around that tile with an approximate radius of 3-5 tiles
 
 Respond with ONLY a JSON object (no markdown, no extra text):
 {{
@@ -219,7 +220,7 @@ Respond with ONLY a JSON object (no markdown, no extra text):
     {{
       ""robotName"": ""Rover"",
       ""waypoints"": [
-        {{""gridX"": 10, ""gridY"": 5, ""priority"": 1, ""reason"": ""Resource deposit location""}},
+        {{""gridX"": 10, ""gridY"": 5, ""priority"": 1, ""reason"": ""Resource location""}},
         {{""gridX"": 15, ""gridY"": 8, ""priority"": 2, ""reason"": ""Survey point""}}
       ],
       ""exclusionZones"": [
@@ -257,6 +258,7 @@ Consider:
 - Which tiles are CRITICAL checkpoints that must be visited?
 - Are there tiles that should be AVOIDED entirely?
 - Prioritize waypoints (lower priority number = visit first)
+- If and only if the user is interested in exploration around a tile, place waypoints around that tile with an approximate radius of 3-5 tiles
 
 Respond with ONLY a JSON object (no markdown, no extra text):
 {{

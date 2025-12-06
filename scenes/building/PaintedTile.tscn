@@ -24,6 +24,7 @@ horizontal_alignment = 2
 [node name="LabelEdit" type="LineEdit" parent="."]
 unique_name_in_owner = true
 visible = false
+z_index = 1
 offset_left = -96.0
 offset_top = 8.0
 offset_right = 160.0

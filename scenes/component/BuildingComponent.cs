@@ -917,6 +917,148 @@ public partial class BuildingComponent : Node2D
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
+	/// <summary>
+	/// Execute a series of waypoints smoothly without stopping between each one.
+	/// Uses A* to find the complete path through all waypoints, then executes it as one continuous movement.
+	/// </summary>
+	public async void ExecuteWaypointPath(List<Vector2I> waypoints)
+	{
+		if (waypoints == null || waypoints.Count == 0)
+		{
+			GD.PrintErr("ExecuteWaypointPath: No waypoints provided");
+			return;
+		}
+		
+		if (AttachedRobot is not null) DetachRobot();
+		
+		// Cancel any previous movement
+		cancelMoveRequested = true;
+		await ToSignal(GetTree().CreateTimer(0.1f), "timeout");
+		cancelMoveRequested = false;
+		
+		// Validation checks
+		if (currentExplorMode != ExplorMode.None && currentExplorMode != ExplorMode.ReturnToBase && currentExplorMode != ExplorMode.Random)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Already moving!", this);
+			return;
+		}
+		if (IsStuck)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot move while stuck", this);
+			return;
+		}
+		if (Battery <= 15)
+		{
+			FloatingTextManager.ShowMessageAtBuildingPosition("Battery depleted!", this);
+			return;
+		}
+		
+		// Set movement mode
+		currentExplorMode = ExplorMode.MoveToPos;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+		
+		GD.Print($"{BuildingResource.DisplayName}: Executing path through {waypoints.Count} waypoints");
+		
+		// Build complete path by connecting all waypoints with A*
+		List<string> completePath = new List<string>();
+		HashSet<Vector2I> allBridgeTiles = new HashSet<Vector2I>();
+		Vector2I currentPos = GetGridCellPosition();
+		
+		foreach (var waypoint in waypoints)
+		{
+			// Find A* path from current position to this waypoint
+			var (pathSegment, bridgeTiles) = GetMovesWithAStarAndBridges(currentPos, waypoint, false);
+			
+			// If no land path and we're a rover, try with bridges
+			if (pathSegment.Count == 0 && !BuildingResource.IsAerial)
+			{
+				var (robotElevation, robotIsElevated) = gridManager.GetElevationLayerForTile(currentPos);
+				var (targetElevation, targetIsElevated) = gridManager.GetElevationLayerForTile(waypoint);
+				
+				if (robotIsElevated == targetIsElevated)
+				{
+					(pathSegment, bridgeTiles) = GetMovesWithAStarAndBridges(currentPos, waypoint, true);
+					
+					if (pathSegment.Count > 0 && bridgeTiles.Count > 0)
+					{
+						// Check if we have enough wood
+						int totalWoodNeeded = allBridgeTiles.Count + bridgeTiles.Count;
+						if (numberOfWoodCarried < totalWoodNeeded)
+						{
+							FloatingTextManager.ShowMessageAtBuildingPosition($"Need {totalWoodNeeded} wood, have {numberOfWoodCarried}!", this);
+							currentExplorMode = ExplorMode.None;
+							EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+							return;
+						}
+						allBridgeTiles.UnionWith(bridgeTiles);
+					}
+				}
+			}
+			
+			if (pathSegment.Count == 0)
+			{
+				FloatingTextManager.ShowMessageAtBuildingPosition($"Cannot reach waypoint at ({waypoint.X}, {waypoint.Y})!", this);
+				GD.PrintErr($"No path found to waypoint {waypoint}");
+				currentExplorMode = ExplorMode.None;
+				EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+				return;
+			}
+			
+			// Add this segment to complete path
+			completePath.AddRange(pathSegment);
+			
+			// Update current position for next segment
+			foreach (var move in pathSegment)
+			{
+				currentPos = GetNextPosFromCurrentPos(currentPos, move);
+			}
+		}
+		
+		GD.Print($"{BuildingResource.DisplayName}: Executing continuous path with {completePath.Count} moves");
+		
+		// Execute the complete path smoothly without stopping
+		int bridgesBuilt = 0;
+		for (int i = 0; i < completePath.Count; i++)
+		{
+			// Check cancellation conditions
+			if (cancelMoveRequested || IsStuck || Battery <= 0 || currentExplorMode == ExplorMode.None)
+			{
+				break;
+			}
+			
+			var direction = completePath[i];
+			var currentGridPos = GetGridCellPosition();
+			var nextPos = GetNextPosFromCurrentPos(currentGridPos, direction);
+			
+			// Place bridge if needed
+			if (allBridgeTiles.Contains(nextPos) && numberOfWoodCarried > 0)
+			{
+				var robotArea = GetAreaOccupied(currentGridPos);
+				var bridgeArea = GetAreaOccupied(nextPos);
+				var delta = nextPos - currentGridPos;
+				string orientation = (delta.X != 0) ? "horizontal" : "vertical";
+				
+				if (gridManager.TryPlaceBridgeTile(robotArea, bridgeArea, orientation))
+				{
+					RemoveResource("wood");
+					bridgesBuilt++;
+					FloatingTextManager.ShowMessageAtBuildingPosition($"Bridge {bridgesBuilt}/{allBridgeTiles.Count}", this);
+					await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+				}
+			}
+			
+			// Move in this direction
+			buildingManager.MoveInDirectionAutomated(this, direction);
+			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
+		}
+		
+		// Clean up
+		currentExplorMode = ExplorMode.None;
+		CanMove = true;
+		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+		GD.Print($"{BuildingResource.DisplayName}: Completed waypoint path");
+	}
+
 	private string GetPerpendicularDirection(string direction)
 	{
 		return direction switch
