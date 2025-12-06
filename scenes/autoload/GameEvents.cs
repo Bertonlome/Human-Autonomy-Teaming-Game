@@ -40,6 +40,8 @@ public partial class GameEvents : Node
 	public delegate void AllRobotStoppedEventHandler();
 	[Signal]
 	public delegate void CarriedResourceCountChangedEventHandler(int carriedResourceCount);
+	[Signal]
+	public delegate void RobotBackToIdleEventHandler(BuildingComponent buildingComponent);
 
 	public override void _Notification(int what)
 	{
@@ -127,5 +129,10 @@ public partial class GameEvents : Node
 	public static void EmitNoGroundRobotBelowUav()
 	{
 		Instance.EmitSignal(SignalName.NoGroundRobotBelowUav);
+	}
+
+	public static void EmitRobotBackToIdle(BuildingComponent buildingComponent)
+	{
+		Instance.EmitSignal(SignalName.RobotBackToIdle, buildingComponent);
 	}
 }

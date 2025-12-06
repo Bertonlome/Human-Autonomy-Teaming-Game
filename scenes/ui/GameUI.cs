@@ -121,6 +121,8 @@ public partial class GameUI : CanvasLayer
 		buildingManager.BuildingPlaced += OnNewBuildingPlaced;
 		buildingManager.BasePlaced += OnBasePlaced;
 		GameEvents.Instance.Connect(GameEvents.SignalName.BuildingMoved, Callable.From<BuildingComponent>(OnRobotMoved));
+		GameEvents.Instance.Connect(GameEvents.SignalName.RobotSelected, Callable.From<BuildingComponent>(OnRobotSelected));
+		GameEvents.Instance.Connect(GameEvents.SignalName.RobotBackToIdle, Callable.From<BuildingComponent>(OnRobotBackToIdle));
 	}
 
 	public void OnRobotMoved(BuildingComponent buildingComponent)
@@ -160,6 +162,16 @@ public partial class GameUI : CanvasLayer
 			// Remember all discovered tiles for next frame
 			_previouslyDiscoveredTiles = tileDiscoveredByAllRobots;
 		}
+	}
+
+	public void OnRobotBackToIdle(BuildingComponent buildingComponent)
+	{
+		adviceLabel.Text = $"{buildingComponent.BuildingResource.DisplayName} completed the path.";
+	}
+	
+	public void OnRobotSelected(BuildingComponent buildingComponent)
+	{
+		adviceLabel.Text = "Press 'B' to enter painting path mode.";
 	}
 
 	public void SetTimeToCompleteLevel(int timeResource)
@@ -609,9 +621,11 @@ public partial class GameUI : CanvasLayer
 			// Clear previous exclusion zones
 			BuildingManager.ClearExclusionZones();
 			
-			// Get all available robots for mapping
+			// Get all available robots for mapping (handle duplicates by taking first match)
 			var allRobots = BuildingComponent.GetValidBuildingComponents(this);
-			var robotsByName = allRobots.ToDictionary(r => r.BuildingResource.DisplayName, r => r);
+			var robotsByName = allRobots
+				.GroupBy(r => r.BuildingResource.DisplayName)
+				.ToDictionary(g => g.Key, g => g.First());
 			
 			// Collect all exclusion zones from all plans
 			var allExclusionZones = new HashSet<Vector2I>();
@@ -821,13 +835,19 @@ public partial class GameUI : CanvasLayer
 			
 			foreach (var waypoint in waypoints)
 			{
+				// Skip if waypoint is at current position (e.g., double-click on same tile)
+				if (currentPos == waypoint.GridPosition)
+				{
+					GD.Print($"    Skipping waypoint at current position ({waypoint.GridPosition.X}, {waypoint.GridPosition.Y})");
+					continue;
+				}
+				
 				// Use A* to find path from current position to this waypoint
 				var (moves, bridgeTiles) = robot.ComputeAStarPath(currentPos, waypoint.GridPosition);
 				
 				if (moves.Count == 0)
 				{
-					GD.PrintErr($"    Failed to find path to waypoint at ({waypoint.GridPosition.X}, {waypoint.GridPosition.Y})");
-					adviceLabel.Text = $"Cannot reach waypoint for {robot.BuildingResource.DisplayName}!";
+					GD.Print($"    No path found to waypoint at ({waypoint.GridPosition.X}, {waypoint.GridPosition.Y}), skipping...");
 					continue;
 				}
 				
@@ -864,9 +884,11 @@ public partial class GameUI : CanvasLayer
 			return;
 		}
 		
-		// Get all available robots for mapping
+		// Get all available robots for mapping (handle duplicates by taking first match)
 		var allRobots = BuildingComponent.GetValidBuildingComponents(this);
-		var robotsByName = allRobots.ToDictionary(r => r.BuildingResource.DisplayName, r => r);
+		var robotsByName = allRobots
+			.GroupBy(r => r.BuildingResource.DisplayName)
+			.ToDictionary(g => g.Key, g => g.First());
 		
 		GD.Print($"Generating path preview for {plans.Count} robot(s)...");
 		
@@ -894,19 +916,26 @@ public partial class GameUI : CanvasLayer
 			// Start from robot's current position
 			var currentPos = robot.GetGridCellPosition();
 			int segmentNum = 0;
+			bool isCarryingRobot = false; // Track if we're between LIFT and DROP
 			
 			foreach (var waypoint in sortedWaypoints)
 			{
 				var targetPos = new Vector2I(waypoint.GridX, waypoint.GridY);
+				
+				// Skip if waypoint is at current position (e.g., LLM generated duplicate)
+				if (currentPos == targetPos)
+				{
+					GD.Print($"    Skipping waypoint P{waypoint.Priority} at current position ({targetPos.X}, {targetPos.Y})");
+					continue;
+				}
 				
 				// Use A* to find path from current position to this waypoint
 				var (moves, bridgeTiles) = robot.ComputeAStarPath(currentPos, targetPos);
 				
 				if (moves.Count == 0)
 				{
-					GD.PrintErr($"    Cannot reach waypoint P{waypoint.Priority} at ({targetPos.X}, {targetPos.Y})");
-					adviceLabel.Text = $"Unreachable waypoint for {robot.BuildingResource.DisplayName}!";
-					break; // Stop trying this robot's path
+					GD.Print($"    No path found to waypoint P{waypoint.Priority} at ({targetPos.X}, {targetPos.Y}), skipping...");
+					continue; // Skip this waypoint and try the next one
 				}
 				
 				// Create painted tiles for this path segment
@@ -915,8 +944,36 @@ public partial class GameUI : CanvasLayer
 				{
 					pathPos = robot.ComputeNextPosition(pathPos, move);
 					
-					// Create painted tile at this position (no annotation to avoid clutter)
-					buildingManager.CreatePaintedTileAt(pathPos, string.Empty);
+					// Check if this is the waypoint position - if so, use waypoint's reason as annotation
+					string annotation = string.Empty;
+					if (pathPos == targetPos && !string.IsNullOrEmpty(waypoint.Reason))
+					{
+						// Transfer LIFT/DROP/LIFTING reasons to the tile annotation
+						if (waypoint.Reason.Equals("LIFT", StringComparison.OrdinalIgnoreCase))
+						{
+							annotation = waypoint.Reason;
+							isCarryingRobot = true; // Start carrying after LIFT
+							GD.Print($"    Annotated waypoint at ({pathPos.X}, {pathPos.Y}) with '{annotation}'");
+						}
+						else if (waypoint.Reason.Equals("DROP", StringComparison.OrdinalIgnoreCase))
+						{
+							annotation = waypoint.Reason;
+							isCarryingRobot = false; // Stop carrying at DROP
+							GD.Print($"    Annotated waypoint at ({pathPos.X}, {pathPos.Y}) with '{annotation}'");
+						}
+						else if (waypoint.Reason.Equals("LIFTING", StringComparison.OrdinalIgnoreCase))
+						{
+							annotation = waypoint.Reason;
+							GD.Print($"    Annotated waypoint at ({pathPos.X}, {pathPos.Y}) with '{annotation}'");
+						}
+					}
+					else if (isCarryingRobot && string.IsNullOrEmpty(annotation))
+					{
+						// Intermediate tiles between LIFT and DROP get "LIFTING" annotation
+						annotation = "LIFTING";
+					}
+					
+					buildingManager.CreatePaintedTileAt(pathPos, annotation);
 					totalPathTiles++;
 				}
 				
@@ -973,10 +1030,9 @@ public partial class GameUI : CanvasLayer
 			return;
 		}
 		
-		// Clear the painted tiles before execution
+		// Keep painted tiles visible during execution to show the path
 		// Note: Exclusion zones remain active during path execution
 		// They will be cleared when a new strategic plan is imported
-		buildingManager.ClearAllPaintedTiles();
 		
 	// Execute path for each robot
 	int robotCount = 0;
@@ -1006,16 +1062,31 @@ public partial class GameUI : CanvasLayer
 /// </summary>
 private void ExecuteCustomPath(BuildingComponent robot, List<PaintedTile> waypoints)
 {
-	// Extract just the grid positions from the painted tiles
-	List<Vector2I> waypointPositions = waypoints
-		.OrderBy(tile => tile.TileNumber)
+	// Extract grid positions and annotations from painted tiles
+	var orderedWaypoints = waypoints.OrderBy(tile => tile.TileNumber).ToList();
+	
+	List<Vector2I> waypointPositions = orderedWaypoints
 		.Select(tile => tile.GridPosition)
 		.ToList();
 	
-	GD.Print($"Executing path with {waypointPositions.Count} waypoints for {robot.BuildingResource.DisplayName}");
+	// Build annotation dictionary (only for tiles that have annotations)
+	Dictionary<Vector2I, string> waypointAnnotations = new Dictionary<Vector2I, string>();
+	foreach (var tile in orderedWaypoints)
+	{
+		if (!string.IsNullOrEmpty(tile.Annotation))
+		{
+			waypointAnnotations[tile.GridPosition] = tile.Annotation;
+		}
+	}
 	
-	// Let the robot handle the entire path smoothly
-	robot.ExecuteWaypointPath(waypointPositions);
+	GD.Print($"Executing path with {waypointPositions.Count} waypoints for {robot.BuildingResource.DisplayName}");
+	if (waypointAnnotations.Count > 0)
+	{
+		GD.Print($"Found {waypointAnnotations.Count} annotated waypoints: {string.Join(", ", waypointAnnotations.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+	}
+	
+	// Let the robot handle the entire path smoothly with annotations
+	robot.ExecuteWaypointPath(waypointPositions, waypointAnnotations);
 	
 	adviceLabel.Text = $"Executing path for {robot.BuildingResource.DisplayName}...";
 }	private void OnAvailableResourceCountChanged(int availableResourceCount)

@@ -317,28 +317,77 @@ public partial class GridManager : Node
 			var (robotElevation, robotIsElevated) = GetElevationLayerForTile(tilesOrigin[0]);
 			var (targetElevation, targetIsElevated) = GetElevationLayerForTile(tilePosition);
 
+			// DEBUG: Log tile checking details
+			if (considerBridge && bridgeElevationIsElevated.HasValue)
+			{
+				GD.Print($"[Bridge Check] Tile {tilePosition}:");
+				GD.Print($"  - elevationLayer: {elevationLayer?.Name ?? "null"}");
+				GD.Print($"  - targetElevationLayer: {targetElevationLayer?.Name ?? "null"}");
+				GD.Print($"  - robotIsElevated: {robotIsElevated}, targetIsElevated: {targetIsElevated}");
+				GD.Print($"  - isWater: {isWater}, isRoulable: {isRoulable}, isWood: {isWood}");
+				GD.Print($"  - bridgeElevationIsElevated: {bridgeElevationIsElevated.Value}");
+			}
+
 			// When considerBridge is true and bridgeElevationIsElevated is set,
-			// we're simulating that the robot is on a bridge at that elevation level
+			// we're planning a bridge at a specific elevation level
+			// KEY MECHANIC: Elevated bridges go OVER base terrain (spanning cliff to cliff)
 			bool canCrossWithBridge = false;
 			if (considerBridge && bridgeElevationIsElevated.HasValue)
 			{
-				// Allow movement to ANY tile when using bridges - we'll place a bridge there if needed
-				// The bridge will be at the path's elevation level (bridgeElevationIsElevated)
-				canCrossWithBridge = true;
+				if (bridgeElevationIsElevated.Value)
+				{
+					// ELEVATED BRIDGE allows:
+					// 1. Crossing over base terrain (bridge spans over it)
+					// 2. Crossing elevated water
+					// 3. Reaching elevated land (destination cliff)
+					canCrossWithBridge = !targetIsElevated || (targetIsElevated && (isWater || OriginElevationLayer != targetElevationLayer));
+				}
+				else
+				{
+					// BASE BRIDGE: Can only cross base water at base elevation
+					if (isWater && !targetIsElevated)
+					{
+						canCrossWithBridge = true;
+					}
+				}
 			}
 
-			//Check for ground vehicle
-			var check1 = tileSetToCheckGround.Contains(tilePosition) ? false : true;
-			var check2 = elevationLayer == targetElevationLayer ? true : false;
-			var check3 = OriginElevationLayer == targetElevationLayer ? true : false || canCrossWithBridge || isWood || isInWood || isMud || isInMud;
-			var check7 = !isRoulable;
-			var check8 = !buildingComponent.BuildingResource.IsAerial;
-			var check9 = !isWater || considerBridge;
-			//Check for aerial vehicle
-			var check4 = buildingComponent.BuildingResource.IsAerial;
-			var check5 = tileSetToCheckAerial.Contains(tilePosition) ? false : true;
-			var check6 = !isWood;
-			return (check1 && check2 && check3 && check7 && check8 && check9) || (check4 && check5 && check6);
+			// Check for GROUND vehicle (rovers)
+			if (!buildingComponent.BuildingResource.IsAerial)
+			{
+				var check1 = !tileSetToCheckGround.Contains(tilePosition); // Not occupied by another robot
+				// check2: Elevation layer check - relaxed when bridges allow crossing
+				var check2 = elevationLayer == targetElevationLayer || canCrossWithBridge;
+				// check3: Origin and target elevation must match unless bridges allow it
+				var check3 = OriginElevationLayer == targetElevationLayer || canCrossWithBridge || 
+				             (isMud && OriginElevationLayer == targetElevationLayer) || 
+				             (isInMud && OriginElevationLayer == targetElevationLayer);
+				var check7 = !isRoulable; // Not rough terrain (rocks, plants)
+				var check9 = !isWater || canCrossWithBridge; // Not water unless bridge allows it
+				
+				// DEBUG: Log check results
+				/*if (considerBridge && bridgeElevationIsElevated.HasValue)
+				{
+					GD.Print($"  - canCrossWithBridge: {canCrossWithBridge}");
+					GD.Print($"  - check1 (not occupied): {check1}");
+					GD.Print($"  - check2 (elevation layer): {check2}");
+					GD.Print($"  - check3 (origin/target match): {check3}");
+					GD.Print($"  - check7 (not rough): {check7}");
+					GD.Print($"  - check9 (water/bridge): {check9}");
+					GD.Print($"  - RESULT: {check1 && check2 && check3 && check7 && check9}");
+				}
+				*/
+				
+				return check1 && check2 && check3 && check7 && check9;
+			}
+			// Check for AERIAL vehicle (drones)
+			else
+			{
+				var check5 = !tileSetToCheckAerial.Contains(tilePosition); // Not occupied by another robot
+				var check6 = !isWood; // Cannot fly through trees
+				
+				return check5 && check6;
+			}
 		});
 	}
 
@@ -866,6 +915,22 @@ public partial class GridManager : Node
 		{
 			GameEvents.EmitNoGroundRobotBelowUav();
 		}
+	}
+
+	/// <summary>
+	/// Gets the robot/building component at a specific grid position
+	/// </summary>
+	public BuildingComponent GetRobotAtPosition(Vector2I gridPosition)
+	{
+		if (TileToBuilding.TryGetValue(gridPosition, out var building))
+		{
+			// Don't return bases or antennas for lifting
+			if (!building.BuildingResource.IsBase && building.BuildingResource.DisplayName != "Antenna")
+			{
+				return building;
+			}
+		}
+		return null;
 	}
 
 	private void CheckGroundRobotTouchingMonolith(BuildingComponent buildingComponent)

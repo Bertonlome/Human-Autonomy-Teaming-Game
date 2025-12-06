@@ -201,15 +201,38 @@ Instead, provide STRATEGIC GUIDANCE:
 
 The A* algorithm will automatically find the optimal path connecting these waypoints while avoiding exclusion zones.
 
+**CRITICAL MULTI-ROBOT COLLABORATION RULES:**
+- If you see annotations containing ""lift"", ""pick up"", ""carry"", ""transport"" a rover/robot: the drone must LIFT the ground robot
+- If you see annotations containing ""drop"", ""release"", ""place"", ""deposit"" a rover/robot: the drone must DROP the ground robot
+- When lifting/dropping is detected:
+  1. The waypoint where lifting happens MUST have priority 1 and reason ""LIFT""
+  2. The waypoint where dropping happens MUST have priority 2 and reason ""DROP""
+  3. Do NOT add additional exploration waypoints - only LIFT and DROP
+  4. Do NOT improvise extra exploration unless explicitly requested
+- The system uses these exact keywords to trigger lift/drop operations - do not paraphrase them
+- Example: If user writes ""lift rover from here"" at (17,4) and ""to here"" at (20,4), respond:
+  waypoints: [{{gridX:17, gridY:4, priority:1, reason:""LIFT""}}, {{gridX:20, gridY:4, priority:2, reason:""DROP""}}]
+
 Current painted paths show the general exploration area:
 {pathJson}
 
 Consider:
+- FIRST: Check all annotations for lift/drop operations - these take absolute priority
 - Which tiles are CRITICAL checkpoints that must be visited?
 - Are there tiles that should be AVOIDED entirely?
 - For multiple robots: coordinate to prevent collisions 
 - Prioritize waypoints (lower priority number = visit first)
-- If and only if the user is interested in exploration around a tile, place waypoints around that tile with an approximate radius of 3-5 tiles
+
+**CREATIVE EXPLORATION PATTERNS:**
+When users provide creative/exploratory annotations (e.g., ""form a flower"", ""draw a circle"", ""make a spiral"", ""write HAT"", ""explore in a star pattern""):
+- Generate waypoints that create the requested shape/pattern
+- Use 8-15 waypoints to form recognizable shapes (flowers need ~8-12 points, text needs ~10-20)
+- For flowers: create a central point + petal points radiating outward (typically 5-8 petals)
+- For text: trace the letter outlines with waypoints
+- For geometric shapes: place waypoints along the perimeter
+- For spiral patterns: gradually increase radius while rotating
+- Space waypoints 2-4 tiles apart for smooth shapes
+- Be creative and proactive - don't just return empty waypoints when asked to explore creatively
 
 Respond with ONLY a JSON object (no markdown, no extra text):
 {{
@@ -251,14 +274,38 @@ Instead, provide STRATEGIC GUIDANCE:
 
 The A* algorithm will automatically find the optimal path connecting these waypoints while avoiding exclusion zones.
 
+**CRITICAL LIFT/DROP OPERATION RULES:**
+- If you see annotations containing ""lift"", ""pick up"", ""carry"", ""transport"" a rover/robot: the drone must LIFT the ground robot
+- If you see annotations containing ""drop"", ""release"", ""place"", ""deposit"" a rover/robot: the drone must DROP the ground robot
+- When lifting/dropping is detected:
+  1. The waypoint where lifting happens MUST have priority 1 and reason ""LIFT""
+  2. The waypoint where dropping happens MUST have priority 2 and reason ""DROP""
+  3. Do NOT add additional exploration waypoints - only LIFT and DROP
+  4. Do NOT improvise extra exploration unless explicitly requested
+- The system uses these exact keywords to trigger lift/drop operations - do not paraphrase them
+- Example: If user writes ""lift rover from here"" at (17,4) and ""to here"" at (20,4), respond:
+  waypoints: [{{gridX:17, gridY:4, priority:1, reason:""LIFT""}}, {{gridX:20, gridY:4, priority:2, reason:""DROP""}}]
+
 Current painted path shows the general exploration area:
 {pathJson}
 
 Consider:
+- FIRST: Check all annotations for lift/drop operations - these take absolute priority
 - Which tiles are CRITICAL checkpoints that must be visited?
 - Are there tiles that should be AVOIDED entirely?
 - Prioritize waypoints (lower priority number = visit first)
-- If and only if the user is interested in exploration around a tile, place waypoints around that tile with an approximate radius of 3-5 tiles
+
+**CREATIVE EXPLORATION PATTERNS:**
+When users provide creative/exploratory annotations (e.g., ""form a flower"", ""draw a circle"", ""make a spiral"", ""write HAT"", ""explore in a star pattern""):
+- Generate waypoints that create the requested shape/pattern
+- Use 8-15 waypoints to form recognizable shapes (flowers need ~8-12 points, text needs ~10-20)
+- For flowers: create a central point + petal points radiating outward (typically 5-8 petals)
+- For text: trace the letter outlines with waypoints (e.g., ""H"" = vertical left line, horizontal middle, vertical right line)
+- For geometric shapes (circles, squares, stars): place waypoints along the perimeter
+- For spiral patterns: gradually increase radius while rotating around center
+- Space waypoints 2-4 tiles apart for smooth, recognizable shapes
+- Be creative and proactive - interpret vague requests generously and generate interesting patterns
+- If a single tile is marked with creative intent, use it as the CENTER of your pattern
 
 Respond with ONLY a JSON object (no markdown, no extra text):
 {{

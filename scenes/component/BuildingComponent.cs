@@ -619,7 +619,23 @@ public partial class BuildingComponent : Node2D
 				if (!gridManager.IsBuildingMovable(this, originArea, destinationArea, allowWaterCrossing, bridgeElevationIsElevated))
 					continue;
 
-				var gCost = current.G + 1; // Assume cost is 1 for each move
+				// Calculate movement cost - heavily penalize tiles that require bridges
+				int moveCost = 1; // Base cost for normal land movement
+				
+				// If bridges are allowed, check if this tile would need a bridge and add penalty
+				if (allowWaterCrossing && bridgeElevationIsElevated.HasValue)
+				{
+					var (tileElevation, tileIsElevated) = gridManager.GetElevationLayerForTile(neighborPos);
+					(_, bool isWater) = gridManager.GetTileCustomData(neighborPos, GridManager.IS_WATER);
+					
+					// If this tile requires a bridge, add a significant cost penalty
+					if (isWater || tileIsElevated != bridgeElevationIsElevated.Value)
+					{
+						moveCost += 10; // Heavy penalty to prefer land routes
+					}
+				}
+				
+				var gCost = current.G + moveCost;
 				var hCost = Heuristic(neighborPos, targetPos);
 				var neighbor = new NodeAStar(neighborPos, current, gCost, hCost);
 
@@ -799,7 +815,7 @@ public partial class BuildingComponent : Node2D
 						FloatingTextManager.ShowMessageAtBuildingPosition("Ran out of wood for bridges!", this);
 						currentExplorMode = ExplorMode.None;
 						EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-						buildingManager.ClearAllPaintedTiles();
+						buildingManager.ClearAllPaintedTiles(this);
 						return;
 					}
 					
@@ -829,103 +845,25 @@ public partial class BuildingComponent : Node2D
 				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 			}
 		}
-		/*
-		else
-		{
-			Vector2I currentPos = GetGridCellPosition();
-			int maxSteps = 100; // Prevent infinite loops
-			int steps = 0;
-			int visitedLimit = 5; // How many tiles to remember
-			Queue<Vector2I> visited = new Queue<Vector2I>();
-			HashSet<Vector2I> visitedSet = new HashSet<Vector2I>();
-			var chosenDirection = (string)null;
-			bool couldMove = true;
-			while (currentPos != targetPosition && !cancelMoveRequested && steps < maxSteps && !IsStuck && Battery > 0 && currentExplorMode != ExplorMode.None)
-			{
-				if (!couldMove)
-				{
-					chosenDirection = GetPerpendicularDirection(chosenDirection);
-					Vector2I nextPos = currentPos;
-					if (chosenDirection == MOVE_UP) nextPos += new Vector2I(0, -1);
-					else if (chosenDirection == MOVE_DOWN) nextPos += new Vector2I(0, 1);
-					else if (chosenDirection == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
-					else if (chosenDirection == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-					var limit = 0;
-					while (limit < 20 && visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos))
-					{
-						chosenDirection = buildingManager.GetRandomDirection();
-						if (chosenDirection == MOVE_UP) nextPos += new Vector2I(0, -1);
-						else if (chosenDirection == MOVE_DOWN) nextPos += new Vector2I(0, 1);
-						else if (chosenDirection == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
-						else if (chosenDirection == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-						limit++;
-					}
-				}
-				else
-				{
-					// Plan only the next move
-					var nextMoves = GetMovesToReachTile(currentPos, targetPosition);
-					// Filter out moves that would revisit a recently visited tile
-					Vector2I nextPos = currentPos;
-					if (nextMoves[0] == MOVE_UP) nextPos += new Vector2I(0, -1);
-					else if (nextMoves[0] == MOVE_DOWN) nextPos += new Vector2I(0, 1);
-					else if (nextMoves[0] == MOVE_LEFT) nextPos += new Vector2I(-1, 0);
-					else if (nextMoves[0] == MOVE_RIGHT) nextPos += new Vector2I(1, 0);
-					if (!visitedSet.Contains(nextPos) || !obstacleTiles.Contains(nextPos))
-					{
-						chosenDirection = nextMoves[0];
-					}
-					else
-					{
-						var limit = 0;
-						while (limit < 20 && (visitedSet.Contains(nextPos) || obstacleTiles.Contains(nextPos)))
-						{
-							chosenDirection = buildingManager.GetRandomDirection(chosenDirection);
-							if (chosenDirection == MOVE_UP) nextPos = currentPos + new Vector2I(0, -1);
-							else if (chosenDirection == MOVE_DOWN) nextPos = currentPos + new Vector2I(0, 1);
-							else if (chosenDirection == MOVE_LEFT) nextPos = currentPos + new Vector2I(-1, 0);
-							else if (chosenDirection == MOVE_RIGHT) nextPos = currentPos + new Vector2I(1, 0);
-							limit++;
-						}
-					}
-				}
-				var attemptPos = currentPos;
-				if (chosenDirection == MOVE_UP) attemptPos += new Vector2I(0, -1);
-				else if (chosenDirection == MOVE_DOWN) attemptPos += new Vector2I(0, 1);
-				else if (chosenDirection == MOVE_LEFT) attemptPos += new Vector2I(-1, 0);
-				else if (chosenDirection == MOVE_RIGHT) attemptPos += new Vector2I(1, 0);
-				couldMove = buildingManager.MoveInDirectionAutomated(this, chosenDirection);
-				obstacleTiles.Add(attemptPos);
-				await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
-				Vector2I newPos = GetGridCellPosition();
-				// Mark as visited
-				visited.Enqueue(newPos);
-				visitedSet.Add(newPos);
-				if (visited.Count > visitedLimit)
-				{
-					var old = visited.Dequeue();
-					visitedSet.Remove(old);
-				}
-				currentPos = newPos;
-				steps++;
-			}
-		}
-		*/
 			currentExplorMode = ExplorMode.None;
 		CanMove = true; // Reset in case it wasn't already
-		buildingManager.ClearAllPaintedTiles();
+		buildingManager.ClearAllPaintedTiles(this);
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 	}
 
 	/// <summary>
 	/// Execute a series of waypoints smoothly without stopping between each one.
 	/// Uses A* to find the complete path through all waypoints, then executes it as one continuous movement.
+	/// Supports lift/drop operations if annotations contain "LIFT" or "DROP" keywords.
 	/// </summary>
-	public async void ExecuteWaypointPath(List<Vector2I> waypoints)
+	public async void ExecuteWaypointPath(List<Vector2I> waypoints, Dictionary<Vector2I, string> waypointAnnotations = null)
 	{
 		if (waypoints == null || waypoints.Count == 0)
 		{
 			GD.PrintErr("ExecuteWaypointPath: No waypoints provided");
+			buildingManager.ClearAllPaintedTiles(this);
+			GameEvents.EmitRobotBackToIdle(this);
+			EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 			return;
 		}
 		
@@ -945,11 +883,18 @@ public partial class BuildingComponent : Node2D
 		if (IsStuck)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Cannot move while stuck", this);
+			buildingManager.ClearAllPaintedTiles(this);
+			GameEvents.EmitRobotBackToIdle(this);
+			EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 			return;
 		}
 		if (Battery <= 15)
 		{
 			FloatingTextManager.ShowMessageAtBuildingPosition("Battery depleted!", this);
+			buildingManager.ClearAllPaintedTiles(this);
+			GameEvents.EmitRobotBackToIdle(this);
+			currentExplorMode = ExplorMode.None;
+			EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 			return;
 		}
 		
@@ -966,6 +911,13 @@ public partial class BuildingComponent : Node2D
 		
 		foreach (var waypoint in waypoints)
 		{
+			// Skip if waypoint is at current position (e.g., double-click on same tile)
+			if (currentPos == waypoint)
+			{
+				GD.Print($"{BuildingResource.DisplayName}: Skipping waypoint at current position {waypoint}");
+				continue;
+			}
+			
 			// Find A* path from current position to this waypoint
 			var (pathSegment, bridgeTiles) = GetMovesWithAStarAndBridges(currentPos, waypoint, false);
 			
@@ -981,15 +933,7 @@ public partial class BuildingComponent : Node2D
 					
 					if (pathSegment.Count > 0 && bridgeTiles.Count > 0)
 					{
-						// Check if we have enough wood
-						int totalWoodNeeded = allBridgeTiles.Count + bridgeTiles.Count;
-						if (numberOfWoodCarried < totalWoodNeeded)
-						{
-							FloatingTextManager.ShowMessageAtBuildingPosition($"Need {totalWoodNeeded} wood, have {numberOfWoodCarried}!", this);
-							currentExplorMode = ExplorMode.None;
-							EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-							return;
-						}
+						// Track bridge tiles - wood check happens during execution
 						allBridgeTiles.UnionWith(bridgeTiles);
 					}
 				}
@@ -997,11 +941,10 @@ public partial class BuildingComponent : Node2D
 			
 			if (pathSegment.Count == 0)
 			{
-				FloatingTextManager.ShowMessageAtBuildingPosition($"Cannot reach waypoint at ({waypoint.X}, {waypoint.Y})!", this);
-				GD.PrintErr($"No path found to waypoint {waypoint}");
-				currentExplorMode = ExplorMode.None;
-				EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
-				return;
+				// Still no path after trying both land and bridges - skip this waypoint
+				GD.PrintErr($"No path found to waypoint {waypoint}, skipping...");
+				FloatingTextManager.ShowMessageAtBuildingPosition($"Skipped unreachable waypoint ({waypoint.X}, {waypoint.Y})", this);
+				continue; // Skip this waypoint and try the next one
 			}
 			
 			// Add this segment to complete path
@@ -1012,6 +955,18 @@ public partial class BuildingComponent : Node2D
 			{
 				currentPos = GetNextPosFromCurrentPos(currentPos, move);
 			}
+		}
+		
+		// Check if we have any valid moves after processing all waypoints
+		if (completePath.Count == 0)
+		{
+			GD.Print($"{BuildingResource.DisplayName}: No valid path generated - all waypoints were unreachable or at current position");
+			FloatingTextManager.ShowMessageAtBuildingPosition("No valid path to execute", this);
+			buildingManager.ClearAllPaintedTiles(this);
+			GameEvents.EmitRobotBackToIdle(this);
+			currentExplorMode = ExplorMode.None;
+			EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
+			return;
 		}
 		
 		GD.Print($"{BuildingResource.DisplayName}: Executing continuous path with {completePath.Count} moves");
@@ -1029,6 +984,44 @@ public partial class BuildingComponent : Node2D
 			var direction = completePath[i];
 			var currentGridPos = GetGridCellPosition();
 			var nextPos = GetNextPosFromCurrentPos(currentGridPos, direction);
+			
+			// Check for lift/drop annotations at current position
+			if (waypointAnnotations != null && waypointAnnotations.TryGetValue(currentGridPos, out string annotation))
+			{
+				string annotLower = annotation.ToLower();
+				
+				// Handle LIFT annotation
+				if (annotLower.Contains("lift") && AttachedRobot == null && BuildingResource.IsAerial)
+				{
+					// Try to find a robot at current position (one tile below for aerial robots)
+					Vector2I groundPosition = currentGridPos + Vector2I.Down;
+					var robotToLift = gridManager.GetRobotAtPosition(groundPosition);
+					
+					if (robotToLift != null && !robotToLift.BuildingResource.IsAerial)
+					{
+						AttachToRobot(robotToLift);
+						robotToLift.AttachToRobot(this);
+						FloatingTextManager.ShowMessageAtBuildingPosition($"Lifted {robotToLift.BuildingResource.DisplayName}!", this);
+						GD.Print($"{BuildingResource.DisplayName} lifted {robotToLift.BuildingResource.DisplayName} at {groundPosition}");
+						await ToSignal(GetTree().CreateTimer(0.3f), "timeout"); // Pause for lift animation
+					}
+					else
+					{
+						FloatingTextManager.ShowMessageAtBuildingPosition("No robot found to lift!", this);
+						GD.PrintErr($"No ground robot found at {groundPosition} for lifting");
+					}
+				}
+				// Handle DROP annotation
+				else if (annotLower.Contains("drop") && AttachedRobot != null)
+				{
+					var droppedRobot = AttachedRobot;
+					DetachRobot();
+					droppedRobot.DetachRobot();
+					FloatingTextManager.ShowMessageAtBuildingPosition($"Dropped {droppedRobot.BuildingResource.DisplayName}!", this);
+					GD.Print($"{BuildingResource.DisplayName} dropped {droppedRobot.BuildingResource.DisplayName} at {currentGridPos}");
+					await ToSignal(GetTree().CreateTimer(0.3f), "timeout"); // Pause for drop animation
+				}
+			}
 			
 			// Place bridge if needed
 			if (allBridgeTiles.Contains(nextPos) && numberOfWoodCarried > 0)
@@ -1048,13 +1041,34 @@ public partial class BuildingComponent : Node2D
 			}
 			
 			// Move in this direction
-			buildingManager.MoveInDirectionAutomated(this, direction);
+			// Use lifted movement if carrying a robot, otherwise use normal automated movement
+			if (BuildingResource.IsAerial && AttachedRobot != null)
+			{
+				// Drone is lifting - use lifted movement for both
+				MoveLifted(direction);
+				AttachedRobot.MoveLifted(direction);
+			}
+			else
+			{
+				// Normal automated movement
+				buildingManager.MoveInDirectionAutomated(this, direction);
+			}
 			await ToSignal(GetTree().CreateTimer(BuildingResource.moveInterval), "timeout");
 		}
 		
-		// Clean up
+		// Clean up - if still carrying a robot, detach it
+		if (AttachedRobot != null)
+		{
+			var stillAttached = AttachedRobot;
+			DetachRobot();
+			stillAttached.DetachRobot();
+			GD.Print($"{BuildingResource.DisplayName} auto-detached {stillAttached.BuildingResource.DisplayName} at path end");
+		}
+		
 		currentExplorMode = ExplorMode.None;
 		CanMove = true;
+		buildingManager.ClearAllPaintedTiles(this);
+		GameEvents.EmitRobotBackToIdle(this);
 		EmitSignal(SignalName.ModeChanged, currentExplorMode.ToString());
 		GD.Print($"{BuildingResource.DisplayName}: Completed waypoint path");
 	}
@@ -1380,7 +1394,7 @@ public partial class BuildingComponent : Node2D
 						recentPositions.Dequeue(); // Keep only the most recent positions
 					}
 				}
-				buildingManager.ClearAllPaintedTiles();
+				buildingManager.ClearAllPaintedTiles(this);
 			}
 		}
 		currentExplorMode = ExplorMode.None;

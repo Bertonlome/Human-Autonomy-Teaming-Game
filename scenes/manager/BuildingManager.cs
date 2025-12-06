@@ -911,6 +911,28 @@ public partial class BuildingManager : Node
 	/// <param name="excludedPositions">Optional set of positions to exclude from the path (e.g., erased tiles)</param>
 	private List<Vector2I> FindPathBetweenTiles(BuildingComponent robot, Vector2I startPos, Vector2I targetPos, HashSet<Vector2I> excludedPositions = null)
 	{
+		// First try without bridges
+		var path = FindPathBetweenTilesInternal(robot, startPos, targetPos, excludedPositions, false, null);
+		
+		// If no path found and robot is ground-based, try with bridge crossing
+		if (path == null && !robot.BuildingResource.IsAerial)
+		{
+			// Check if start and target are at the same elevation level (required for bridging)
+			var (startElevation, startIsElevated) = gridManager.GetElevationLayerForTile(startPos);
+			var (targetElevation, targetIsElevated) = gridManager.GetElevationLayerForTile(targetPos);
+			
+			if (startIsElevated == targetIsElevated)
+			{
+				// Try pathfinding with bridge crossing allowed
+				path = FindPathBetweenTilesInternal(robot, startPos, targetPos, excludedPositions, true, startIsElevated);
+			}
+		}
+		
+		return path;
+	}
+	
+	private List<Vector2I> FindPathBetweenTilesInternal(BuildingComponent robot, Vector2I startPos, Vector2I targetPos, HashSet<Vector2I> excludedPositions, bool allowBridges, bool? bridgeElevationIsElevated)
+	{
 		var open = new List<PathNode>();
 		var closed = new HashSet<Vector2I>();
 		
@@ -966,11 +988,11 @@ public partial class BuildingManager : Node
 					continue;
 				}
 				
-				// Check if this move is valid
+				// Check if this move is valid (with optional bridge consideration)
 				Rect2I originArea = new Rect2I(current.Position, Vector2I.One);
 				Rect2I destinationArea = new Rect2I(neighborPos, Vector2I.One);
 				
-				if (!gridManager.IsBuildingMovable(robot, originArea, destinationArea))
+				if (!gridManager.IsBuildingMovable(robot, originArea, destinationArea, allowBridges, bridgeElevationIsElevated))
 				{
 					continue;
 				}
@@ -1402,14 +1424,44 @@ public partial class BuildingManager : Node
 	}
 	
 	/// <summary>
-	/// Public method to clear all painted tiles (for API use)
+	/// Clear painted tiles for a specific robot
 	/// </summary>
-	public void ClearAllPaintedTiles()
+	public void ClearPaintedTilesForRobot(BuildingComponent robot)
 	{
-		DestroyAllPaintedTiles();
-		if (selectedBuildingComponent != null)
+		if (robot == null) return;
+		
+		// Remove and free painted tiles associated with this robot
+		var tilesToRemove = paintedTiles.Where(tile => tile.AssociatedRobot == robot).ToList();
+		foreach (var tile in tilesToRemove)
 		{
-			selectedBuildingComponent.paintedTiles.Clear();
+			tile.QueueFree();
+			paintedTiles.Remove(tile);
+		}
+		
+		// Clear the robot's own list
+		robot.paintedTiles.Clear();
+	}
+	
+	/// <summary>
+	/// Public method to clear all painted tiles (for API use)
+	/// If a specific robot is provided, only clears that robot's tiles
+	/// </summary>
+	public void ClearAllPaintedTiles(BuildingComponent robot = null)
+	{
+		if (robot != null)
+		{
+			ClearPaintedTilesForRobot(robot);
+		}
+		else
+		{
+			DestroyAllPaintedTiles();
+			// Clear all robots' painted tile lists
+			var allRobots = BuildingComponent.GetValidBuildingComponents(gridManager)
+				.Where(b => b.BuildingResource.BuildableRadius > 0);
+			foreach (var r in allRobots)
+			{
+				r.paintedTiles.Clear();
+			}
 		}
 	}
 	
@@ -1432,10 +1484,37 @@ public partial class BuildingManager : Node
 		paintedTile.AssociatedRobot = selectedBuildingComponent;
 		paintedTile.GridPosition = gridPosition;
 		
-		if (selectedBuildingComponent.BuildingResource.IsAerial) 
-			paintedTile.SetColor(Colors.Cyan);
-		else 
-			paintedTile.SetColor(Colors.Yellow);
+		// Check annotation for special coloring
+		if (!string.IsNullOrEmpty(annotation))
+		{
+			if (annotation.Equals("LIFT", StringComparison.OrdinalIgnoreCase) || 
+			    annotation.Equals("DROP", StringComparison.OrdinalIgnoreCase))
+			{
+				// Bright red for LIFT/DROP waypoints
+				paintedTile.SetColor(Colors.Red);
+			}
+			else if (annotation.Equals("LIFTING", StringComparison.OrdinalIgnoreCase))
+			{
+				// Softer red/pink for intermediate carrying tiles
+				paintedTile.SetColor(new Color(1.0f, 0.5f, 0.5f)); // Light red/pink
+			}
+			else
+			{
+				// Default color for other annotations
+				if (selectedBuildingComponent.BuildingResource.IsAerial) 
+					paintedTile.SetColor(Colors.Cyan);
+				else 
+					paintedTile.SetColor(Colors.Yellow);
+			}
+		}
+		else
+		{
+			// No annotation - use default robot colors
+			if (selectedBuildingComponent.BuildingResource.IsAerial) 
+				paintedTile.SetColor(Colors.Cyan);
+			else 
+				paintedTile.SetColor(Colors.Yellow);
+		}
 			
 		paintedTile.SetNumberLabel(paintedTiles.Count + 1);
 		
