@@ -11,7 +11,7 @@ Communication with Earth is limited, and your robots rely on you to balance stra
 Command a swarm of robots: flying drones and rolling rovers, each with unique strengths and weaknesses.
 Balance autonomy and control: you can give high-level orders, but robots may need to adapt or fail, or you can choose low-level systematic oversight but at the cost of time and flexibility.
 Explore and survive: manage energy and resources to ensure your robots can continue their mission.
-Discover the planer: gradually unveil the map, locate the monolith, and uncover the planet’s hidden anomalies.
+Discover the planet: gradually unveil the map, locate the monolith, and uncover the planet’s hidden anomalies.
 
 **Development Status**
 This game is still in active development. Some features may be incomplete or unstable. Feedback and contributions are welcome as the project evolves.
