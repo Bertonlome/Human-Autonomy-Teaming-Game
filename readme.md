@@ -97,7 +97,7 @@ Feedback from educators and researchers is welcome.
 
 If you use this software for research or teaching, please cite:
 
-Berton, B., & Doyon-Poulin, P. (2026). *Exoplanet Explorer (Version X.X.X)* [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.xxxxx
+Berton, B., & Doyon-Poulin, P. (2026). *Exoplanet Explorer (Version 1.0.1)* [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.18651448
 
 ---
 
