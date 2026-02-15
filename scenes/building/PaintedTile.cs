@@ -15,6 +15,7 @@ public partial class PaintedTile : Node2D
 	public string Annotation => labelEdit?.Text ?? "";
 	public Vector2I GridPosition { get; set; }
 	public bool IsReachable { get; set; } = true;
+	public bool IsCheckpoint { get; set; } = false; // User-clicked checkpoint vs auto-generated connecting tile
 
 	public override void _Ready()
 	{
@@ -35,6 +36,14 @@ public partial class PaintedTile : Node2D
 	public void SetColor(Color color)
 	{
 		color.A = 0.5f; // Set to 50% transparency
+		
+		// Darken checkpoints to make them stand out
+		if (IsCheckpoint)
+		{
+			// Reduce brightness by 30% for checkpoints
+			color = color.Darkened(0.3f);
+		}
+		
 		colorRect.Color = color;
 	}
 

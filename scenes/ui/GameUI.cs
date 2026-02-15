@@ -455,6 +455,7 @@ public partial class GameUI : CanvasLayer
 	
 	/// <summary>
 	/// Export painted tiles to JSON format for LLM API
+	/// Only exports checkpoint tiles (annotated or endpoints) to reduce noise and emphasize user intent
 	/// </summary>
 	private string ExportPathToJson(List<PaintedTile> tiles)
 	{
@@ -464,11 +465,18 @@ public partial class GameUI : CanvasLayer
 			return "{}";
 		}
 		
-		// Group tiles by robot
-		var robotPaths = new Dictionary<BuildingComponent, List<PaintedTile>>();
-		foreach (var tile in tiles)
+	// Group tiles by robot and filter to checkpoint tiles OR tiles with annotations
+	var robotPaths = new Dictionary<BuildingComponent, List<PaintedTile>>();
+	foreach (var tile in tiles)
+	{
+		if (tile.AssociatedRobot != null)
 		{
-			if (tile.AssociatedRobot != null)
+			// Debug: Log tile checkpoint status
+			GD.Print($"Tile #{tile.TileNumber} at ({tile.GridPosition.X},{tile.GridPosition.Y}): IsCheckpoint={tile.IsCheckpoint}, Annotation='{tile.Annotation}'");
+			
+			// Include checkpoint tiles (directly clicked by user) OR tiles with annotations (LIFT/DROP/etc)
+			// Annotations on connecting tiles are important strategic information
+			if (tile.IsCheckpoint || !string.IsNullOrEmpty(tile.Annotation))
 			{
 				if (!robotPaths.ContainsKey(tile.AssociatedRobot))
 				{
@@ -477,16 +485,21 @@ public partial class GameUI : CanvasLayer
 				robotPaths[tile.AssociatedRobot].Add(tile);
 			}
 		}
-		
-		if (robotPaths.Count == 0)
-		{
-			GD.PrintErr("Tiles have no associated robot");
-			return "{}";
-		}
-		
-		// Get contextual tiles for surrounding area
-		var contextTiles = buildingManager.GetContextualTilesForPaintedTiles(tiles);
-		var contextTileDtos = new List<ContextTileDto>();
+	}
+	
+	if (robotPaths.Count == 0)
+	{
+		GD.PrintErr("No checkpoint tiles or annotated tiles found");
+		return "{}";
+	}
+	
+	// Build focused context window around checkpoint/annotated tiles
+	var exportedTiles = robotPaths.Values.SelectMany(list => list).ToList();
+	GD.Print($"Exporting {exportedTiles.Count} tiles (checkpoints + annotations, out of {tiles.Count} total painted tiles)");
+	
+	// Get contextual tiles for surrounding area of exported tiles
+	var contextTiles = buildingManager.GetContextualTilesForPaintedTiles(exportedTiles);
+	var contextTileDtos = new List<ContextTileDto>();
 		
 		// Calculate bounding box from context tiles
 		int minX = int.MaxValue, minY = int.MaxValue;

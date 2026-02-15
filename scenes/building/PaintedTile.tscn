@@ -9,11 +9,13 @@ position = Vector2(32, 32)
 script = ExtResource("1_cp5tg")
 
 [node name="ColorRect" type="ColorRect" parent="."]
+z_index = 1
 offset_right = 64.0
 offset_bottom = 64.0
 
 [node name="TileNumberLabel" type="Label" parent="."]
 unique_name_in_owner = true
+z_index = 1
 offset_top = 46.0
 offset_right = 64.0
 offset_bottom = 64.0

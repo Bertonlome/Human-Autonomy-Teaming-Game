@@ -201,6 +201,8 @@ Instead, provide STRATEGIC GUIDANCE:
 
 The A* algorithm will automatically find the optimal path connecting these waypoints while avoiding exclusion zones.
 
+**CRITICAL: In your response JSON, use the EXACT robot names from the input data.** Do NOT change ""Drone"" to ""Rover"" or vice versa.
+
 **CRITICAL MULTI-ROBOT COLLABORATION RULES:**
 - If you see annotations containing ""lift"", ""pick up"", ""carry"", ""transport"" a rover/robot: the drone must LIFT the ground robot
 - If you see annotations containing ""drop"", ""release"", ""place"", ""deposit"" a rover/robot: the drone must DROP the ground robot
@@ -216,9 +218,12 @@ The A* algorithm will automatically find the optimal path connecting these waypo
 Current painted paths show the general exploration area:
 {pathJson}
 
+**IMPORTANT: The tiles in currentPath.tiles and robotPaths are checkpoint tiles that the user clicked.** Include ALL of them as waypoints in your response, even if they have no annotation. These represent the user's intended paths.
+
 Consider:
-- FIRST: Check all annotations for lift/drop operations - these take absolute priority
-- Which tiles are CRITICAL checkpoints that must be visited?
+- FIRST: Include ALL tiles from currentPath/robotPaths as waypoints (these are user-specified checkpoints)
+- SECOND: Check all annotations for lift/drop operations - these take absolute priority
+- Which additional tiles should be CRITICAL checkpoints?
 - Are there tiles that should be AVOIDED entirely?
 - For multiple robots: coordinate to prevent collisions 
 - Prioritize waypoints (lower priority number = visit first)
@@ -233,6 +238,17 @@ When users provide creative/exploratory annotations (e.g., ""form a flower"", ""
 - For spiral patterns: gradually increase radius while rotating
 - Space waypoints 2-4 tiles apart for smooth shapes
 - Be creative and proactive - don't just return empty waypoints when asked to explore creatively
+
+**AREA EXPLORATION (""explore around"", ""search around"", ""scan area""):**
+When annotations request exploration AROUND a specific tile:
+- If annotation says ""first [action] then [action]"" or ""settle here then explore"": INCLUDE THE ANNOTATED TILE as first waypoint, THEN add exploration waypoints
+- Treat the annotated tile as the CENTER of an exploration area
+- Generate 4 corner waypoints forming a square/rectangle around it
+- Default square size: 6-8 tiles from center (total 12-16 tile square)
+- Example: if center is (20,5), create corners at approximately (16,1), (24,1), (24,9), (16,9)
+- Visit corners in sequential order (clockwise or counterclockwise)
+- For multiple ""explore around"" annotations: create separate squares for each, don't overlap
+- Adapt square size based on context: larger for open areas, smaller near obstacles
 
 Respond with ONLY a JSON object (no markdown, no extra text):
 {{
@@ -274,6 +290,8 @@ Instead, provide STRATEGIC GUIDANCE:
 
 The A* algorithm will automatically find the optimal path connecting these waypoints while avoiding exclusion zones.
 
+**CRITICAL: In your response JSON, use the EXACT robot name from currentPath.robotName in the input data.** Do NOT change ""Drone"" to ""Rover"" or vice versa.
+
 **CRITICAL LIFT/DROP OPERATION RULES:**
 - If you see annotations containing ""lift"", ""pick up"", ""carry"", ""transport"" a rover/robot: the drone must LIFT the ground robot
 - If you see annotations containing ""drop"", ""release"", ""place"", ""deposit"" a rover/robot: the drone must DROP the ground robot
@@ -289,9 +307,12 @@ The A* algorithm will automatically find the optimal path connecting these waypo
 Current painted path shows the general exploration area:
 {pathJson}
 
+**IMPORTANT: The tiles in currentPath.tiles are checkpoint tiles that the user clicked.** Include ALL of them as waypoints in your response, even if they have no annotation. These represent the user's intended path.
+
 Consider:
-- FIRST: Check all annotations for lift/drop operations - these take absolute priority
-- Which tiles are CRITICAL checkpoints that must be visited?
+- FIRST: Include ALL tiles from currentPath.tiles as waypoints (these are user-specified checkpoints)
+- SECOND: Check all annotations for lift/drop operations - these take absolute priority
+- Which additional tiles should be CRITICAL checkpoints?
 - Are there tiles that should be AVOIDED entirely?
 - Prioritize waypoints (lower priority number = visit first)
 
@@ -306,6 +327,17 @@ When users provide creative/exploratory annotations (e.g., ""form a flower"", ""
 - Space waypoints 2-4 tiles apart for smooth, recognizable shapes
 - Be creative and proactive - interpret vague requests generously and generate interesting patterns
 - If a single tile is marked with creative intent, use it as the CENTER of your pattern
+
+**AREA EXPLORATION (""explore around"", ""explore around here"", ""search around"", ""scan area"", ""survey this area""):**
+When annotations request exploration AROUND a specific tile:
+- If annotation says ""first [action] then [action]"" or ""settle here then explore"": INCLUDE THE ANNOTATED TILE as first waypoint, THEN add exploration waypoints
+- Treat the annotated tile as the CENTER of an exploration area
+- Generate 4 corner waypoints forming a square/rectangle around it
+- Default square size: 6-8 tiles from center (total 12-16 tile square)
+- Example: if center is (20,5), create corners at approximately (16,1), (24,1), (24,9), (16,9)
+- Visit corners in sequential order (clockwise: top-left → top-right → bottom-right → bottom-left)
+- For multiple ""explore around"" annotations: create separate squares for each, don't overlap
+- Adapt square size based on context: larger for open areas, smaller near obstacles
 
 Respond with ONLY a JSON object (no markdown, no extra text):
 {{

@@ -832,16 +832,21 @@ public partial class BuildingManager : Node
 					return;
 				}
 				
-				// Paint all intermediate tiles
-				foreach (var pos in pathPositions)
+				// Paint all intermediate tiles (connecting tiles)
+				// The LAST tile in the path is the target (checkpoint)
+				for (int i = 0; i < pathPositions.Count; i++)
 				{
+					var pos = pathPositions[i];
+					
 					// Skip if already painted at this position
 					if (GetPaintedTileAtPosition(pos) != null)
 					{
 						continue;
 					}
 					
-					CreateAndAddPaintedTile(pos);
+					// Last tile in path is the target where user clicked = checkpoint
+					bool isCheckpoint = (i == pathPositions.Count - 1);
+					CreateAndAddPaintedTile(pos, isCheckpoint);
 				}
 				
 				return; // Exit since we've already painted the target tile in the path
@@ -865,11 +870,16 @@ public partial class BuildingManager : Node
 				}
 				
 				// Paint all tiles in the path (excluding robot's current position)
-				foreach (var pos in pathPositions)
+				// The LAST tile is the target where user clicked = checkpoint
+				for (int i = 0; i < pathPositions.Count; i++)
 				{
+					var pos = pathPositions[i];
+					
 					if (pos != robotPos) // Don't paint where robot is standing
 					{
-						CreateAndAddPaintedTile(pos);
+						// Last tile in path is the target where user clicked = checkpoint
+						bool isCheckpoint = (i == pathPositions.Count - 1);
+						CreateAndAddPaintedTile(pos, isCheckpoint);
 					}
 				}
 				
@@ -878,13 +888,15 @@ public partial class BuildingManager : Node
 		}
 
 		// Paint the single tile (either adjacent or first tile next to robot)
-		CreateAndAddPaintedTile(targetGridCell);
+		// Mark it as a checkpoint since it was directly clicked by the user
+		CreateAndAddPaintedTile(targetGridCell, isCheckpoint: true);
 	}
 
 	/// <summary>
 	/// Creates and adds a painted tile at the specified position
 	/// </summary>
-	private void CreateAndAddPaintedTile(Vector2I gridPosition)
+	/// <param name="isCheckpoint">True if this tile was directly clicked by user (checkpoint), false if auto-generated connecting tile</param>
+	private void CreateAndAddPaintedTile(Vector2I gridPosition, bool isCheckpoint = false)
 	{
 		if (selectedBuildingComponent == null) return;
 
@@ -895,6 +907,9 @@ public partial class BuildingManager : Node
 		// Set properties for centralized access
 		paintedTile.AssociatedRobot = selectedBuildingComponent;
 		paintedTile.GridPosition = gridPosition;
+		paintedTile.IsCheckpoint = isCheckpoint;
+
+		GD.Print($"[CreateAndAddPaintedTile] Creating tile at ({gridPosition.X},{gridPosition.Y}), isCheckpoint={isCheckpoint}");
 
 		if (selectedBuildingComponent.BuildingResource.IsAerial) paintedTile.SetColor(Colors.Cyan);
 		else paintedTile.SetColor(Colors.Yellow);
@@ -1072,20 +1087,6 @@ public partial class BuildingManager : Node
 			return contextTiles;
 		}
 		
-		// Find the bounding rectangle that contains all painted tiles
-		int minX = int.MaxValue;
-		int minY = int.MaxValue;
-		int maxX = int.MinValue;
-		int maxY = int.MinValue;
-		
-		foreach (var paintedTile in paintedTilesList)
-		{
-			minX = Math.Min(minX, paintedTile.GridPosition.X);
-			minY = Math.Min(minY, paintedTile.GridPosition.Y);
-			maxX = Math.Max(maxX, paintedTile.GridPosition.X);
-			maxY = Math.Max(maxY, paintedTile.GridPosition.Y);
-		}
-		
 		// Get the robot from the first painted tile (assuming all tiles belong to same robot)
 		BuildingComponent robot = paintedTilesList[0].AssociatedRobot;
 		if (robot == null)
@@ -1103,33 +1104,58 @@ public partial class BuildingManager : Node
 			paintedTilePositions[paintedTile.GridPosition] = paintedTile;
 		}
 		
-		// Iterate through the bounding rectangle and create context tiles
-		for (int x = minX; x <= maxX; x++)
+		// Use a HashSet to avoid duplicate context tiles when squares overlap
+		HashSet<Vector2I> contextTilePositions = new HashSet<Vector2I>();
+		
+		// Generate 4x4 square around each checkpoint tile (2 tiles in each direction)
+		const int CONTEXT_RADIUS = 2; // 2 tiles in each direction = 5x5 square (center + 2 each side)
+		
+		foreach (var paintedTile in paintedTilesList)
 		{
-			for (int y = minY; y <= maxY; y++)
+			Vector2I center = paintedTile.GridPosition;
+			
+			// Add all tiles in the square around this checkpoint
+			for (int x = center.X - CONTEXT_RADIUS; x <= center.X + CONTEXT_RADIUS; x++)
 			{
-				Vector2I gridPos = new Vector2I(x, y);
-				ContextTile contextTile = new ContextTile(gridPos, robot);
-				
-				// Check if this position has a painted tile
-				if (paintedTilePositions.TryGetValue(gridPos, out PaintedTile existingPaintedTile))
+				for (int y = center.Y - CONTEXT_RADIUS; y <= center.Y + CONTEXT_RADIUS; y++)
 				{
-					contextTile.IsPaintedTile = true;
-					contextTile.PaintedTileReference = existingPaintedTile;
-					contextTile.IsReachable = existingPaintedTile.IsReachable;
+					contextTilePositions.Add(new Vector2I(x, y));
 				}
-				else
-				{
-					// Not a painted tile, check if it's reachable
-					Rect2I destinationArea = new Rect2I(gridPos, Vector2I.One);
-					contextTile.IsReachable = gridManager.IsBuildingMovable(robot, robotArea, destinationArea);
-				}
-				
-				contextTiles.Add(contextTile);
 			}
 		}
 		
-		GD.Print($"Created {contextTiles.Count} context tiles ({paintedTilesList.Count} painted) in bounding box ({minX},{minY}) to ({maxX},{maxY})");
+		// Calculate bounding box for logging
+		int minX = int.MaxValue, minY = int.MaxValue;
+		int maxX = int.MinValue, maxY = int.MinValue;
+		
+		// Create ContextTile objects for each unique position
+		foreach (var gridPos in contextTilePositions)
+		{
+			minX = Math.Min(minX, gridPos.X);
+			minY = Math.Min(minY, gridPos.Y);
+			maxX = Math.Max(maxX, gridPos.X);
+			maxY = Math.Max(maxY, gridPos.Y);
+			
+			ContextTile contextTile = new ContextTile(gridPos, robot);
+			
+			// Check if this position has a painted tile
+			if (paintedTilePositions.TryGetValue(gridPos, out PaintedTile existingPaintedTile))
+			{
+				contextTile.IsPaintedTile = true;
+				contextTile.PaintedTileReference = existingPaintedTile;
+				contextTile.IsReachable = existingPaintedTile.IsReachable;
+			}
+			else
+			{
+				// Not a painted tile, check if it's reachable
+				Rect2I destinationArea = new Rect2I(gridPos, Vector2I.One);
+				contextTile.IsReachable = gridManager.IsBuildingMovable(robot, robotArea, destinationArea);
+			}
+			
+			contextTiles.Add(contextTile);
+		}
+		
+		GD.Print($"Created {contextTiles.Count} context tiles ({paintedTilesList.Count} checkpoints) using 5x5 squares, bounding box ({minX},{minY}) to ({maxX},{maxY})");
 		
 		return contextTiles;
 	}
@@ -1468,7 +1494,8 @@ public partial class BuildingManager : Node
 	/// <summary>
 	/// Create a painted tile at a specific grid position (for API use)
 	/// </summary>
-	public void CreatePaintedTileAt(Vector2I gridPosition, string annotation = "")
+	/// <param name="isCheckpoint">True if this represents a waypoint, false if connecting tile</param>
+	public void CreatePaintedTileAt(Vector2I gridPosition, string annotation = "", bool isCheckpoint = false)
 	{
 		if (selectedBuildingComponent == null)
 		{
@@ -1483,6 +1510,7 @@ public partial class BuildingManager : Node
 		// Set properties
 		paintedTile.AssociatedRobot = selectedBuildingComponent;
 		paintedTile.GridPosition = gridPosition;
+		paintedTile.IsCheckpoint = isCheckpoint; // Mark if this is a waypoint vs connecting tile
 		
 		// Check annotation for special coloring
 		if (!string.IsNullOrEmpty(annotation))
@@ -1490,7 +1518,8 @@ public partial class BuildingManager : Node
 			if (annotation.Equals("LIFT", StringComparison.OrdinalIgnoreCase) || 
 			    annotation.Equals("DROP", StringComparison.OrdinalIgnoreCase))
 			{
-				// Bright red for LIFT/DROP waypoints
+				// Bright red for LIFT/DROP waypoints - these are always checkpoints
+				paintedTile.IsCheckpoint = true;
 				paintedTile.SetColor(Colors.Red);
 			}
 			else if (annotation.Equals("LIFTING", StringComparison.OrdinalIgnoreCase))
@@ -1500,6 +1529,8 @@ public partial class BuildingManager : Node
 			}
 			else
 			{
+				// Other annotations make it a checkpoint
+				paintedTile.IsCheckpoint = true;
 				// Default color for other annotations
 				if (selectedBuildingComponent.BuildingResource.IsAerial) 
 					paintedTile.SetColor(Colors.Cyan);
@@ -1511,25 +1542,28 @@ public partial class BuildingManager : Node
 		{
 			// No annotation - use default robot colors
 			if (selectedBuildingComponent.BuildingResource.IsAerial) 
-				paintedTile.SetColor(Colors.Cyan);
-			else 
-				paintedTile.SetColor(Colors.Yellow);
-		}
-			
-		paintedTile.SetNumberLabel(paintedTiles.Count + 1);
+			paintedTile.SetColor(Colors.Cyan);
+		else 
+			paintedTile.SetColor(Colors.Yellow);
+	}
 		
-		// Set annotation if provided
-		if (!string.IsNullOrEmpty(annotation))
+	paintedTile.SetNumberLabel(paintedTiles.Count + 1);
+	
+	// Set annotation if provided (but don't display "LIFTING" - it clutters the screen)
+	if (!string.IsNullOrEmpty(annotation))
+	{
+		paintedTile.SetAnnotation(annotation);
+		
+		// Only display label for LIFT/DROP and other important annotations, not for intermediate "LIFTING" tiles
+		if (!annotation.Equals("LIFTING", StringComparison.OrdinalIgnoreCase))
 		{
-			paintedTile.SetAnnotation(annotation);
 			paintedTile.DisplayLabelEdit();
 		}
-		
-		selectedBuildingComponent.AddPaintedTile(paintedTile);
-		paintedTiles.Add(paintedTile);
 	}
-
-	private void RenumberPaintedTiles()
+	
+	selectedBuildingComponent.AddPaintedTile(paintedTile);
+	paintedTiles.Add(paintedTile);
+}	private void RenumberPaintedTiles()
 	{
 		// Renumber all painted tiles sequentially
 		for (int i = 0; i < paintedTiles.Count; i++)
