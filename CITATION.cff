@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: Exoplanet Explorer
+version: 1.0.0
+authors:
+  - family-names: Berton
+    given-names: Benjamin
+  - family-names: Doyon-Poulin
+    given-names: Philippe
+date-released: 2026-01-01
+doi: 10.5281/zenodo.xxxxx
